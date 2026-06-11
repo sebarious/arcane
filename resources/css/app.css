@@ -1,8 +1,32 @@
 @import url('[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cinzel:wght@500;700&display=swap)');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+@source '../../resources/**/*.{js,ts,vue,blade.php}';
+@source '../../app/**/*.php';
+
+@theme {
+    --color-arcane-bg:        #0a0a0f;
+    --color-arcane-surface:   #12121a;
+    --color-arcane-elevated:  #1a1a26;
+    --color-arcane-border:    #2a2a3a;
+    --color-arcane-muted:     #6b6b80;
+    --color-arcane-text:      #e8e8f0;
+    --color-arcane-accent:    #a78bfa;
+    --color-arcane-accent2:   #22d3ee;
+
+    --color-arcane-common:    #9ca3af;
+    --color-arcane-rare:      #60a5fa;
+    --color-arcane-super:     #a78bfa;
+    --color-arcane-legendary: #f59e0b;
+    --color-arcane-mythic:    #ef4444;
+
+    --font-sans:    'Inter', ui-sans-serif, system-ui;
+    --font-display: 'Cinzel', serif;
+}
 
 @layer base {
     html { color-scheme: dark; }

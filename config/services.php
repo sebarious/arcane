@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'scrydex' => [
+        'url'     => env('SCRYDEX_API_URL', '[api.scrydex.com](https://api.scrydex.com)'),
+        'key'     => env('SCRYDEX_API_KEY'),
+        'team_id' => env('SCRYDEX_TEAM_ID'),
+    ],
+
 ];

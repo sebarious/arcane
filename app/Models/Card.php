@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Services\Banding\RarityBander;
 
 class Card extends Model
 {
@@ -25,5 +26,40 @@ class Card extends Model
             ->where('source', $source)
             ->latest('fetched_at')
             ->first();
+    }
+
+    public function getCurrentMarketPencesAttribute(): ?int
+    {
+        return $this->latestPrice('seed')?->median_pence
+            ?? $this->latestPrice('scrydex')?->median_pence
+            ?? $this->latestPrice('cardmarket')?->median_pence
+            ?? $this->latestPrice('tcgplayer')?->median_pence;
+    }
+
+    public function addToInventory(
+        int $costPence,
+        \DateTimeInterface|string $acquiredAt,
+        ?string $acquiredFrom = null,
+        ?string $acquisitionLot = null,
+        int $quantity = 1,
+    ): \Illuminate\Database\Eloquent\Collection
+    {
+        $marketPence = $this->current_market_pence;
+        $band        = (new RarityBander())->bandFor($marketPence);
+        $rows = [];
+        for ($i = 0; $i < $quantity; $i++) {
+            $rows[] = $this->inventory()->create([
+                'condition'               => 'NM',
+                'cost_pence'              => $costPence,
+                'acquired_at'             => $acquiredAt,
+                'acquired_from'           => $acquiredFrom,
+                'acquisition_lot'         => $acquisitionLot,
+                'market_value_pence'      => $marketPence,
+                'market_value_updated_at' => now(),
+                'rarity_band'             => $band,
+                'status'                  => 'in_stock',
+            ]);
+        }
+        return new \Illuminate\Database\Eloquent\Collection($rows);
     }
 }

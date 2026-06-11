@@ -18,6 +18,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Enums\ThemeMode;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -25,12 +26,19 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
+            ->defaultThemeMode(ThemeMode::Dark)
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName('Arcane')
+            ->darkMode(true)
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Violet,
+                'gray'    => Color::Slate,
             ])
+            ->font('Inter')
+            ->favicon(asset('favicon.ico'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
