@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Enums\Game;
 
 class CardInventory extends Model
 {
@@ -15,13 +15,14 @@ class CardInventory extends Model
         'acquisition_lot', 'market_value_pence', 'market_value_updated_at',
         'rarity_band', 'pack_id', 'qr_token', 'status',
         'allocated_sale_price_pence', 'margin_pence',
-        'delisted_at', 'delisted_by_user_id',
+        'delisted_at', 'delisted_by_user_id', 'game'
     ];
 
     protected $casts = [
         'acquired_at'             => 'date',
         'market_value_updated_at' => 'datetime',
         'delisted_at'             => 'datetime',
+        'game'                    => Game::class,
     ];
 
     public function card()        { return $this->belongsTo(Card::class); }
@@ -52,4 +53,3 @@ class CardInventory extends Model
         return $this->market_value_pence !== null ? $this->market_value_pence / 100 : null;
     }
 }
-

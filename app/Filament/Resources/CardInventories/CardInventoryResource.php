@@ -17,6 +17,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Schemas\Components\Section;
+use App\Enums\Game;
 
 use UnitEnum;
 
@@ -36,8 +38,16 @@ class CardInventoryResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Forms\Components\Section::make('Card')
+            Section::make('Card')
+                ->columnSpanFull()
                 ->schema([
+                    Forms\Components\Select::make('game')
+                        ->label('Game')
+                        ->options(collect(Game::cases())->mapWithKeys(
+                            fn (Game $g) => [$g->value => $g->label()]
+                        ))
+                        ->default(Game::Pokemon->value)
+                        ->required(),
                     Forms\Components\Select::make('card_id')
                         ->label('Card')
                         ->relationship('card', 'name')
@@ -49,8 +59,8 @@ class CardInventoryResource extends Resource
                         ->required(),
                 ]),
 
-            Forms\Components\Section::make('Acquisition')
-                ->columns(2)
+            Section::make('Acquisition')
+                ->columnSpanFull()
                 ->schema([
                     Forms\Components\TextInput::make('cost_pounds')
                         ->label('Cost (£)')
@@ -77,8 +87,8 @@ class CardInventoryResource extends Resource
                         ->helperText('Group multi-card purchases together'),
                 ]),
 
-            Forms\Components\Section::make('Valuation & status')
-                ->columns(3)
+            Section::make('Valuation & status')
+                ->columnSpanFull()
                 ->schema([
                     Forms\Components\TextInput::make('market_value_pounds')
                         ->label('Market value (£)')
@@ -123,6 +133,20 @@ class CardInventoryResource extends Resource
                     ->height(50)
                     ->extraImgAttributes(['class' => 'rounded']),
 
+                Tables\Columns\TextColumn::make('game')
+                    ->label('Game')
+                    ->badge()
+                    ->formatStateUsing(function ($state) {
+                        if ($state instanceof Game) {
+                            return $state->label();
+                        }
+                        if (is_string($state)) {
+                            return Game::from($state)->label();
+                        }
+                        return (string) $state;
+                    })
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('card.name')
                     ->label('Card')
                     ->searchable()
@@ -143,9 +167,17 @@ class CardInventoryResource extends Resource
                     ->alignEnd(),
 
                 Tables\Columns\TextColumn::make('rarity_band')
-                    ->label('Band')
+                    ->label('Rarity')
                     ->badge()
-                    ->color(fn (?string $state) => match ($state) {
+                    ->formatStateUsing(fn(?string $state) => match ($state) {
+                        'common'    => 'Common',
+                        'rare'      => 'Rare',
+                        'super'     => 'Super',
+                        'legendary' => 'Legendary',
+                        'mythic'    => 'Mythic',
+                        default     => 'Unknown',
+                    })
+                    ->color(fn(?string $state) => match ($state) {
                         'common'    => 'gray',
                         'rare'      => 'info',
                         'super'     => 'primary',
@@ -155,13 +187,25 @@ class CardInventoryResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
                     ->badge()
-                    ->color(fn (string $state) => match ($state) {
+                    ->formatStateUsing(fn(string $state) => match ($state) {
+                        'in_stock'   => 'In stock',
+                        'allocated'  => 'In batch',
+                        'dispatched' => 'With store',
+                        'sold'       => 'Sold',
+                        'returned'   => 'Returned',
+                        'written_off' => 'Written off',
+                        default      => ucfirst(str_replace('_', ' ', $state)),
+                    })
+                    ->color(fn(string $state) => match ($state) {
                         'in_stock'   => 'success',
                         'allocated'  => 'info',
                         'dispatched' => 'warning',
                         'sold'       => 'gray',
-                        default      => 'danger',
+                        'returned'   => 'warning',
+                        'written_off' => 'danger',
+                        default      => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('acquisition_lot')

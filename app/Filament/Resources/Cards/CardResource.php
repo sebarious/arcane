@@ -19,6 +19,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use UnitEnum;
+use Filament\Schemas\Components\Section;
+use App\Enums\Game;
 
 class CardResource extends Resource
 {
@@ -35,7 +37,7 @@ class CardResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Forms\Components\Section::make('Card')
+            Section::make('Card')
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('scrydex_id')
@@ -51,7 +53,7 @@ class CardResource extends Resource
                     Forms\Components\TextInput::make('language_code')->default('EN')->maxLength(5),
                 ]),
 
-            Forms\Components\Section::make('Imagery')
+            Section::make('Imagery')
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('image_front')->url()->columnSpanFull(),
@@ -68,6 +70,20 @@ class CardResource extends Resource
                     ->label('')
                     ->height(60)
                     ->extraImgAttributes(['class' => 'rounded']),
+
+                Tables\Columns\TextColumn::make('game')
+                    ->label('Game')
+                    ->badge()
+                    ->formatStateUsing(function ($state) {
+                        if ($state instanceof Game) {
+                            return $state->label();
+                        }
+                        if (is_string($state)) {
+                            return Game::from($state)->label();
+                        }
+                        return (string) $state;
+                    })
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()->sortable()

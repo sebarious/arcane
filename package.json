@@ -24,6 +24,9 @@
         "@heroicons/vue": "^2.2.0",
         "@inertiajs/vue3": "^3.3.1",
         "axios": "^1.17.0",
-        "vue": "^3.5.38"
+        "laravel-echo": "^2.3.7",
+        "pusher-js": "^8.5.0",
+        "vue": "^3.5.38",
+        "ziggy-js": "^2.6.2"
     }
 }

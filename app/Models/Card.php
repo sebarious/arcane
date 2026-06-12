@@ -4,22 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Services\Banding\RarityBander;
+use App\Enums\Game;
 
 class Card extends Model
 {
     protected $fillable = [
         'name', 'set_code', 'set_name', 'card_number', 'variant',
-        'language', 'printed_rarity', 'image_front', 'image_back', 'external_ids',
+        'language', 'printed_rarity', 'image_front', 'image_back', 'external_ids', 'game'
     ];
 
     protected $casts = [
         'external_ids' => 'array',
+        'game' => Game::class,
     ];
 
     public function inventory()        { return $this->hasMany(CardInventory::class); }
 
     public function priceSnapshots()   { return $this->hasMany(MarketPriceSnapshot::class); }
-    
+
     public function latestPrice(string $source = 'cardmarket'): ?MarketPriceSnapshot
     {
         return $this->priceSnapshots()
@@ -49,6 +51,7 @@ class Card extends Model
         $rows = [];
         for ($i = 0; $i < $quantity; $i++) {
             $rows[] = $this->inventory()->create([
+                'game'                    => $this->game->value,
                 'condition'               => 'NM',
                 'cost_pence'              => $costPence,
                 'acquired_at'             => $acquiredAt,

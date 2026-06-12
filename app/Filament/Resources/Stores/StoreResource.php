@@ -18,6 +18,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use UnitEnum;
+use Filament\Schemas\Components\Section;
 
 class StoreResource extends Resource
 {
@@ -32,14 +33,14 @@ class StoreResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Forms\Components\Section::make('Identity')
+            Section::make('Identity')
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('name')
                         ->required()
                         ->maxLength(255)
                         ->live(onBlur: true)
-                        ->afterStateUpdated(fn ($state, Forms\Set $set) =>
+                        ->afterStateUpdated(fn ($state, $set) =>
                             $set('slug', Str::slug($state))),
 
                     Forms\Components\TextInput::make('slug')
@@ -76,14 +77,14 @@ class StoreResource extends Resource
                         ->required(),
                 ]),
 
-            Forms\Components\Section::make('Contact')
+            Section::make('Contact')
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('contact_email')->email()->required(),
                     Forms\Components\TextInput::make('phone')->tel(),
                 ]),
 
-            Forms\Components\Section::make('Address')
+            Section::make('Address')
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('address_line_1')->required()->columnSpanFull(),
@@ -94,7 +95,7 @@ class StoreResource extends Resource
                     Forms\Components\TextInput::make('vat_number')->label('VAT number'),
                 ]),
 
-            Forms\Components\Section::make('Public page')
+            Section::make('Public page')
                 ->schema([
                     Forms\Components\Toggle::make('public_page_enabled')
                         ->label('Visible on the storefront list')
