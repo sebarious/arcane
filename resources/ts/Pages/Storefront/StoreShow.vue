@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import Header from '@/Components/Layout/Header.vue';
 
 type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic';
 
@@ -17,6 +18,8 @@ interface Batch {
   type: string | null;
   created_at: string | null;
   pack_count: number;
+  game: string | null;
+  game_label: string | null;
 }
 
 interface PullCard {
@@ -57,20 +60,7 @@ const bandPillClass = ( band: Rarity | null ): string => {
 
 <template>
   <div class="min-h-screen flex flex-col">
-    <!-- Header ... same as before -->
-    <!-- Header -->
-    <header class="border-b border-arcane-border/60 bg-arcane-bg/90 backdrop-blur">
-      <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" class="font-display text-xl tracking-[0.3em] text-arcane-accent">
-        ARCANE
-        </Link>
-        <nav class="flex items-center gap-3 text-sm text-arcane-muted">
-          <Link href="/stores" class="hover:text-arcane-accent">Stores</Link>
-          <span>/</span>
-          <span>{{ store.name }}</span>
-        </nav>
-      </div>
-    </header>
+    <Header />
 
     <main class="flex-1 bg-arcane-bg">
       <div class="max-w-6xl mx-auto px-6 py-8 space-y-8">
@@ -136,12 +126,20 @@ const bandPillClass = ( band: Rarity | null ): string => {
             <Link v-for=" batch in batches " :key="batch.id"
               :href="route( 'store.lists.show', { store: store.slug, batch: batch.id } )"
               class="flex items-center justify-between gap-3 border border-arcane-border/60 rounded-lg px-3 py-2.5 bg-arcane-surface/80 hover:border-arcane-accent/60 transition">
-            <div>
+            <div class="space-y-2">
               <div class="text-sm font-semibold">
                 {{ batch.reference }}
               </div>
-              <div class="text-xs text-arcane-muted">
-                {{ ( batch.type ?? '' ).toUpperCase() }} · {{ batch.pack_count }} packs
+              <div class="flex items-center gap-2">
+                <div v-if=" batch.game_label ">
+                  <span
+                    class="px-2 py-[2px] rounded-full text-[10px] bg-arcane-elevated text-arcane-muted border border-arcane-border/70">
+                    {{ batch.game_label }}
+                  </span>
+                </div>
+                <div class="text-xs text-arcane-muted">
+                  {{ ( batch.type ?? '' ).toUpperCase() }} · {{ batch.pack_count }} packs
+                </div>
               </div>
             </div>
             <div class="text-[11px] text-arcane-muted">

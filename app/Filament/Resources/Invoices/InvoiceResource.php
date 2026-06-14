@@ -84,7 +84,16 @@ class InvoiceResource extends Resource
                     ->formatStateUsing(fn($state) => Money::format($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
                     ->badge()
+                    ->formatStateUsing(fn(string $state) => match ($state) {
+                        'draft'     => 'Draft (not sent)',
+                        'sent'      => 'Sent',
+                        'paid'      => 'Paid',
+                        'overdue'   => 'Overdue',
+                        'cancelled' => 'Cancelled',
+                        default     => ucfirst($state),
+                    })
                     ->color(fn(string $state) => match ($state) {
                         'draft'     => 'gray',
                         'sent'      => 'info',

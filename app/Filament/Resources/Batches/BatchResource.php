@@ -23,13 +23,16 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Schemas\Components\Section;
 use App\Enums\Game;
+use App\Services\Batches\BatchDeleter;
+use Filament\Notifications\Notification;
+
 
 class BatchResource extends Resource
 {
     protected static ?string $model = Batch::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquaresPlus;
-    protected static string|UnitEnum|null $navigationGroup = 'Batches';
+    protected static string|UnitEnum|null $navigationGroup = 'Batches & billing';
     protected static ?int $navigationSort = 30;
 
     public static function form(Schema $schema): Schema
@@ -181,14 +184,23 @@ class BatchResource extends Resource
                     })
                     ->default('—'),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
                     ->badge()
+                    ->formatStateUsing(fn(string $state) => match ($state) {
+                        'draft'      => 'Draft (not generated)',
+                        'committed'  => 'Live (in store)',
+                        'dispatched' => 'Dispatched',
+                        'completed'  => 'Completed',
+                        'cancelled'  => 'Cancelled',
+                        default      => ucfirst($state),
+                    })
                     ->color(fn(string $state) => match ($state) {
-                        'draft'     => 'gray',
-                        'committed' => 'success',
+                        'draft'      => 'gray',
+                        'committed'  => 'success',
                         'dispatched' => 'warning',
-                        'completed' => 'info',
-                        'cancelled' => 'danger',
-                        default     => 'gray',
+                        'completed'  => 'info',
+                        'cancelled'  => 'danger',
+                        default      => 'gray',
                     }),
             ])
             ->recordActions([
@@ -212,6 +224,36 @@ class BatchResource extends Resource
                     ->url(fn(\App\Models\Batch $record) => route('batches.qr-sheet', $record))
                     ->openUrlInNewTab()
                     ->visible(fn(\App\Models\Batch $record) => $record->status === 'committed'),
+                Action::make('deleteBatch')
+                    ->label('Delete batch')
+                    ->icon(\Filament\Support\Icons\Heroicon::OutlinedTrash)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete batch')
+                    ->modalDescription('Choose how to handle the cards in this batch when deleting.')
+                    ->schema([
+                        Forms\Components\Toggle::make('reallocate_inventory')
+                            ->label('Return cards to stock')
+                            ->helperText('On = cards become "In stock" again. Off = cards are permanently deleted.')
+                            ->default(true),
+                        Forms\Components\Toggle::make('delete_invoice')
+                            ->label('Also delete the linked invoice')
+                            ->default(false),
+                    ])
+                    ->action(function (\App\Models\Batch $record, array $data, BatchDeleter $deleter) {
+                        $deleter->delete(
+                            $record,
+                            reallocateInventory: (bool) $data['reallocate_inventory'],
+                            deleteInvoice: (bool) $data['delete_invoice'],
+                        );
+                        Notification::make()
+                            ->title('Batch deleted')
+                            ->body($data['reallocate_inventory']
+                                ? 'Cards have been returned to stock.'
+                                : 'Cards have been permanently deleted.')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

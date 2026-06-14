@@ -32,8 +32,8 @@ class CardInventoryResource extends Resource
 
     protected static ?int $navigationSort = 20;
 
-    protected static ?string $modelLabel = 'Card in inventory';
-    protected static ?string $pluralModelLabel = 'Card inventory';
+    protected static ?string $modelLabel = 'Inventory';
+    protected static ?string $pluralModelLabel = 'Inventory';
 
     public static function form(Schema $schema): Schema
     {

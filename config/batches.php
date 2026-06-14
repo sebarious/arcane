@@ -35,9 +35,11 @@ return [
   | Global margin settings
   |--------------------------------------------------------------------------
   |
-  | target_markup_on_cost:   0.30  => sale = cost * 1.30  (~30% markup on cost)
+  | target_markup_on_cost:   0.20  => sale = cost * 1.20  (~20% markup on cost)
   | or equivalently: margin = sale * (markup / (1 + markup))
   |
   */
-  'target_markup_on_cost' => 0.30,
+  'target_markup_on_cost' => 0.20,
+
+  'target_market_multiple' => 1.20, // target market value = sale * 1.20 (~20% over sale price)
 ];

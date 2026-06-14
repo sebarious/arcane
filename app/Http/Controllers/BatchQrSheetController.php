@@ -2,59 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateBatchQrSheetJob;
 use App\Models\Batch;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Storage;
 
 class BatchQrSheetController extends Controller
 {
     public function __invoke(Request $request, Batch $batch)
     {
-        // Authorize: only admins (and later, the store owner) can access
-        if (! $request->user()?->hasRole('admin')) {
+        $user = $request->user();
+        if (! $user || (! $user->hasRole('admin') &&
+            ! $user->stores()->where('id', $batch->store_id)->exists())) {
             abort(403);
         }
 
-        $batch->load(['packs.card.card']); // packs -> cardInventory -> card
+        // If the PDF already exists, stream it
+        if ($batch->qr_sheet_pdf_path && Storage::disk('local')->exists($batch->qr_sheet_pdf_path)) {
+            return response()->streamDownload(
+                fn() => print Storage::disk('local')->get($batch->qr_sheet_pdf_path),
+                "{$batch->reference}_qr_sheet.pdf",
+                ['Content-Type' => 'application/pdf'],
+            );
+        }
 
-        // Prepare data for the view
-        $rows = $batch->packs()
-            ->with('card.card')
-            ->orderBy('sequence_no')
-            ->get()
-            ->map(function ($pack) use ($batch, $request) {
-                $cardInventory = $pack->card;
-                $card          = $cardInventory?->card;
-                $token = $cardInventory?->qr_token;
-                $qrUrl = $token
-                    ? route('qr.scan', ['token' => $token])
-                    : null;
-                $qrPng = null;
-                if ($qrUrl) {
-                    $png = QrCode::format('png')
-                        ->size(140)
-                        ->margin(0)
-                        ->generate($qrUrl);
-                    $qrPng = 'data:image/png;base64,' . base64_encode($png);
-                }
-                return [
-                    'sequence' => $pack->sequence_no,
-                    'name'     => $card?->name ?? 'Unknown',
-                    'set'      => $card?->set_name ?? '',
-                    'number'   => $card?->card_number ?? '',
-                    'band'     => $cardInventory?->rarity_band ?? '',
-                    'qr_png'   => $qrPng,
-                ];
-            });
+        // Otherwise dispatch the job and show a "preparing" page
+        if (! $batch->qr_sheet_pdf_path) {
+            GenerateBatchQrSheetJob::dispatch($batch->id);
+        }
 
-        $pdf = Pdf::loadView('pdf.batch-qr-sheet', [
+        return response()->view('pdf.batch-qr-sheet-preparing', [
             'batch' => $batch,
-            'rows'  => $rows,
-        ])->setPaper('a4', 'portrait');
-
-        $filename = "{$batch->reference}_qr_sheet.pdf";
-
-        return $pdf->download($filename);
+        ], 202);
     }
 }

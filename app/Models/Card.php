@@ -44,23 +44,28 @@ class Card extends Model
         ?string $acquiredFrom = null,
         ?string $acquisitionLot = null,
         int $quantity = 1,
-    ): \Illuminate\Database\Eloquent\Collection
-    {
-        $marketPence = $this->current_market_pence;
-        $band        = (new RarityBander())->bandFor($marketPence);
+    ): \Illuminate\Database\Eloquent\Collection {
+        // Prefer latest market snapshot, fallback to cost if none
+        $marketPence = $this->current_market_pence; // from Card::latestPrice()
+        if ($marketPence === null) {
+            // Conservative fallback: assume market ~= cost
+            $marketPence = $costPence;
+        }
+        $bander = new RarityBander();
+        $band   = $bander->bandFor($marketPence);
         $rows = [];
         for ($i = 0; $i < $quantity; $i++) {
             $rows[] = $this->inventory()->create([
-                'game'                    => $this->game->value,
-                'condition'               => 'NM',
-                'cost_pence'              => $costPence,
-                'acquired_at'             => $acquiredAt,
-                'acquired_from'           => $acquiredFrom,
-                'acquisition_lot'         => $acquisitionLot,
-                'market_value_pence'      => $marketPence,
+                'game'                    => $this->game->value, // if you added game
+                'condition'              => 'NM',
+                'cost_pence'             => $costPence,
+                'acquired_at'            => $acquiredAt,
+                'acquired_from'          => $acquiredFrom,
+                'acquisition_lot'        => $acquisitionLot,
+                'market_value_pence'     => $marketPence,
                 'market_value_updated_at' => now(),
-                'rarity_band'             => $band,
-                'status'                  => 'in_stock',
+                'rarity_band'            => $band,
+                'status'                 => 'in_stock',
             ]);
         }
         return new \Illuminate\Database\Eloquent\Collection($rows);

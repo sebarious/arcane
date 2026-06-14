@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import Header from '@/Components/Layout/Header.vue';
+
+interface StoreGame {
+  value: string;
+  label: string;
+}
 
 interface Store {
   id: number;
@@ -7,6 +13,7 @@ interface Store {
   name: string;
   city: string;
   postcode: string;
+  games: StoreGame[];
 }
 
 interface Props {
@@ -18,18 +25,7 @@ const props = defineProps<Props>();
 
 <template>
   <div class="min-h-screen flex flex-col">
-    <header class="border-b border-arcane-border/60 bg-arcane-bg/90 backdrop-blur">
-      <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" class="font-display text-xl tracking-[0.3em] text-arcane-accent">
-        ARCANE
-        </Link>
-        <nav class="flex items-center gap-4 text-sm text-arcane-muted">
-          <span class="text-arcane-muted">Stores</span>
-          <Link href="/login" class="hover:text-arcane-accent text-xs">Store login</Link>
-        </nav>
-      </div>
-    </header>
-
+    <Header />
     <main class="flex-1">
       <div class="max-w-6xl mx-auto px-6 py-10 space-y-6">
         <section class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
@@ -39,11 +35,10 @@ const props = defineProps<Props>();
             </h1>
             <p class="text-arcane-muted text-sm max-w-xl">
               These shops stock Arcane single-card mystery packs. Tap a store
-              to view the live card list of hits still in the pool.
+              to view the live card lists and recent pulls.
             </p>
           </div>
         </section>
-
         <section>
           <div v-if=" stores.length === 0 " class="text-arcane-muted text-sm">
             No stores are live yet.
@@ -57,12 +52,18 @@ const props = defineProps<Props>();
                   {{ store.name }}
                 </h2>
                 <span class="text-[11px] text-arcane-muted">
-                  Live card list →
+                  View store →
+                </span>
+              </div>
+              <div v-if=" store.games.length " class="flex flex-wrap gap-1 mt-1">
+                <span v-for=" game in store.games " :key="game.value"
+                  class="px-2 py-[2px] rounded-full text-[10px] bg-arcane-elevated text-arcane-muted border border-arcane-border/70">
+                  {{ game.label }}
                 </span>
               </div>
             </div>
             <div class="mt-3 text-[11px] text-arcane-muted">
-              View remaining mythic, legendary, super, rare, and common hits at this location.
+              View recent pulls and active card lists for this store.
             </div>
             </Link>
           </div>

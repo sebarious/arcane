@@ -13,14 +13,14 @@
     --color-arcane-surface:   #12121a;
     --color-arcane-elevated:  #1a1a26;
     --color-arcane-border:    #2a2a3a;
-    --color-arcane-muted:     #6b6b80;
+    --color-arcane-muted:     #76768e;
     --color-arcane-text:      #e8e8f0;
-    --color-arcane-accent:    #a78bfa;
-    --color-arcane-accent2:   #22d3ee;
+    --color-arcane-accent:    #512b74;
+    --color-arcane-accent2:   #d6bc71;
 
     --color-arcane-common:    #9ca3af;
     --color-arcane-rare:      #60a5fa;
-    --color-arcane-super:     #a78bfa;
+    --color-arcane-super:     #512b74;
     --color-arcane-legendary: #f59e0b;
     --color-arcane-mythic:    #ef4444;
 
@@ -41,19 +41,110 @@
 
 @layer components {
     .card-panel {
-        @apply bg-arcane-surface/80 backdrop-blur border border-arcane-border rounded-xl;
+        @apply bg-arcane-surface/90 backdrop-blur;
     }
     .btn-primary {
-        @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg
-               bg-arcane-accent text-arcane-bg font-semibold
-               hover:bg-arcane-accent/90 transition;
+        @apply inline-flex items-center gap-2 px-4 py-2 rounded-none
+               bg-white text-black font-semibold;
     }
     .btn-ghost {
-        @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg
+        @apply inline-flex items-center gap-2 px-4 py-2 rounded-none
                border border-arcane-border text-arcane-text
                hover:bg-arcane-elevated transition;
     }
     .rarity-pill {
         @apply px-2 py-0.5 text-xs font-semibold rounded uppercase tracking-wider;
     }
+    .outline-root {
+        @apply p-1.5 inline-block relative;
+    }
+
+    .outline-root .outline-inner:before, .outline-root .outline-inner:after, .outline-root .outline-inner > span:before, .outline-root .outline-inner > span:after {
+        content: '';
+        @apply block absolute w-[8px] h-[8px] border border-white transition;
+    }
+
+    .outline-root .outline-inner:before {
+        @apply top-0 left-0;
+
+        border-color: #ffffff transparent transparent #ffffff;
+    }
+
+    .outline-root .outline-inner:after {
+        @apply bottom-0 right-0;
+
+        border-color: transparent #ffffff #ffffff transparent;
+    }
+
+    .outline-root .outline-inner > span:before {
+        @apply bottom-0 left-0;
+
+        border-color: transparent transparent #ffffff #ffffff;
+    }
+
+    .outline-root .outline-inner > span:after {
+        @apply top-0 right-0;
+
+        border-color: #ffffff #ffffff transparent transparent;
+    }
+
+    .outline-root .outline-inner.secondary:before {
+        border-color: #d6bc71 transparent transparent #d6bc71;
+    }
+
+    .outline-root .outline-inner.secondary:after {
+        border-color: transparent #d6bc71 #d6bc71 transparent;
+    }
+
+    .outline-root .outline-inner.secondary > span:before {
+        border-color: transparent transparent #d6bc71 #d6bc71;
+    }
+
+    .outline-root .outline-inner.secondary > span:after {
+        border-color: #d6bc71 #d6bc71 transparent transparent;
+    }
+
+    .text-sapphire {
+        @apply text-arcane-rare;
+    }
+
+    .text-ruby {
+        @apply text-arcane-mythic;
+    }
+
+    .text-diamond {
+        @apply text-arcane-legendary;
+    }
+
+    .border-sapphire {
+        @apply border-arcane-rare;
+    }
+    .border-ruby {
+        @apply border-arcane-mythic;
+    }
+    .border-diamond {
+        @apply border-arcane-legendary;
+    }
+}
+
+.futuristic-grid {
+    background-color: #02040c;
+
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.05) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 2px, transparent 2px);
+
+    background-size:
+        40px 40px,
+        40px 40px,
+        200px 200px,
+        200px 200px;
+
+    background-position:
+        0 0,
+        0 0,
+        -1px -1px,
+        -1px -1px;
 }

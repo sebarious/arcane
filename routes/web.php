@@ -13,12 +13,19 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\Seller\InvoicesController;
 use App\Http\Controllers\Storefront\BatchListController;
+use App\Http\Controllers\Sell\SubmissionCreateController;
+use App\Http\Controllers\Sell\SubmissionStoreController;
+use App\Http\Controllers\Sell\SubmissionThankYouController;
 
 Route::get('/', fn () => Inertia::render('Welcome'));
 
 Route::middleware(['web', 'auth'])  // tighten with an 'admin' gate later
   ->get('/admin/batches/{batch}/qr-sheet', BatchQrSheetController::class)
   ->name('batches.qr-sheet');
+
+Route::get('/sell', SubmissionCreateController::class)->name('sell.create');
+Route::post('/sell', SubmissionStoreController::class)->name('sell.store');
+Route::get('/sell/thanks/{reference}', SubmissionThankYouController::class)->name('sell.thankyou');
 
 Route::middleware(['web', 'auth', 'role:seller'])
   ->prefix('seller')

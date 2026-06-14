@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Storefront;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use Inertia\Inertia;
+use App\Enums\Game;
 
 class StoreShowController extends Controller
 {
@@ -64,6 +65,8 @@ class StoreShowController extends Controller
                     'id'        => $batch->id,
                     'reference' => $batch->reference,
                     'type'      => $batch->type?->value,
+                    'game'       => $batch->game?->value,
+                    'game_label' => $batch->game ? $batch->game->label() : null,
                     'created_at' => $batch->created_at?->toIso8601String(),
                     'pack_count' => $batch->pack_count,
                 ];

@@ -70,7 +70,7 @@ class StoreResource extends Resource
                     Forms\Components\Select::make('status')
                         ->options([
                             'active'    => 'Active',
-                            'paused'    => 'Paused',
+                            'paused'    => 'Paused (not selling)',
                             'suspended' => 'Suspended',
                         ])
                         ->default('active')
@@ -118,11 +118,19 @@ class StoreResource extends Resource
                     ->label('Seller')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn(string $state) => match ($state) {
+                        'active'    => 'Active',
+                        'paused'    => 'Paused (not selling)',
+                        'suspended' => 'Suspended',
+                        default     => ucfirst($state),
+                    })
+                    ->color(fn(string $state) => match ($state) {
                         'active'    => 'success',
                         'paused'    => 'warning',
                         'suspended' => 'danger',
+                        default     => 'gray',
                     }),
                 Tables\Columns\IconColumn::make('public_page_enabled')
                     ->label('Public')
@@ -134,7 +142,7 @@ class StoreResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'active'    => 'Active',
-                        'paused'    => 'Paused',
+                        'paused'    => 'Paused (not selling)',
                         'suspended' => 'Suspended',
                     ]),
             ])

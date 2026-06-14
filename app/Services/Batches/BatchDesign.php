@@ -35,4 +35,16 @@ class BatchDesign
     $markup = (float) config('batches.target_markup_on_cost', 0.30);
     return (int) round($sale / (1 + $markup));
   }
+
+  // existing config(), packCount(), pricePerPack(), targetSalePrice(), targetCost()
+  /**
+   * Target total market value for the batch.
+   * For example, sale * 1.15 for a 15% "EV over price" target.
+   */
+  public static function targetMarket(Game $game, BatchType $type): int
+  {
+    $sale = self::targetSalePrice($game, $type);
+    $multiple = (float) config('batches.target_market_multiple', 1.15);
+    return (int) round($sale * $multiple);
+  }
 }
