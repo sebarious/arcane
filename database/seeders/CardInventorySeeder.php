@@ -22,36 +22,36 @@ class CardInventorySeeder extends Seeder
     protected array $bandConfig = [
         'common' => [
             'count'      => 2000,
-            'price_min'  => 50,
-            'price_max'  => 210,    // £0.50 – £2.10, avg ~£1.30
+            'price_min'  => 75,
+            'price_max'  => 349,    // £0.75 – £3.49, avg ~£2.12
             'cost_ratio' => 0.70,
         ],
         'rare' => [
             'count'      => 800,
             'price_min'  => 350,
-            'price_max'  => 900,    // £3.50 – £9.00, avg ~£6.25
+            'price_max'  => 1099,    // £3.50 – £10.99, avg ~£7.25
             'cost_ratio' => 0.70,
         ],
         'super' => [
             'count'      => 300,
-            'price_min'  => 1200,
-            'price_max'  => 2500,   // £12 – £25, avg ~£18.50
+            'price_min'  => 1100,
+            'price_max'  => 4999,   // £11.00 – £49.99, avg ~£30.50
             'cost_ratio' => 0.65,
         ],
         'legendary' => [
             'count'      => 120,
-            'price_min'  => 3200,
-            'price_max'  => 5500,   // £32 – £55, avg ~£43
+            'price_min'  => 5000,
+            'price_max'  => 17999,   // £50.00 – £179.99, avg ~£115
             'cost_ratio' => 0.60,
         ],
         'mythic' => [
             'count'      => 60,
-            'price_min'  => 5500,
-            'price_max'  => 9000,   // £55 – £90 for the bulk
+            'price_min'  => 18000,
+            'price_max'  => 49999,   // £180 – £499.99 for the bulk
             'cost_ratio' => 0.55,
             'chase_chance'    => 0.20,
-            'chase_price_min' => 15000,
-            'chase_price_max' => 30000,
+            'chase_price_min' => 18000,
+            'chase_price_max' => 49999,
         ],
     ];
 

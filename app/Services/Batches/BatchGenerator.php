@@ -25,7 +25,7 @@ class BatchGenerator
         throw new \RuntimeException("Batch {$batch->id} is not in draft status.");
       }
 
-    $attempts = 80;
+    $attempts = 150;
     $best     = null;
     $debug    = [
       'tried'        => 0,
@@ -75,7 +75,7 @@ class BatchGenerator
       $minMargin = max(0, $targetMargin - 0.10);
       $maxMargin = $targetMargin + 0.10;
 
-      $attempts = 80;
+      $attempts = 150;
       $best     = null;
 
       for ($i = 0; $i < $attempts; $i++) {
@@ -141,13 +141,6 @@ class BatchGenerator
           $debug['rejected_hi'],
           $sampleSummary ?: 'none',
         ));
-      }
-
-      if (! $best) {
-        throw new \RuntimeException(
-          "Could not find a batch within the target margin window for " .
-            "{$game->value}/{$type->value}. Review pricing, distribution, or stock."
-        );
       }
 
       $selected     = $best['selected'];

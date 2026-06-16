@@ -39,6 +39,7 @@ class BatchListController extends Controller
                         'number' => $card?->card_number,
                         'image'  => $card?->image_front,
                         'band'   => $inv->rarity_band,
+                        'market_price' => $inv->market_value_pence ? round($inv->market_value_pence / 100, 2) : null,
                     ];
                 })->values(),
             ];

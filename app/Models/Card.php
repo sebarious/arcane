@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\Banding\RarityBander;
 use App\Enums\Game;
+use Illuminate\Support\Facades\URL;
 
 class Card extends Model
 {
@@ -37,6 +38,11 @@ class Card extends Model
             ?? $this->latestPrice('scrydex')?->median_pence
             ?? $this->latestPrice('cardmarket')?->median_pence
             ?? $this->latestPrice('tcgplayer')?->median_pence;
+    }
+
+    public function getImageFrontAttribute(): ?string
+    {
+        return $this->attributes['image_front'] ? URL::temporarySignedRoute('image.show', now()->addMinutes(5), ['path' => $this->attributes['image_front']]) : null;
     }
 
     public function addToInventory(

@@ -6,7 +6,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('app:check-economics')]
+#[Signature('arcane:check-economics')]
 #[Description('Check the economics of card inventory')]
 class CheckEconomics extends Command
 {

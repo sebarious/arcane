@@ -137,7 +137,8 @@ const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
             </p>
           </div>
           <div class="text-xs text-arcane-muted md:text-right">
-            <p><span class="text-arcane-text font-semibold">{{ Object.entries(bands).reduce((acc, [, info]) => acc + info.count, 0) }}/{{ batch.pack_count }}</span> packs</p>
+            <p><span class="text-arcane-text font-semibold">{{ Object.entries(bands).reduce((acc, [, info]) => acc +
+                info.count, 0) }}/{{ batch.pack_count }}</span> packs</p>
           </div>
         </section>
 
@@ -200,6 +201,9 @@ const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
                     </div>
                     <div class="text-[10px] text-arcane-muted truncate">
                       {{ card.set }} · {{ card.number }}
+                    </div>
+                    <div class="text-[10px] text-arcane-muted">
+                      &pound;{{ card.market_price }}
                     </div>
                   </div>
                 </div>
