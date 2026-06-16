@@ -15,11 +15,11 @@ class RarityBander
      *   mythic:    £150.00+
      */
     public const DEFAULT_THRESHOLDS = [
-        'common'    => ['min' => 10,    'max' => 199],
-        'rare'      => ['min' => 200,   'max' => 999],
-        'super'     => ['min' => 1000,  'max' => 3999],
-        'legendary' => ['min' => 4000,  'max' => 14999],
-        'mythic'    => ['min' => 15000, 'max' => PHP_INT_MAX],
+        'common'    => ['min' => 10,    'max' => 299],
+        'rare'      => ['min' => 300,   'max' => 1099],
+        'super'     => ['min' => 1100,  'max' => 3099],
+        'legendary' => ['min' => 3100,  'max' => 5499],
+        'mythic'    => ['min' => 5500,  'max' => PHP_INT_MAX],
     ];
 
     /** @param array<string, array{min:int,max:int}>|null $thresholds */

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import SellerHeader from '@/Components/Layout/SellerHeader.vue';
 
 interface CardInfo {
   name: string | null;
@@ -66,20 +67,7 @@ const bandLabel = ( band: string | null ): string => {
 
 <template>
   <div class="min-h-screen bg-arcane-bg text-arcane-text">
-    <header class="border-b border-arcane-border/60">
-      <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" class="font-display text-xl tracking-[0.3em] text-arcane-accent">
-        ARCANE
-        </Link>
-        <nav class="flex items-center gap-4 text-sm text-arcane-muted">
-          <Link href="/seller" class="hover:text-arcane-accent">Dashboard</Link>
-          <span>/</span>
-          <Link href="/seller/batches" class="hover:text-arcane-accent">Batches</Link>
-          <span>/</span>
-          <span>{{ batch.reference }}</span>
-        </nav>
-      </div>
-    </header>
+    <SellerHeader />
 
     <main class="max-w-6xl mx-auto px-6 py-8 space-y-6">
       <section class="card-panel p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">

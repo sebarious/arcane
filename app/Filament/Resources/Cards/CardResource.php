@@ -21,6 +21,7 @@ use Filament\Actions\EditAction;
 use UnitEnum;
 use Filament\Schemas\Components\Section;
 use App\Enums\Game;
+use App\Models\Expansion;
 
 class CardResource extends Resource
 {
@@ -89,6 +90,12 @@ class CardResource extends Resource
                     ->searchable()->sortable()
                     ->description(fn (Card $r) => "{$r->set_name} · {$r->card_number}"),
 
+                Tables\Columns\TextColumn::make('current_market_pence')
+                        ->label('Market price')
+                        ->formatStateUsing(fn ($state) => $state !== null ? '£' . number_format($state / 100, 2) : null)
+                        ->sortable()
+                        ->toggleable(),
+
                 Tables\Columns\TextColumn::make('printed_rarity')->badge()->toggleable(),
                 Tables\Columns\TextColumn::make('variant')->toggleable(),
 
@@ -118,40 +125,48 @@ class CardResource extends Resource
                     ->label('Import expansion')
                     ->icon(Heroicon::OutlinedCloudArrowDown)
                     ->schema([
-                        Forms\Components\TextInput::make('expansion_id')
-                            ->label('Expansion ID')
-                            ->placeholder('e.g. sv3pt5')
-                            ->required(),
-                    ])
-                    ->action(function (array $data, ScrydexClient $client) {
-                        $cards = $client->getCardsInExpansion($data['expansion_id']);
-                        foreach ($cards as $payload) {
-                            CardMapper::upsert($payload);
-                        }
-                        Notification::make()
-                            ->title("Imported {$data['expansion_id']}")
-                            ->body(count($cards).' cards added or updated')
-                            ->success()
-                            ->send();
-                    }),
+                Forms\Components\Select::make('game')
+                    ->label('Game')
+                    ->options(
+                        fn() => collect(Game::cases())
+                            ->mapWithKeys(fn(Game $game) => [
+                                $game->value => $game->label(),
+                            ])
+                            ->all()
+                    )
+                    ->default(Game::Pokemon->value)
+                    ->live()
+                    ->afterStateUpdated(fn($set) => $set('expansion_id', null))
+                    ->required(),
 
-                Action::make('searchByName')
-                    ->label('Search by name')
-                    ->icon(Heroicon::OutlinedMagnifyingGlass)
-                    ->schema([
-                        Forms\Components\TextInput::make('q')
-                            ->label('Card name')
-                            ->placeholder('e.g. Charizard ex')
-                            ->required(),
+                Forms\Components\Select::make('expansion_id')
+                    ->label('Expansion')
+                    ->options(function ($get) {
+                        return Expansion::query()
+                            ->where('game', $get('game')) // adjust column name if needed
+                            ->where('is_online_only', false)
+                            ->orderBy('release_date', 'desc')
+                            ->get()
+                            ->mapWithKeys(function ($expansion) {
+                                return [
+                                    $expansion->scrydex_id => "{$expansion->series} - {$expansion->name} ({$expansion->code})",
+                                ];
+                            })
+                            ->all();
+                    })
+                    ->disabled(fn($get): bool => blank($get('game')))
+                    ->required(),
                     ])
                     ->action(function (array $data, ScrydexClient $client) {
-                        $response = $client->searchCards("name:\"{$data['q']}\"", pageSize: 50);
-                        foreach ($response['data'] ?? [] as $payload) {
-                            CardMapper::upsert($payload);
-                        }
+                        $lang = $data['game'] === Game::Pokemon->value ? 'en' : null;
+
+                        // Dispatch a job to fetch cards for the selected expansion
+                        \App\Jobs\GetCardsForExpansion::dispatch($data['expansion_id'], $data['game'], $lang);
+
+                        // Notify the user that the job has been dispatched
                         Notification::make()
-                            ->title('Search complete')
-                            ->body(count($response['data'] ?? []).' cards added or updated')
+                            ->title('Import started')
+                            ->body('The import job has been dispatched. It may take a few minutes to complete.')
                             ->success()
                             ->send();
                     }),

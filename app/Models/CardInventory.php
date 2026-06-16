@@ -52,4 +52,9 @@ class CardInventory extends Model
     {
         return $this->market_value_pence !== null ? $this->market_value_pence / 100 : null;
     }
+
+    public function getValuePenceAttribute(): int
+    {
+        return (int) ($this->market_value_pence ?? $this->cost_pence ?? 0);
+    }
 }

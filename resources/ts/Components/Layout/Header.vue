@@ -8,17 +8,32 @@
       <nav class="flex items-center gap-4 text-sm text-white/70">
         <Link href="/stores" class="hover:text-white">Stores</Link>
         <Link href="/sell" class="hover:text-white">Sell to us</Link>
-        <Link href="/login" class="btn-ghost text-xs">Log in</Link>
-        <div class="outline-root">
-          <Link href="/apply" class="btn-primary text-xs outline-inner">
-          <span>Become a seller</span>
-          </Link>
-        </div>
+        <template v-if="!user?.id">
+          <Link href="/login" class="btn-ghost text-xs">Log in</Link>
+          <div class="outline-root">
+            <Link href="/apply" class="btn-primary text-xs outline-inner">
+            <span>Become a seller</span>
+            </Link>
+          </div>
+        </template>
+        <template v-else>
+          <div class="outline-root">
+            <a href="/dashboard" class="btn-primary text-xs outline-inner">
+            <span>Dashboard</span>
+            </a>
+          </div>
+        </template>
       </nav>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import type { User } from '@/types/global';
+
+const page = usePage();
+const user = (page?.props?.auth as any)?.user as User | undefined;
+
+console.log(user);
 </script>

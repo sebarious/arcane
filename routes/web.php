@@ -16,8 +16,15 @@ use App\Http\Controllers\Storefront\BatchListController;
 use App\Http\Controllers\Sell\SubmissionCreateController;
 use App\Http\Controllers\Sell\SubmissionStoreController;
 use App\Http\Controllers\Sell\SubmissionThankYouController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Seller\BatchRequestController;
+use App\Http\Controllers\ImageController;
 
-Route::get('/', fn () => Inertia::render('Welcome'));
+Route::get('/', HomeController::class)->name('home');
+
+Route::middleware(['web', 'auth'])->get('/dashboard', function () {
+    return request()->user()->hasRole('admin') ? redirect('/admin') : redirect()->route('seller.dashboard');
+})->name('dashboard');
 
 Route::middleware(['web', 'auth'])  // tighten with an 'admin' gate later
   ->get('/admin/batches/{batch}/qr-sheet', BatchQrSheetController::class)
@@ -27,6 +34,11 @@ Route::get('/sell', SubmissionCreateController::class)->name('sell.create');
 Route::post('/sell', SubmissionStoreController::class)->name('sell.store');
 Route::get('/sell/thanks/{reference}', SubmissionThankYouController::class)->name('sell.thankyou');
 
+Route::get('/image/{path}', [ImageController::class, 'show'])
+  ->where('path', '.*')
+  ->name('image.show')
+  ->middleware('signed');
+
 Route::middleware(['web', 'auth', 'role:seller'])
   ->prefix('seller')
   ->name('seller.')
@@ -35,6 +47,8 @@ Route::middleware(['web', 'auth', 'role:seller'])
     Route::get('/batches', [BatchesController::class, 'index'])->name('batches.index');
     Route::get('/batches/{batch}', [BatchesController::class, 'show'])->name('batches.show');
     Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
+    Route::get('/request-batch', [BatchRequestController::class, 'create'])->name('batches.request');
+    Route::post('/request-batch', [BatchRequestController::class, 'store'])->name('batches.request.store');
   });
 
 Route::middleware(['web', 'auth'])->group(function () {

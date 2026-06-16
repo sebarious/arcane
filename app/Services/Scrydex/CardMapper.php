@@ -4,6 +4,7 @@ namespace App\Services\Scrydex;
 
 use App\Models\Card;
 use App\Models\MarketPriceSnapshot;
+use Illuminate\Support\Facades\Storage;
 
 class CardMapper
 {
@@ -19,9 +20,18 @@ class CardMapper
         $languageCode  = $payload['language_code']     ?? 'EN';
 
         // Scrydex provides 'images' as { small, large } — large is preferred.
-        $imageFront = $payload['images']['large']
-            ?? $payload['images']['small']
+        $imageFront = $payload['images'][0]['large']
+            ?? $payload['images'][0]['small']
             ?? null;
+
+        if ($imageFront) {
+            // Skip if the image is already stored locally for this card.
+            $imagePath = 'cards/' . $payload['id'] . '.jpg';
+            if (!Storage::disk('local')->exists($imagePath)) {
+                $imageContents = file_get_contents($imageFront);
+                Storage::disk('local')->put($imagePath, $imageContents);
+            }
+        }
 
         $card = Card::updateOrCreate(
             ['scrydex_id' => $payload['id']],
@@ -34,17 +44,17 @@ class CardMapper
                 'language'       => strtolower($languageCode),
                 'language_code'  => strtoupper($languageCode),
                 'printed_rarity' => $payload['rarity'] ?? null,
-                'image_front'    => $imageFront,
+                'image_front'    => $imageFront ? $imagePath : null,
                 'external_ids'   => [
                     'scrydex_id' => $payload['id'] ?? null,
                 ],
             ],
         );
 
-        // If pricing came back in the same payload, snapshot it.
-        if (isset($payload['prices'])) {
-            self::snapshotPrices($card, $payload['prices']);
-        }
+        // // If pricing came back in the same payload, snapshot it.
+        // if (isset($payload['variants'][0]['prices'])) {
+        //     self::snapshotPrices($card, $payload['variants'][0]['prices']);
+        // }
 
         return $card;
     }
@@ -75,15 +85,25 @@ class CardMapper
             $median = $entry['market'] ?? $entry['median'] ?? $entry['low'] ?? null;
             if ($median === null) continue;
 
+            // For now lets only import NM
+            if (isset($entry['condition']) && strtoupper(trim($entry['condition'])) !== 'NM') {
+                continue;
+            }
+
+            // Let's convert USD to GBP if the source is Scrydex and the currency is USD.
+            $median = usd_to_gbp($median);
+            $low   = isset($entry['low'])  ? usd_to_gbp($entry['low'])  : null;
+            $high  = isset($entry['high']) ? usd_to_gbp($entry['high']) : null;
+
             MarketPriceSnapshot::create([
                 'card_id'     => $card->id,
-                'condition'   => 'NM',
+                'condition'   => $entry['condition'] ?? 'NM',
                 'source'      => $entry['source'] ?? 'scrydex',
-                'currency'    => strtoupper($entry['currency'] ?? 'USD'),
+                'currency'    => 'GBP',
                 'median_pence'=> (int) round(((float) $median) * 100),
-                'low_pence'   => isset($entry['low'])  ? (int) round(((float) $entry['low'])  * 100) : null,
-                'high_pence'  => isset($entry['high']) ? (int) round(((float) $entry['high']) * 100) : null,
-                'sample_size' => $entry['count'] ?? null,
+                'low_pence'   => isset($low)  ? (int) round(((float) $low)  * 100) : null,
+                'high_pence'  => isset($high) ? (int) round(((float) $high) * 100) : null,
+                'sample_size' => null,
                 'raw_payload' => $entry,
                 'fetched_at'  => now(),
             ]);

@@ -48,6 +48,13 @@ class StoreResource extends Resource
                         ->unique(ignoreRecord: true)
                         ->helperText('Public URL: /{slug}'),
 
+                    Forms\Components\FileUpload::make('logo')
+                        ->image()
+                        ->maxSize(1024)
+                        ->directory('store-logos')
+                        ->visibility('public')
+                        ->helperText('Recommended size: 300x300px'),
+
                     Forms\Components\Select::make('user_id')
                         ->label('Seller account')
                         ->relationship('user', 'email')
@@ -108,6 +115,11 @@ class StoreResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('logo')
+                    ->label('')
+                    ->circular()
+                    ->size(40)
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('slug')
                     ->prefix('/')

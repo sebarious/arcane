@@ -19,179 +19,199 @@ class BatchGenerator
    *
    * @throws \RuntimeException if not enough stock or constraints can’t be met.
    */
-  public function generate(Batch $batch): void
-  {
-    if ($batch->status !== 'draft') {
-      throw new \RuntimeException("Batch {$batch->id} is not in draft status.");
-    }
+    public function generate(Batch $batch): void
+    {
+      if ($batch->status !== 'draft') {
+        throw new \RuntimeException("Batch {$batch->id} is not in draft status.");
+      }
+
+    $attempts = 80;
+    $best     = null;
+    $debug    = [
+      'tried'        => 0,
+      'rejected_lo'  => 0,   // margin too low
+      'rejected_hi'  => 0,   // margin too high
+      'sample'       => [],  // first few attempts' actual margins
+    ];
+
 
     /** @var BatchType $type */
-    $type = $batch->type;
-    /** @var Game $game */
-    $game = $batch->game;
+      $type = $batch->type;
+      /** @var Game $game */
+      $game = $batch->game;
 
-    if (! $type instanceof BatchType || ! $game instanceof Game) {
-      throw new \RuntimeException("Batch {$batch->id} has invalid game or type.");
-    }
-
-    $packCount        = BatchDesign::packCount($game, $type);
-    $targetSale       = BatchDesign::targetSalePrice($game, $type);
-    $targetCost       = BatchDesign::targetCost($game, $type);
-    $targetMarket     = BatchDesign::targetMarket($game, $type);
-    $targetMarginPct  = (float) config('batches.target_markup_on_cost', 0.30);
-
-    $bandDistribution = \App\Services\Banding\Distribution::forGameAndType($game, $type);
-    if (empty($bandDistribution)) {
-      throw new \RuntimeException("No band distribution configured for {$game->value}/{$type->value}.");
-    }
-
-    // Pull only inventory for that game
-    $pool = CardInventory::query()
-      ->inStock()
-      ->where('game', $game->value)
-      ->whereNotNull('rarity_band')
-      ->whereNotNull('market_value_pence')
-      ->whereNull('pack_id')
-      ->get();
-
-    $bucketed = $pool->groupBy('rarity_band');
-
-    // Ensure basic stock availability per band
-    foreach ($bandDistribution as $band => $needed) {
-      $available = ($bucketed[$band] ?? collect())->count();
-      if ($available < $needed) {
-        throw new \RuntimeException("Not enough {$band} stock: need {$needed}, have {$available}.");
+      if (! $type instanceof BatchType || ! $game instanceof Game) {
+        throw new \RuntimeException("Batch {$batch->id} has invalid game or type.");
       }
-    }
 
-    // Multi-attempt selection, optimising for both market and margin
-    $attempts           = 60;
-    $minMarginPct       = 0.15; // 15% min markup on cost
-    $maxMarginPct       = 0.50; // 50% max markup on cost
-    $minMarketMultiple  = 1.0;  // totalMarket >= sale
-    $maxMarketMultiple  = 1.5;  // avoid overpacking too much value
-    $best               = null;
+      $packCount       = BatchDesign::packCount($game, $type);
+      $targetSale      = BatchDesign::targetSalePrice($game, $type);
+      $targetMargin    = BatchDesign::targetMargin($game, $type);   // 0.40 / 0.30 / 0.20
+      $targetValue     = BatchDesign::targetValue($game, $type);    // sale / (1 + margin)
 
-    for ($i = 0; $i < $attempts; $i++) {
-      $selected = collect();
+      $bandDistribution = \App\Services\Banding\Distribution::forGameAndType($game, $type);
+      if (empty($bandDistribution)) {
+        throw new \RuntimeException("No band distribution configured for {$game->value}/{$type->value}.");
+      }
+
+      // Pool for this game
+      $pool = CardInventory::query()
+        ->inStock()
+        ->where('game', $game->value)
+        ->whereNotNull('rarity_band')
+        ->whereNull('pack_id')
+        ->get();
+
+      $bucketed = $pool->groupBy('rarity_band');
 
       foreach ($bandDistribution as $band => $needed) {
-        $selected = $selected->merge(
-          ($bucketed[$band] ?? collect())->shuffle()->take($needed)
+        $available = ($bucketed[$band] ?? collect())->count();
+        if ($available < $needed) {
+          throw new \RuntimeException("Not enough {$band} stock: need {$needed}, have {$available}.");
+        }
+      }
+
+      // Acceptable margin windows around the target (e.g. ±10pp)
+      $minMargin = max(0, $targetMargin - 0.10);
+      $maxMargin = $targetMargin + 0.10;
+
+      $attempts = 80;
+      $best     = null;
+
+      for ($i = 0; $i < $attempts; $i++) {
+        $selected = collect();
+        foreach ($bandDistribution as $band => $needed) {
+          $selected = $selected->merge(
+            ($bucketed[$band] ?? collect())->shuffle()->take($needed)
+          );
+        }
+        if ($selected->count() !== $packCount) continue;
+        $totalValue  = $selected->sum->value_pence;
+        $totalCost   = $selected->sum('cost_pence');
+        $totalMarket = $selected->sum('market_value_pence');
+        if ($totalValue <= 0) continue;
+        $marginVsValue = ($targetSale - $totalValue) / $totalValue;
+        $debug['tried']++;
+        if ($i < 5) {
+          $debug['sample'][] = [
+            'value'   => round($totalValue / 100, 2),
+            'cost'    => round($totalCost / 100, 2),
+            'market'  => round($totalMarket / 100, 2),
+            'margin'  => round($marginVsValue, 4),
+          ];
+        }
+        if ($marginVsValue < $minMargin) {
+          $debug['rejected_lo']++;
+          continue;
+        }
+        if ($marginVsValue > $maxMargin) {
+          $debug['rejected_hi']++;
+          continue;
+        }
+        $score = abs($marginVsValue - $targetMargin)
+          + abs(($totalValue - $targetValue) / max(1, $targetValue));
+        if (! $best || $score < $best['score']) {
+          $best = [
+            'selected'      => $selected,
+            'total_value'   => $totalValue,
+            'total_cost'    => $totalCost,
+            'total_market'  => $totalMarket,
+            'margin_value'  => $marginVsValue,
+            'score'         => $score,
+          ];
+        }
+      }
+      if (! $best) {
+        $sampleSummary = collect($debug['sample'])
+          ->map(fn($s) => "value=£{$s['value']} margin=" . number_format($s['margin'] * 100, 1) . '%')
+          ->implode(' | ');
+        throw new \RuntimeException(sprintf(
+          'Could not find a batch within margin window for %s/%s. ' .
+            'Target sale=£%.2f, target value=£%.2f, target margin=%.1f%% (window %.1f%% – %.1f%%). ' .
+            'Tried %d. Rejected: %d too-low, %d too-high. Samples: %s',
+          $game->value,
+          $type->value,
+          $targetSale / 100,
+          $targetValue / 100,
+          $targetMargin * 100,
+          $minMargin * 100,
+          $maxMargin * 100,
+          $debug['tried'],
+          $debug['rejected_lo'],
+          $debug['rejected_hi'],
+          $sampleSummary ?: 'none',
+        ));
+      }
+
+      if (! $best) {
+        throw new \RuntimeException(
+          "Could not find a batch within the target margin window for " .
+            "{$game->value}/{$type->value}. Review pricing, distribution, or stock."
         );
       }
 
-      if ($selected->count() !== $packCount) {
-        continue;
-      }
+      $selected     = $best['selected'];
+      $totalCost    = $best['total_cost'];      // what we actually paid
+      $totalMarket  = $best['total_market'];    // market only
+      $totalValue   = $best['total_value'];     // market w/ cost fallback (used for selection only)
+      $marginAtCost = $targetSale - $totalCost; // what hits the books
+      $vatOnMargin  = Money::marginSchemeVat($marginAtCost);
 
-      $totalCost   = $selected->sum('cost_pence');
-      $totalMarket = $selected->sum('market_value_pence');
+      DB::transaction(function () use ($batch, $selected, $totalCost, $totalMarket, $targetSale, $marginAtCost, $vatOnMargin) {
+        $packs = collect();
+        for ($i = 1; $i <= $batch->pack_count; $i++) {
+          $packs->push(
+            Pack::create([
+              'batch_id'    => $batch->id,
+              'sequence_no' => $i,
+              'status'      => 'sealed',
+            ])
+          );
+        }
 
-      if ($totalCost <= 0 || $totalMarket <= 0) {
-        continue;
-      }
+        $cards = $selected->values();
+        foreach ($packs as $index => $pack) {
+          /** @var CardInventory $card */
+          $card = $cards[$index];
+          $card->update([
+            'pack_id'                    => $pack->id,
+            'status'                     => 'allocated',
+            'qr_token'                   => CardInventory::generateQrToken(),
+            'allocated_sale_price_pence' => (int) floor($targetSale / $batch->pack_count),
+            'margin_pence'               => null,
+          ]);
+        }
 
-      $margin         = $targetSale - $totalCost;
-      $marginPct      = $margin / $totalCost;
-      $marketMultiple = $totalMarket / $targetSale;
+        $perCardMargin = (int) floor($marginAtCost / max(1, $cards->count()));
+        CardInventory::whereIn('id', $cards->pluck('id'))
+          ->update(['margin_pence' => $perCardMargin]);
 
-      // Reject candidates that are clearly off economically
-      if ($marginPct < $minMarginPct || $marginPct > $maxMarginPct) {
-        continue;
-      }
-      if ($marketMultiple < $minMarketMultiple || $marketMultiple > $maxMarketMultiple) {
-        continue;
-      }
-
-      // Composite score: how close to target margin AND target market?
-      $score = abs($marginPct - $targetMarginPct)
-        + abs(($totalMarket - $targetMarket) / max(1, $targetMarket));
-
-      if (! $best || $score < $best['score']) {
-        $best = [
-          'selected'     => $selected,
-          'total_cost'   => $totalCost,
-          'total_market' => $totalMarket,
-          'margin'       => $margin,
-          'margin_pct'   => $marginPct,
-          'market_mul'   => $marketMultiple,
-          'score'        => $score,
-        ];
-      }
-    }
-
-    if (! $best) {
-      throw new \RuntimeException(
-        "Could not find a batch with acceptable margin/market. " .
-          "Review pricing, band distribution, or inventory values."
-      );
-    }
-
-    $selected    = $best['selected'];
-    $totalCost   = $best['total_cost'];
-    $totalMarket = $best['total_market'];
-    $margin      = $best['margin'];
-    $vatOnMargin = Money::marginSchemeVat($margin);
-
-    // Persist everything
-    DB::transaction(function () use ($batch, $selected, $totalCost, $totalMarket, $targetSale, $margin, $vatOnMargin) {
-      $packs = collect();
-      for ($i = 1; $i <= $batch->pack_count; $i++) {
-        $packs->push(
-          Pack::create([
-            'batch_id'    => $batch->id,
-            'sequence_no' => $i,
-            'status'      => 'sealed',
-          ])
-        );
-      }
-
-      $cards = $selected->values();
-
-      foreach ($packs as $index => $pack) {
-        /** @var CardInventory $card */
-        $card = $cards[$index];
-
-        $card->update([
-          'pack_id'                    => $pack->id,
-          'status'                     => 'allocated',
-          'qr_token'                   => CardInventory::generateQrToken(),
-          'allocated_sale_price_pence' => (int) floor($targetSale / $batch->pack_count),
-          'margin_pence'               => null,
+        $batch->update([
+          'status'                   => 'committed',
+          'total_cost_pence'         => $totalCost,         // real cost (for accounting)
+          'total_market_value_pence' => $totalMarket,       // real market (for reporting)
+          'sale_price_pence'         => $targetSale,
+          'margin_pence'             => $marginAtCost,      // sale - cost (real margin)
+          'margin_scheme_vat_pence'  => $vatOnMargin,
+          'committed_at'             => now(),
         ]);
-      }
 
-      $perCardMargin = (int) floor($margin / max(1, $cards->count()));
-      CardInventory::whereIn('id', $cards->pluck('id'))
-        ->update(['margin_pence' => $perCardMargin]);
+        $invoice = Invoice::create([
+          'number'                    => Invoice::nextNumber(),
+          'store_id'                  => $batch->store_id,
+          'batch_id'                  => $batch->id,
+          'total_pence'               => $targetSale,
+          'internal_cost_pence'       => $totalCost,
+          'internal_margin_pence'     => $marginAtCost,
+          'internal_margin_vat_pence' => $vatOnMargin,
+          'status'                    => 'sent',
+          'issued_on'                 => now()->toDateString(),
+          'due_on'                    => now()->addDays(14)->toDateString(),
+        ]);
 
-      $batch->update([
-        'status'                   => 'committed',
-        'total_cost_pence'         => $totalCost,
-        'total_market_value_pence' => $totalMarket,
-        'sale_price_pence'         => $targetSale,
-        'margin_pence'             => $margin,
-        'margin_scheme_vat_pence'  => $vatOnMargin,
-        'committed_at'             => now(),
-      ]);
+        $batch->update(['invoice_id' => $invoice->id]);
 
-      $invoice = Invoice::create([
-        'number'                    => Invoice::nextNumber(),
-        'store_id'                  => $batch->store_id,
-        'batch_id'                  => $batch->id,
-        'total_pence'               => $targetSale,
-        'internal_cost_pence'       => $totalCost,
-        'internal_margin_pence'     => $margin,
-        'internal_margin_vat_pence' => $vatOnMargin,
-        'status'                    => 'sent',
-        'issued_on'                 => now()->toDateString(),
-        'due_on'                    => now()->addDays(14)->toDateString(),
-      ]);
-
-      $batch->update(['invoice_id' => $invoice->id]);
-
-      \App\Jobs\GenerateBatchQrSheetJob::dispatch($batch->id)->afterCommit();
-    });
-  }
+        \App\Jobs\GenerateBatchQrSheetJob::dispatch($batch->id)->afterCommit();
+      });
+    }
 }

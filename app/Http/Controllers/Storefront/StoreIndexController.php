@@ -20,8 +20,7 @@ class StoreIndexController extends Controller
                 'id',
                 'slug',
                 'name',
-                'city',
-                'postcode',
+                'logo'
             ]);
         // Get games per store by looking at batches
         $gamesByStore = Batch::query()
@@ -41,8 +40,7 @@ class StoreIndexController extends Controller
                     'id'       => $store->id,
                     'slug'     => $store->slug,
                     'name'     => $store->name,
-                    'city'     => $store->city,
-                    'postcode' => $store->postcode,
+                    'logo'     => $store->logo,
                     'games'    => $gameValues->map(
                         fn(Game $g) => [
                             'value' => $g->value,

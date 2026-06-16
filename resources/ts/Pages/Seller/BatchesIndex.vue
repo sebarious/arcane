@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import SellerHeader from '@/Components/Layout/SellerHeader.vue';
 
 interface Batch {
   id: number;
@@ -50,16 +51,7 @@ const statusLabel = ( status: string ): string => {
 
 <template>
   <div class="min-h-screen bg-arcane-bg text-arcane-text">
-    <header class="border-b border-arcane-border/60">
-      <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" class="font-display text-xl tracking-[0.3em] text-arcane-accent">
-        ARCANE
-        </Link>
-        <nav class="flex items-center gap-4 text-sm text-arcane-muted">
-          <Link href="/seller" class="hover:text-arcane-accent">Dashboard</Link>
-        </nav>
-      </div>
-    </header>
+    <SellerHeader />
 
     <main class="max-w-6xl mx-auto px-6 py-8 space-y-6">
       <section>

@@ -10,7 +10,8 @@ class Card extends Model
 {
     protected $fillable = [
         'name', 'set_code', 'set_name', 'card_number', 'variant',
-        'language', 'printed_rarity', 'image_front', 'image_back', 'external_ids', 'game'
+        'language', 'printed_rarity', 'image_front', 'image_back', 'external_ids', 'game',
+        'scrydex_id'
     ];
 
     protected $casts = [
@@ -30,7 +31,7 @@ class Card extends Model
             ->first();
     }
 
-    public function getCurrentMarketPencesAttribute(): ?int
+    public function getCurrentMarketPenceAttribute(): ?int
     {
         return $this->latestPrice('seed')?->median_pence
             ?? $this->latestPrice('scrydex')?->median_pence

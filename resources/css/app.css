@@ -13,16 +13,16 @@
     --color-arcane-surface:   #12121a;
     --color-arcane-elevated:  #1a1a26;
     --color-arcane-border:    #2a2a3a;
-    --color-arcane-muted:     #76768e;
+    --color-arcane-muted:     #a9a9cc;
     --color-arcane-text:      #e8e8f0;
     --color-arcane-accent:    #512b74;
     --color-arcane-accent2:   #d6bc71;
 
-    --color-arcane-common:    #9ca3af;
-    --color-arcane-rare:      #60a5fa;
-    --color-arcane-super:     #512b74;
-    --color-arcane-legendary: #f59e0b;
-    --color-arcane-mythic:    #ef4444;
+    --color-arcane-common:    #95aed8;
+    --color-arcane-rare:      #19a2f9;
+    --color-arcane-super:     #ef4444;
+    --color-arcane-legendary: #f6a422;
+    --color-arcane-mythic:    #b62afe;
 
     --font-sans:    'Inter', ui-sans-serif, system-ui;
     --font-display: 'Cinzel', serif;
@@ -109,7 +109,7 @@
     }
 
     .text-ruby {
-        @apply text-arcane-mythic;
+        @apply text-arcane-super;
     }
 
     .text-diamond {
@@ -120,7 +120,7 @@
         @apply border-arcane-rare;
     }
     .border-ruby {
-        @apply border-arcane-mythic;
+        @apply border-arcane-super;
     }
     .border-diamond {
         @apply border-arcane-legendary;

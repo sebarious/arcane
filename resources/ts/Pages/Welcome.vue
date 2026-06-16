@@ -1,27 +1,71 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import Header from '@/Components/Layout/Header.vue';
+import Store from '@/Components/Cards/Store.vue';
+
+type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic';
+
+interface PullCard {
+    name: string | null;
+    set: string | null;
+    number: string | null;
+    image: string | null;
+    band: Rarity | null;
+}
+
+interface RecentPull {
+    id: number;
+    sequence: number;
+    sold_at: string | null;
+    batch: { id: number; reference: string | null; };
+    card: PullCard | null;
+}
+
+interface Store {
+    id: number;
+    name: string;
+    slug: string;
+    logo: string | null;
+}
+
+interface Props {
+    recentPulls: RecentPull[];
+    newStores: Store[];
+}
+
+const props = defineProps<Props>();
 
 const products = [
     {
         key: 'sapphire',
         name: 'Sapphire',
         packs: 100,
-        pricePerPack: '£8.00'
+        pricePerPack: '£9.00'
     },
     {
         key: 'ruby',
         name: 'Ruby',
         packs: 250,
-        pricePerPack: '£7.00'
+        pricePerPack: '£8.50'
     },
     {
         key: 'diamond',
         name: 'Diamond',
         packs: 500,
-        pricePerPack: '£6.00'
+        pricePerPack: '£8.00'
     },
 ];
+
+const bandPillClass = ( band: Rarity | null ): string => {
+    if ( !band ) return 'bg-arcane-border text-arcane-muted';
+    return {
+        common: 'bg-arcane-common/20 text-arcane-common',
+        rare: 'bg-arcane-rare/20 text-arcane-rare',
+        super: 'bg-arcane-super/20 text-arcane-super',
+        legendary: 'bg-arcane-legendary/20 text-arcane-legendary',
+        mythic: 'bg-arcane-mythic/20 text-arcane-mythic',
+    }[band];
+};
 </script>
 
 <template>
@@ -53,7 +97,7 @@ const products = [
                             <div class="flex flex-wrap gap-3">
                                 <span class="outline-root">
                                     <Link href="/stores" class="btn-primary outline-inner">
-                                        <span>Browse participating stores</span>
+                                    <span>Browse participating stores</span>
                                     </Link>
                                 </span>
                                 <Link href="/apply" class="btn-ghost">
@@ -131,6 +175,61 @@ const products = [
                             unopened Arcane packs. QR codes delist cards the moment a pack is sold.
                         </p>
                     </div>
+                </div>
+            </section>
+
+            <!-- Recent Pulls -->
+            <div class="futuristic-grid">
+                <section
+                    class="border-b border-arcane-border/60 bg-gradient-to-b from-arcane-bg/90 to-arcane-surface/80">
+                    <div class="max-w-6xl mx-auto px-6 py-16 md:py-20">
+                        <h2 class="font-display text-4xl md:text-5xl leading-tight mb-4">
+                            Recent pulls
+                        </h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-5 mt-10">
+                            <div v-for=" pull in recentPulls " :key="pull.id"
+                                class="flex flex-col items-center text-center gap-1">
+                                <div
+                                    class="w-full max-w-[130px] aspect-[245/342] rounded-lg overflow-hidden border border-arcane-border/60 bg-arcane-surface/80 flex items-center justify-center opacity-60">
+                                    <template v-if=" pull.card?.image ">
+                                        <img :src="pull.card.image" alt="" class="w-full h-full object-cover"
+                                            loading="lazy" />
+                                    </template>
+                                    <template v-else>
+                                        <div class="text-[10px] text-arcane-muted px-2">
+                                            Image not available
+                                        </div>
+                                    </template>
+                                </div>
+                                <div class="w-full max-w-[130px]">
+                                    <div class="text-[11px] font-semibold truncate">
+                                        {{ pull.card?.name ?? 'Unknown' }}
+                                    </div>
+                                    <div class="text-[10px] text-arcane-muted truncate">
+                                        {{ pull.card?.set }} · {{ pull.card?.number }}
+                                    </div>
+                                    <div
+                                        class="mt-1 flex items-center justify-center gap-1 text-[10px] text-arcane-muted">
+                                        <span class="rarity-pill" :class="bandPillClass( pull.card?.band ?? null )">
+                                            {{ pull.card?.band ?? '' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- New Stores -->
+            <section class="max-w-6xl mx-auto px-6 py-12 md:py-16 space-y-8">
+                <h2 class="font-display text-4xl md:text-5xl leading-tight mb-4">
+                    New stores
+                </h2>
+
+                <div class="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <Store v-for=" store in newStores " :key="store.id" :store="store" />
                 </div>
             </section>
         </main>

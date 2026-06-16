@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import SellerHeader from '@/Components/Layout/SellerHeader.vue';
 
 interface Store {
   id: number;
@@ -35,24 +36,11 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const formatMoney = ( pence: number | null | undefined ): string => {
-  if ( !pence ) return '£0.00';
-  return '£' + ( pence / 100 ).toFixed( 2 );
-};
 </script>
 
 <template>
   <div class="min-h-screen bg-arcane-bg text-arcane-text">
-    <header class="border-b border-arcane-border/60">
-      <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div class="font-display text-xl tracking-[0.3em] text-arcane-accent">
-          ARCANE
-        </div>
-        <nav class="flex items-center gap-4 text-sm text-arcane-muted">
-          <Link href="/seller/batches" class="hover:text-arcane-accent">Batches</Link>
-        </nav>
-      </div>
-    </header>
+    <SellerHeader />
 
     <main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
       <section>
@@ -96,7 +84,8 @@ const formatMoney = ( pence: number | null | undefined ): string => {
         </div>
 
         <div v-else class="space-y-2">
-          <div v-for=" batch in batches " :key="batch.id" class="card-panel p-4 flex items-center justify-between gap-4">
+          <div v-for=" batch in batches " :key="batch.id"
+            class="card-panel p-4 flex items-center justify-between gap-4">
             <div class="flex-1">
               <div class="text-sm font-semibold">
                 {{ batch.reference }}

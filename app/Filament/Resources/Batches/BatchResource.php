@@ -123,6 +123,26 @@ class BatchResource extends Resource
                         ->rows(3)
                         ->maxLength(2000),
                 ]),
+            Section::make('Margin analysis')
+                ->columns(2)
+                ->schema([
+                    Forms\Components\Placeholder::make('margin_vs_cost')
+                        ->label('Profit % vs our cost')
+                        ->content(function (\App\Models\Batch $record) {
+                            if (! $record->total_cost_pence) return '—';
+                            $pct = ($record->margin_pence / $record->total_cost_pence) * 100;
+                            return number_format($pct, 1) . '%';
+                        }),
+                    Forms\Components\Placeholder::make('margin_vs_market')
+                        ->label('Profit % vs market value')
+                        ->content(function (\App\Models\Batch $record) {
+                            if (! $record->total_market_value_pence) return '—';
+                            $pct = (($record->sale_price_pence - $record->total_market_value_pence)
+                                / $record->total_market_value_pence) * 100;
+                            return number_format($pct, 1) . '%';
+                        }),
+                ])
+                ->visibleOn('edit'),
         ]);
     }
 
@@ -171,7 +191,8 @@ class BatchResource extends Resource
                     ->formatStateUsing(fn($state) => \App\Support\Money::format($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('margin_percentage')
-                    ->label('Profit %')
+                    ->label('Profit % (cost)')
+                    ->tooltip('Sale price minus what we paid for the cards, as a percentage of cost. This is your actual accounting margin.')
                     ->alignEnd()
                     ->getStateUsing(function (\App\Models\Batch $record) {
                         $cost   = $record->total_cost_pence;
@@ -182,6 +203,35 @@ class BatchResource extends Resource
                         $percent = ($margin / $cost) * 100;
                         return number_format($percent, 1) . '%';
                     })
+                    ->default('—'),
+                Tables\Columns\TextColumn::make('margin_vs_market')
+                    ->label('Profit % (market)')
+                    ->alignEnd()
+                    ->tooltip('Sale price minus total market value, as a percentage of market value. Tells you whether the pack is generous or stingy versus what the cards are worth.')
+                    ->getStateUsing(function (\App\Models\Batch $record) {
+                        $market = $record->total_market_value_pence;
+                        $sale   = $record->sale_price_pence;
+                        if ($market <= 0 || $sale === null) return null;
+                        $marginVsMarket = (($sale - $market) / $market) * 100;
+                        return number_format($marginVsMarket, 1) . '%';
+                    })
+                    ->color(function (\App\Models\Batch $record) {
+                        $market = $record->total_market_value_pence;
+                        $sale   = $record->sale_price_pence;
+                        if ($market <= 0 || $sale === null) return 'gray';
+
+                        $marginVsMarket = ($sale - $market) / $market;
+
+                        // Negative (sale < market) is good for end customers / pack EV;
+                        // strongly positive means you're charging more than the cards are worth.
+                        return match (true) {
+                            $marginVsMarket < -0.05 => 'success',  // pack EV > sale = great for customer
+                            $marginVsMarket < 0.10  => 'info',     // roughly fair
+                            $marginVsMarket < 0.30  => 'warning',  // store-favourable
+                            default                 => 'danger',   // too rich, customers will feel it
+                        };
+                    })
+                    ->badge()
                     ->default('—'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')

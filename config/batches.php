@@ -1,45 +1,37 @@
 <?php
 
-use App\Enums\BatchType;
 use App\Enums\Game;
+use App\Enums\BatchType;
 
 return [
 
-  /*
-  |--------------------------------------------------------------------------
-  | Batch type definitions
-  |--------------------------------------------------------------------------
-  */
   'types' => [
     Game::Pokemon->value => [
       BatchType::Sapphire->value => [
-        'label'                => 'Sapphire',
-        'packs'                => 100,
-        'price_per_pack_pence' => 800,
+        'label'                  => 'Sapphire',
+        'packs'                  => 100,
+        'price_per_pack_pence'   => 900,  // £9.00
+        'target_margin_on_value' => 0.40, // 40% margin vs market value (fallback: cost)
       ],
       BatchType::Ruby->value => [
-        'label'                => 'Ruby',
-        'packs'                => 250,
-        'price_per_pack_pence' => 700,
+        'label'                  => 'Ruby',
+        'packs'                  => 250,
+        'price_per_pack_pence'   => 850,  // £8.50
+        'target_margin_on_value' => 0.30, // 30%
       ],
       BatchType::Diamond->value => [
-        'label'                => 'Diamond',
-        'packs'                => 500,
-        'price_per_pack_pence' => 600,
+        'label'                  => 'Diamond',
+        'packs'                  => 500,
+        'price_per_pack_pence'   => 800,  // £8.00
+        'target_margin_on_value' => 0.20, // 20%
       ],
     ],
+
+    Game::Magic->value    => [],
+    Game::Lorcana->value  => [],
+    Game::OnePiece->value => [],
   ],
 
-  /*
-  |--------------------------------------------------------------------------
-  | Global margin settings
-  |--------------------------------------------------------------------------
-  |
-  | target_markup_on_cost:   0.20  => sale = cost * 1.20  (~20% markup on cost)
-  | or equivalently: margin = sale * (markup / (1 + markup))
-  |
-  */
-  'target_markup_on_cost' => 0.20,
-
-  'target_market_multiple' => 1.20, // target market value = sale * 1.20 (~20% over sale price)
+  // Optional: how generous packs are vs sale (1.0 = market equals sale)
+  'target_market_multiple' => 1.10,
 ];
