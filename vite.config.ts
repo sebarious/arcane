@@ -3,6 +3,7 @@ import laravel from 'laravel-vite-plugin'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
+import inertia from '@inertiajs/vite'
 
 export default defineConfig({
     plugins: [
@@ -15,6 +16,13 @@ export default defineConfig({
             refresh: true,
         }),
         tailwindcss(),
+        inertia( {
+            ssr: {
+                entry: 'bootstrap/ssr/app2.js',
+                host: '127.0.0.1',
+                port: 13714,
+            },
+        } ),
         vue({
             template: { transformAssetUrls: { base: null, includeAbsolute: false } },
         }),
