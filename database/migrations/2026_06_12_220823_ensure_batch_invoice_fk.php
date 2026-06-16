@@ -12,18 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('batches', function (Blueprint $table) {
-            if (! Schema::hasColumn('batches', 'invoice_id')) {
-                $table->unsignedBigInteger('invoice_id')->nullable();
-            }
-            $table->foreign('invoice_id')
-                ->references('id')->on('invoices')
-                ->nullOnDelete();
+            // if (! Schema::hasColumn('batches', 'invoice_id')) {
+            //     $table->unsignedBigInteger('invoice_id')->nullable();
+            // }
+            // $table->foreign('invoice_id')
+            //     ->references('id')->on('invoices')
+            //     ->nullOnDelete();
         });
     }
     public function down(): void
     {
         Schema::table('batches', function (Blueprint $table) {
-            $table->dropForeign(['invoice_id']);
+            // $table->dropForeign(['invoice_id']);
         });
     }
 };
