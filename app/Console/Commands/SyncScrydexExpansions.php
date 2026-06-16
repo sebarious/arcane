@@ -25,9 +25,7 @@ class SyncScrydexExpansions extends Command
             teamId: $config['team_id'],
         );
 
-        $expansions = $client->listExpansions($game === 'pokemon' ? 'en' : null, $game);
-
-        dd($config, $expansions);
+        $expansions = $client->listExpansions(null, $game);
 
         // UPSERT expansions into the database
         foreach ($expansions as $expansion) {

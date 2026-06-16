@@ -65,7 +65,7 @@ class ScrydexClient
         // Only put language in the URL if it's not null, otherwise use the default language for the game
         $languageSegment = $language ? "/{$language}" : '';
         return $this->request()
-            ->get("/{$game}/v1{$languageSegment}/expansions", ['page_size' => 100, 'include' => 'prices'])
+            ->get("/{$game}/v1{$languageSegment}/expansions", ['page_size' => 100])
             ->throw()
             ->json('data');
     }
