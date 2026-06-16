@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('customer_email')->nullable()->change();
             $table->string('customer_phone')->nullable()->change();
             $table->string('customer_postcode')->nullable()->change();
-            $table->jsonb('images')->default('[]')->change();
+            $table->jsonb('images')->nullable()->change();
             $table->string('status', 32)->default('submitted')->nullable(false)->change();
             $table->integer('estimated_value_pence')->nullable()->change();
             $table->integer('offered_value_pence')->nullable()->change();

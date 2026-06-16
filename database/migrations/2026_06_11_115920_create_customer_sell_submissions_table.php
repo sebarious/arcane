@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('customer_email');
             $table->string('customer_phone')->nullable();
             $table->string('customer_postcode')->nullable();
-            $table->jsonb('images')->default('[]');           // array of S3 paths
+            $table->jsonb('images');           // array of S3 paths
             $table->text('description')->nullable();
             $table->enum('status', [
                 'submitted',
