@@ -98,7 +98,7 @@ const statusLabel = ( status: string ): string => {
                 </span>
               </td>
               <td class="py-2 text-right">
-                <Link :href="route( 'seller.batches.show', { batch: batch.id } )" class="btn-ghost text-xs">
+                <Link :href="`/seller/batches/${batch.id}`" class="btn-ghost text-xs">
                 View
                 </Link>
               </td>
@@ -107,10 +107,11 @@ const statusLabel = ( status: string ): string => {
         </table>
 
         <div class="mt-4 flex justify-end gap-1 text-xs">
-          <Link v-for=" link in batches.links " :key="link.label" v-if=" link?.url " :href="link.url"
-            class="px-2 py-1 rounded border border-arcane-border/60"
-            :class="link.active ? 'bg-arcane-accent text-arcane-bg' : 'text-arcane-muted hover:bg-arcane-elevated'"
-            v-html="link.label" />
+          <template v-for="  link in batches.links  " :key="link.label">
+            <Link v-if=" link?.url " :href="link.url" class="px-2 py-1 rounded border border-arcane-border/60"
+              :class="link.active ? 'bg-arcane-accent text-arcane-bg' : 'text-arcane-muted hover:bg-arcane-elevated'"
+              v-html="link.label" />
+          </template>
         </div>
       </section>
     </main>

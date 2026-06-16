@@ -104,7 +104,7 @@ const props = defineProps<Props>();
               </div>
             </div>
             <div>
-              <Link :href="route( 'seller.batches.show', { batch: batch.id } )" class="btn-ghost text-xs">
+              <Link :href="`/seller/batches/${batch.id}`" class="btn-ghost text-xs">
               View
               </Link>
             </div>

@@ -202,9 +202,6 @@ const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
                     <div class="text-[10px] text-arcane-muted truncate">
                       {{ card.set }} · {{ card.number }}
                     </div>
-                    <div class="text-[10px] text-arcane-muted">
-                      &pound;{{ card.market_price }}
-                    </div>
                   </div>
                 </div>
               </div>

@@ -1,17 +1,16 @@
-import axios, { type AxiosInstance } from 'axios'
+import axios, { type AxiosInstance } from 'axios';
 import Echo from 'laravel-echo';
-import Pusher from 'pusher-js'
+import Pusher from 'pusher-js';
 
 declare global {
     interface Window {
-        axios: AxiosInstance
-        Echo: Echo
-        Pusher: typeof Pusher
+        axios: AxiosInstance;
+        Echo: Echo<any>;
+        Pusher: typeof Pusher;
     }
 }
-
-window.axios = axios
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+window.axios = axios;
+window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.Pusher = Pusher;
 window.Echo = new Echo( {
     broadcaster: 'reverb',

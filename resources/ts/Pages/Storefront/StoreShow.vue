@@ -124,7 +124,7 @@ const bandPillClass = ( band: Rarity | null ): string => {
 
           <div v-else class="space-y-2">
             <Link v-for=" batch in batches " :key="batch.id"
-              :href="route( 'store.lists.show', { store: store.slug, batch: batch.id } )"
+              :href="`/store/${store.slug}/batch/${batch.id}`"
               class="flex items-center justify-between gap-3 border border-arcane-border/60 rounded-lg px-3 py-2.5 bg-arcane-surface/80 hover:border-arcane-accent/60 transition">
             <div class="space-y-2">
               <div class="text-sm font-semibold">
