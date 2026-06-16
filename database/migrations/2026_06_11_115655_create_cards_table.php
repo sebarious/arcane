@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('image_front')->nullable();
             $table->string('image_back')->nullable();
             // External IDs for price lookups & dedup
-            $table->jsonb('external_ids')->default('{}'); // tcgplayer_id, pokemon_tcg_io_id, cardmarket_id, ebay_epid
+            $table->jsonb('external_ids'); // tcgplayer_id, pokemon_tcg_io_id, cardmarket_id, ebay_epid
             $table->timestamps();
             $table->unique(['set_code', 'card_number', 'variant', 'language'], 'cards_unique_print');
             $table->index('name');
