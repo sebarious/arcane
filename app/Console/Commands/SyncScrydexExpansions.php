@@ -27,6 +27,8 @@ class SyncScrydexExpansions extends Command
 
         $expansions = $client->listExpansions($game === 'pokemon' ? 'en' : null, $game);
 
+        dd($config, $expansions);
+
         // UPSERT expansions into the database
         foreach ($expansions as $expansion) {
             \App\Models\Expansion::updateOrCreate(
