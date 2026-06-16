@@ -18,7 +18,7 @@ export default defineConfig({
         tailwindcss(),
         inertia( {
             ssr: {
-                entry: 'bootstrap/ssr/app2.js',
+                entry: 'bootstrap/js/ssr.js',
                 host: '127.0.0.1',
                 port: 13714,
             },

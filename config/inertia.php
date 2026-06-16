@@ -31,7 +31,7 @@ return [
 
         'ensure_bundle_exists' => (bool) env('INERTIA_SSR_ENSURE_BUNDLE_EXISTS', true),
 
-        'bundle' => base_path('bootstrap/ssr/app2.js'),
+        // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
         /*
         |--------------------------------------------------------------------------
