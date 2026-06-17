@@ -32,7 +32,7 @@ class BatchDesign
    */
   public static function targetMargin(Game $game, BatchType $type): float
   {
-    return (float) (self::config($game, $type)['target_margin_on_value'] ?? 0.30);
+    return (float) (self::config($game, $type)['target_margin_on_value'] ?? 0.2);
   }
 
   /**

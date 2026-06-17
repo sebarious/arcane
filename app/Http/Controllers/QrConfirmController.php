@@ -42,7 +42,7 @@ class QrConfirmController extends Controller
                     'status' => 'sold',
                     'sold_at' => now(),
                 ]);
-                event(new PackSold($card->pack));
+                // event(new PackSold($card->pack));
             }
         });
 

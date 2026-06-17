@@ -7,10 +7,10 @@ return [
   'distribution' => [
     Game::Pokemon->value => [
       BatchType::Sapphire->value => [
-        'common'    => 89,
+        'common'    => 113,
         'rare'      => 6,
         'super'     => 3,
-        'legendary' => 1,
+        'legendary' => 2,
         'mythic'    => 1,
       ],
       BatchType::Ruby->value => [

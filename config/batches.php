@@ -9,7 +9,7 @@ return [
     Game::Pokemon->value => [
       BatchType::Sapphire->value => [
         'label'                  => 'Sapphire',
-        'packs'                  => 100,
+        'packs'                  => 125,
         'price_per_pack_pence'   => 900,  // £9.00
         'target_margin_on_value' => 0.25, // 25% margin vs market value (fallback: cost)
       ],
