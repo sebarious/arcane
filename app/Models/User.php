@@ -14,6 +14,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Notifications\ArcaneResetPasswordNotification;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -58,5 +59,10 @@ class User extends Authenticatable implements FilamentUser
     public function store(): HasOne
     {
         return $this->hasOne(Store::class);
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ArcaneResetPasswordNotification($token));
     }
 }

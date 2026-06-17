@@ -19,6 +19,11 @@ use App\Http\Controllers\Sell\SubmissionThankYouController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Seller\BatchRequestController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\SellerApplication\CreateSellerApplicationController;
+use App\Http\Controllers\SellerApplication\StoreSellerApplicationController;
+use App\Http\Controllers\SellerApplication\SellerApplicationThankYouController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 
 Route::get('/', HomeController::class)->name('home');
 
@@ -30,6 +35,20 @@ Route::middleware(['web', 'auth'])  // tighten with an 'admin' gate later
   ->get('/admin/batches/{batch}/qr-sheet', BatchQrSheetController::class)
   ->name('batches.qr-sheet');
 
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])
+        ->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])
+        ->name('password.email');
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])
+        ->name('password.reset');
+    Route::post('/reset-password', [ResetPasswordController::class, 'store'])
+        ->name('password.update');
+});
+
+Route::get('/apply', CreateSellerApplicationController::class)->name('seller-applications.create');
+Route::post('/apply', StoreSellerApplicationController::class)->name('seller-applications.store');
+Route::get('/apply/thanks', SellerApplicationThankYouController::class)->name('seller-applications.thankyou');
 Route::get('/sell', SubmissionCreateController::class)->name('sell.create');
 Route::post('/sell', SubmissionStoreController::class)->name('sell.store');
 Route::get('/sell/thanks/{reference}', SubmissionThankYouController::class)->name('sell.thankyou');

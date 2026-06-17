@@ -32,7 +32,7 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel = $panel
             ->default()
             ->defaultThemeMode(ThemeMode::Dark)
             ->id('admin')
@@ -78,5 +78,13 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+
+        if (app()->environment('production')) {
+            $panel
+                ->databaseNotifications()
+                ->databaseNotificationsPolling('30s');
+        }
+
+        return $panel;
     }
 }

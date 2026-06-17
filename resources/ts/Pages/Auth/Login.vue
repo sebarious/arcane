@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm, usePage } from '@inertiajs/vue3';
+const page = usePage<{ props: { flash?: { status?: string; }; }; }>()
 
 const form = useForm( {
   email: '',
@@ -23,6 +24,11 @@ const submit = () => {
           <p class="text-arcane-muted text-sm">
             Sign in to access your dashboard.
           </p>
+        </div>
+
+        <div v-if=" (page.props.flash as any)?.status "
+          class="mb-4 rounded border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+          {{ (page.props.flash as any).status }}
         </div>
 
         <form @submit.prevent="submit" class="space-y-4">
@@ -49,6 +55,9 @@ const submit = () => {
               <input v-model="form.remember" type="checkbox" class="rounded border-arcane-border bg-arcane-surface" />
               <span>Remember me</span>
             </label>
+            <Link href="/forgot-password" class="hover:text-arcane-accent">
+            Forgot password?
+            </Link>
           </div>
 
           <div class="outline-root w-full">

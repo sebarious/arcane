@@ -35,6 +35,10 @@ return [
         ],
     ],
 
+    'resend' => [
+        'key' => env('RESEND_KEY'),
+    ],
+
     'scrydex' => [
         'url'     => env('SCRYDEX_API_URL', '[api.scrydex.com](https://api.scrydex.com)'),
         'key'     => env('SCRYDEX_API_KEY'),

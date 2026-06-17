@@ -8,6 +8,7 @@
           <img :src="store.logo" alt="" class="h-full w-full object-contain" loading="lazy" />
         </template>
         <template v-else>
+          <img src="/images/logo.png" alt="Arcane" class="h-12 mx-auto" />
         </template>
       </div>
       <div class="w-full">
@@ -21,7 +22,8 @@
         </div>
       </div>
     </div>
-    <Link :href="`/${store.slug}`" class="absolute inset-0"></Link>
+    <Link :href="`/${store.slug}`" class="absolute inset-0">
+    </Link>
   </div>
 </template>
 
