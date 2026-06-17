@@ -55,7 +55,7 @@ class CreateSellerCommand extends Command
         $user = User::create([
             'name'     => $name,
             'email'    => $email,
-            'password' => Hash::make($password),
+            'password' => bcrypt($password),
         ]);
 
         $user->assignRole('seller');
