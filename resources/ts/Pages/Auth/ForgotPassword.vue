@@ -24,9 +24,9 @@ const submit = () => {
         </p>
       </div>
 
-      <div v-if=" page.props.flash?.status "
+      <div v-if=" (page.props.flash as any)?.status "
         class="mb-4 rounded border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
-        {{ page.props.flash.status }}
+        {{ (page.props.flash as any).status }}
       </div>
 
       <form @submit.prevent="submit" class="space-y-4">
