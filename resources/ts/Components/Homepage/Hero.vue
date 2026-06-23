@@ -1,5 +1,5 @@
 <template>
-  <section ref="sectionRef" class="relative min-h-[95vh] max-h-[95vh] flex items-center overflow-hidden"
+  <section ref="sectionRef" class="relative min-h-screen max-h-screen md:min-h-[95vh] md:max-h-[95vh] flex items-center overflow-hidden"
     @mousemove="handleMouseMove">
     <!-- Background layers -->
     <HeroBG />
