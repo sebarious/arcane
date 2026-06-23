@@ -4,6 +4,7 @@ import '../css/app.css'
 import { createApp, h, type DefineComponent } from 'vue'
 import { createInertiaApp, Link } from '@inertiajs/vue3'
 import { ZiggyVue } from 'ziggy-js'
+import { MotionPlugin } from '@vueuse/motion';
 
 createInertiaApp({
     title: (title) => (title ? `${title} · Arcane` : 'Arcane'),
@@ -19,6 +20,7 @@ createInertiaApp({
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
+            .use(MotionPlugin)
             .component('Link', Link)
             .mount(el)
     },

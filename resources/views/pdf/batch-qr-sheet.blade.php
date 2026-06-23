@@ -7,12 +7,7 @@
 
   <style>
     @page {
-      size: A4 portrait;
-      margin: 10.7mm 12.5mm;
-    }
-
-    * {
-      box-sizing: border-box;
+      margin: 0;
     }
 
     html,
@@ -23,75 +18,58 @@
       font-size: 6px;
     }
 
-    .sheet {
-      width: 185mm;
-      height: 275.6mm;
-      page-break-after: always;
+    .page {
+      padding: 40px;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
-    .sheet:last-child {
-      page-break-after: auto;
-    }
-
-    table.labels {
-      width: 185mm;
-      height: 275.6mm;
+    table {
+      width: 714px;
       border-collapse: collapse;
+      border-spacing: 0;
       table-layout: fixed;
     }
 
-    table.labels td {
-      width: 37mm;
-      height: 21.2mm;
-      padding: 0;
-      margin: 0;
+    .sheet-table td {
+      width: 142.8px;
+      min-width: 142.8px;
+      max-width: 142.8px;
+      height: 72px;
+      padding: 1px;
       vertical-align: top;
       overflow: hidden;
     }
 
-    .label {
-      width: 37mm;
-      height: 21.2mm;
-      padding: 1.4mm;
+    .cell {
+      border: 1px solid #fff;
+      height: 70px;
+      padding: 4px;
       overflow: hidden;
-
-      /*
-             * Enable this temporarily for test prints:
-             * border: 0.2mm solid #ccc;
-             */
+      text-align: center;
     }
 
     .qr {
       float: left;
-      width: 15mm;
-      height: 15mm;
-      margin-right: 1.3mm;
+      width: 52px;
+      height: 52px;
+      margin-bottom: 1px;
+      margin-right: 5px;
       text-align: center;
-    }
-
-    .qr img {
-      width: 15mm;
-      height: 15mm;
-      display: block;
-    }
-
-    .no-qr {
-      width: 15mm;
-      height: 15mm;
-      line-height: 15mm;
-      text-align: center;
-      font-size: 5px;
-      border: 0.2mm solid #999;
-    }
-
-    .meta {
-      font-size: 5.5px;
-      line-height: 1.15;
       overflow: hidden;
     }
 
-    .meta strong {
-      font-size: 6.5px;
+    .qr img {
+      width: 52px;
+      height: 52px;
+      display: inline-block;
+    }
+
+    .meta {
+      font-size: 8px;
+      line-height: 1;
+      overflow: hidden;
+      text-align: left;
     }
 
     .name {
@@ -101,19 +79,23 @@
     .muted {
       color: #444;
     }
+
+    .new-page {
+      page-break-before: always;
+    }
   </style>
 </head>
 
 <body>
   @foreach ($rows->chunk(65) as $sheetRows)
-  <div class="sheet">
-    <table class="labels">
+  <div class="page {{ $loop->first ? '' : 'new-page' }}">
+    <table cellspacing="0" cellpadding="0">
       <tbody>
         @foreach ($sheetRows->chunk(5) as $rowChunk)
         <tr>
           @foreach ($rowChunk as $row)
           <td>
-            <div class="label">
+            <div class="cell">
               <div class="qr">
                 @if (!empty($row['qr_png']))
                 <img src="{{ $row['qr_png'] }}" alt="QR code">
@@ -123,41 +105,13 @@
               </div>
 
               <div class="meta">
-                <strong>#{{ $row['sequence'] }}</strong><br>
-                <span class="name">{{ $row['name'] }}</span><br>
-                <span class="muted">
-                  {{ $row['set'] }}
-                  @if (!empty($row['number']))
-                  · {{ $row['number'] }}
-                  @endif
-                </span><br>
-                <span class="muted">
-                  Band: {{ ucfirst($row['band'] ?: 'n/a') }}
-                </span>
+                <strong>#{{ $row['sequence'] }}</strong><br><span class="name">{{ \Illuminate\Support\Str::limit($row['name'], 14, '') }}</span><br>@if (!empty($row['number']))<span class="muted">{{ $row['number'] }}</span><br>@endif<span class="muted">Band: {{ ucfirst($row['band'] ?: 'n/a') }}</span>
               </div>
             </div>
           </td>
           @endforeach
-
-          {{-- Pad final row so table keeps 5 columns --}}
-          @for ($i = $rowChunk->count(); $i < 5; $i++)
-            <td>
-            <div class="label"></div>
-            </td>
-            @endfor
         </tr>
         @endforeach
-
-        {{-- Pad final sheet so table keeps 13 rows --}}
-        @for ($i = $sheetRows->chunk(5)->count(); $i < 13; $i++)
-          <tr>
-          @for ($j = 0; $j < 5; $j++)
-            <td>
-            <div class="label"></div>
-            </td>
-            @endfor
-            </tr>
-            @endfor
       </tbody>
     </table>
   </div>

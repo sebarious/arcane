@@ -14,12 +14,16 @@ class Batch extends Model
         'sale_price_pence', 'margin_pence', 'margin_scheme_vat_pence',
         'invoice_id', 'qr_sheet_pdf_path',
         'committed_at', 'dispatched_at',
-        'type', 'game'
+        'type', 'game',
+        'failure_reason',
+        'failed_at',
+
     ];
 
     protected $casts = [
         'committed_at'  => 'datetime',
         'dispatched_at' => 'datetime',
+        'failed_at'     => 'datetime',
         'type'          => BatchType::class,
         'game'          => Game::class,
     ];

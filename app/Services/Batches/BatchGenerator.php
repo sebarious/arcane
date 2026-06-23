@@ -27,11 +27,12 @@ class BatchGenerator
 
     $attempts = 150;
     $best     = null;
-    $debug    = [
-      'tried'        => 0,
-      'rejected_lo'  => 0,   // margin too low
-      'rejected_hi'  => 0,   // margin too high
-      'sample'       => [],  // first few attempts' actual margins
+    $debug = [
+      'tried'               => 0,
+      'rejected_lo'         => 0,
+      'rejected_hi'         => 0,
+      'duplicate_failures'  => 0,
+      'sample'              => [],
     ];
 
 
@@ -80,9 +81,18 @@ class BatchGenerator
 
       for ($i = 0; $i < $attempts; $i++) {
         $selected = collect();
+        $duplicateLimits = config('banding.duplicate_limits', []);
         foreach ($bandDistribution as $band => $needed) {
+          $bandPool = $bucketed[$band] ?? collect();
+          $limitPerCard = (int) ($duplicateLimits[$band] ?? 1);
+          $dedupedPool = $this->poolWithDuplicateLimit($bandPool, $limitPerCard);
+          // If duplicate limits make it impossible to satisfy the band, skip this attempt
+          if ($dedupedPool->count() < $needed) {
+            $debug['duplicate_failures']++;
+            continue 2;
+          }
           $selected = $selected->merge(
-            ($bucketed[$band] ?? collect())->shuffle()->take($needed)
+            $dedupedPool->take($needed)
           );
         }
         if ($selected->count() !== $packCount) continue;
@@ -128,7 +138,7 @@ class BatchGenerator
         throw new \RuntimeException(sprintf(
           'Could not find a batch within margin window for %s/%s. ' .
             'Target sale=£%.2f, target value=£%.2f, target margin=%.1f%% (window %.1f%% – %.1f%%). ' .
-            'Tried %d. Rejected: %d too-low, %d too-high. Samples: %s',
+            'Tried %d. Rejected: %d too-low, %d too-high, %d duplicate-limit failures. Samples: %s',
           $game->value,
           $type->value,
           $targetSale / 100,
@@ -139,6 +149,7 @@ class BatchGenerator
           $debug['tried'],
           $debug['rejected_lo'],
           $debug['rejected_hi'],
+          $debug['duplicate_failures'],
           $sampleSummary ?: 'none',
         ));
       }
@@ -186,6 +197,8 @@ class BatchGenerator
           'sale_price_pence'         => $targetSale,
           'margin_pence'             => $marginAtCost,      // sale - cost (real margin)
           'margin_scheme_vat_pence'  => $vatOnMargin,
+          'failure_reason'           => null,
+          'failed_at'                => null,
           'committed_at'             => now(),
         ]);
 
@@ -207,4 +220,15 @@ class BatchGenerator
         \App\Jobs\GenerateBatchQrSheetJob::dispatch($batch->id)->afterCommit();
       });
     }
+
+  protected function poolWithDuplicateLimit(\Illuminate\Support\Collection $cards, int $limitPerCard): \Illuminate\Support\Collection
+  {
+    return $cards
+      ->groupBy('card_id')
+      ->flatMap(function ($group) use ($limitPerCard) {
+        return $group->shuffle()->take($limitPerCard);
+      })
+      ->shuffle()
+      ->values();
+  }
 }

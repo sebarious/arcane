@@ -24,6 +24,11 @@ use App\Http\Controllers\SellerApplication\StoreSellerApplicationController;
 use App\Http\Controllers\SellerApplication\SellerApplicationThankYouController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Debug\QrSheetPreviewController;
+
+Route::middleware(['web', 'auth'])
+  ->get('/debug/qr-sheet/{batch}', QrSheetPreviewController::class)
+  ->name('debug.qr-sheet');
 
 Route::get('/', HomeController::class)->name('home');
 

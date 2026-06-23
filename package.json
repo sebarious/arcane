@@ -24,9 +24,13 @@
         "@heroicons/vue": "^2.2.0",
         "@inertiajs/vite": "^3.4.0",
         "@inertiajs/vue3": "^3.3.1",
+        "@vueuse/motion": "^3.0.3",
         "axios": "^1.17.0",
+        "class-variance-authority": "^0.7.1",
         "laravel-echo": "^2.3.7",
+        "lucide-vue-next": "^1.0.0",
         "pusher-js": "^8.5.0",
+        "radix-vue": "^1.9.17",
         "vue": "^3.5.38",
         "ziggy-js": "^2.6.2"
     }

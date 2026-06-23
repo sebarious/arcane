@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Filament\Notifications\Notification;
 use App\Models\User;
+use App\Mail\BatchRequestSubmittedMail;
+use Illuminate\Support\Facades\Mail;
+
 
 class BatchRequestController extends Controller
 {
@@ -79,11 +82,19 @@ class BatchRequestController extends Controller
                 : "Requested by seller {$user->email}",
         ]);
 
-        Notification::make()
-            ->title('New batch request')
-            ->body("{$user->email} requested {$type->label()} for store ID {$data['store_id']}")
-            ->success()
-            ->sendToDatabase(User::role('admin')->get());
+
+        $admins = User::role('admin')->get();
+        foreach ($admins as $admin) {
+            // Email each admin
+            Mail::to($admin->email)->send(
+                new BatchRequestSubmittedMail($batch, $user)
+            );
+            // Database notification for Filament / notifications table
+            Notification::make()
+                ->title('New batch request')
+                ->body("{$user->name} requested {$type->label()} for store ID {$data['store_id']}.")
+                ->sendToDatabase($admin);
+        }
 
         return redirect()->route('seller.dashboard')
             ->with('success', "Batch {$batch->reference} requested. We'll review and generate it shortly.");

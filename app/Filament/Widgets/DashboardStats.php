@@ -43,6 +43,8 @@ class DashboardStats extends BaseWidget
             ->whereIn('status', ['submitted', 'under_review'])
             ->count();
 
+        $cancelledBatches = Batch::query()->where('status', 'cancelled')->count();
+
         return [
             Stat::make('Cards in stock', number_format($inStockCount))
                 ->description(sprintf(
@@ -67,6 +69,11 @@ class DashboardStats extends BaseWidget
                 ->description($pendingSubmissions > 0 ? 'Awaiting review' : 'Inbox clear')
                 ->descriptionIcon('heroicon-m-envelope')
                 ->color($pendingSubmissions > 0 ? 'warning' : 'success'),
+
+            Stat::make('Cancelled batches', $cancelledBatches)
+                ->description($cancelledBatches > 0 ? 'Requires review' : 'No failed batches')
+                ->descriptionIcon('heroicon-m-exclamation-triangle')
+                ->color($cancelledBatches > 0 ? 'danger' : 'success'),
         ];
     }
 }

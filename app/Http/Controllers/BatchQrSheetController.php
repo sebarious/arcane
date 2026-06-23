@@ -26,8 +26,8 @@ class BatchQrSheetController extends Controller
             );
         }
 
-        // Otherwise dispatch the job and show a "preparing" page
-        if (! $batch->qr_sheet_pdf_path) {
+        // Otherwise dispatch the job and show a "preparing" page if 10 mins have passed since the batch was created
+        if (! $batch->qr_sheet_pdf_path && $batch->created_at->diffInMinutes(now()) >= 10) {
             GenerateBatchQrSheetJob::dispatch($batch->id);
         }
 

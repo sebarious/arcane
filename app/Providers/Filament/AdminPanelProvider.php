@@ -27,6 +27,7 @@ use App\Filament\Widgets\PacksSoldChart;
 use App\Filament\Widgets\MarginRealisedWidget;
 use App\Filament\Widgets\InventoryAgingWidget;
 use App\Filament\Widgets\StorePerformanceWidget;
+use App\Filament\Widgets\CancelledBatchesWidget;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -56,13 +57,15 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 DashboardStats::class,
+                CancelledBatchesWidget::class,
+                AttentionList::class,
                 MarginRealisedWidget::class,
                 PacksSoldChart::class,
                 InventoryByBand::class,
                 InventoryAgingWidget::class,
                 MarginByProduct::class,
                 StorePerformanceWidget::class,
-                AttentionList::class,
+
             ])
             ->middleware([
                 EncryptCookies::class,

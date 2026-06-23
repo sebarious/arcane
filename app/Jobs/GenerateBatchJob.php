@@ -29,6 +29,8 @@ class GenerateBatchJob implements ShouldQueue
             // You might want to set a failed status / store error message on the batch.
             $batch->update([
                 'status' => 'cancelled',
+                'failure_reason' => $e->getMessage(),
+                'failed_at'      => now(),
             ]);
 
             throw $e;

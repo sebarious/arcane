@@ -30,5 +30,13 @@ return [
     ],
 
     // Game::Magic->value, etc. can be customised later
+
+    'duplicate_limits' => [
+      'common'    => 4,
+      'rare'      => 2,
+      'super'     => 1,
+      'legendary' => 1,
+      'mythic'    => 1,
+    ],
   ],
 ];

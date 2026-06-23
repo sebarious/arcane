@@ -143,6 +143,18 @@ class BatchResource extends Resource
                         }),
                 ])
                 ->visibleOn('edit'),
+            Section::make('Failure')
+                ->visible(fn(?Batch $record) => $record?->status === 'cancelled')
+                ->schema([
+                    Forms\Components\Placeholder::make('failed_at_display')
+                        ->label('Failed at')
+                        ->content(fn(?Batch $record) => $record?->failed_at?->format('d M Y H:i') ?? '—'),
+                    Forms\Components\Textarea::make('failure_reason')
+                        ->label('Reason')
+                        ->disabled()
+                        ->rows(6)
+                        ->columnSpanFull(),
+                ]),
         ]);
     }
 
@@ -241,7 +253,7 @@ class BatchResource extends Resource
                         'committed'  => 'Live (in store)',
                         'dispatched' => 'Dispatched',
                         'completed'  => 'Completed',
-                        'cancelled'  => 'Cancelled',
+                        'cancelled'  => 'Cancelled (failed)',
                         default      => ucfirst($state),
                     })
                     ->color(fn(string $state) => match ($state) {
@@ -252,6 +264,16 @@ class BatchResource extends Resource
                         'cancelled'  => 'danger',
                         default      => 'gray',
                     }),
+            Tables\Columns\TextColumn::make('failed_at')
+                ->label('Failed')
+                ->dateTime('d M Y H:i')
+                ->sortable()
+                ->toggleable(),
+            Tables\Columns\TextColumn::make('failure_reason')
+                ->label('Failure reason')
+                ->limit(80)
+                ->wrap()
+                ->toggleable(),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -274,6 +296,23 @@ class BatchResource extends Resource
                     ->url(fn(\App\Models\Batch $record) => route('batches.qr-sheet', $record))
                     ->openUrlInNewTab()
                     ->visible(fn(\App\Models\Batch $record) => $record->status === 'committed'),
+                Action::make('retry')
+                    ->label('Retry')
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->visible(fn(Batch $record) => $record->status === 'cancelled')
+                    ->requiresConfirmation()
+                    ->action(function (Batch $record) {
+                        $record->update([
+                            'status'         => 'draft',
+                            'failure_reason' => null,
+                            'failed_at'      => null,
+                        ]);
+                        \App\Jobs\GenerateBatchJob::dispatch($record->id);
+                        \Filament\Notifications\Notification::make()
+                            ->title('Batch retry queued')
+                            ->success()
+                            ->send();
+                    }),
                 Action::make('deleteBatch')
                     ->label('Delete batch')
                     ->icon(\Filament\Support\Icons\Heroicon::OutlinedTrash)

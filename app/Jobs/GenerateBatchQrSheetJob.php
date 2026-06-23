@@ -37,7 +37,7 @@ class GenerateBatchQrSheetJob implements ShouldQueue
                 $qrPng = null;
                 if ($token) {
                     $url = route('qr.scan', ['token' => $token]);
-                    $png = QrCode::format('png')->size(140)->margin(0)->generate($url);
+                    $png = QrCode::format('png')->size(56)->margin(0)->generate($url);
                     $qrPng = 'data:image/png;base64,' . base64_encode($png);
                 }
 
