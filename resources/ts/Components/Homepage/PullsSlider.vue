@@ -28,7 +28,7 @@
     <div class="overflow-hidden py-10" :style="{ paddingLeft: `calc(50vw - ${CARD_W / 2}px)` }">
       <div ref="trackRef" class="flex cursor-grab active:cursor-grabbing" :style="trackStyle"
         @pointerdown="onPointerDown">
-        <PullCard v-for="( pull, i) in INF_PULLS" :key="i" :pull="pull" :active="i === current" />
+        <PullCard v-for="( pull, i) in INF_PULLS" :key="i" :pull="(pull as Pull)" :active="i === current" />
         <div :style="{ width: 'calc(100vw - 560px)', flexShrink: 0 }" />
       </div>
     </div>
@@ -41,6 +41,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import HoloText from './HoloText.vue';
 import PullCard from './PullCard.vue';
 import { pulls } from './data';
+import type { Pull } from '../../types';
 
 const CARD_W = 280;
 const CARD_GAP = 20;

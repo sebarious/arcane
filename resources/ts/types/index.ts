@@ -1,8 +1,16 @@
+export enum Rarity {
+  Common = 'Common',
+  Rare = 'Rare',
+  Ultra = 'Ultra',
+  Legendary = 'Legendary',
+  God = 'God',
+}
+
 export type Pull = {
   name: string;
   set: string;
   grade: string;
-  rarity: 'Common' | 'Rare' | 'Ultra' | 'Legendary' | 'God';
+  rarity: Rarity;
   value: string;
   img: string;
 };
