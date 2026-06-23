@@ -176,9 +176,14 @@ onUnmounted( () => {
   window.removeEventListener( 'resize', checkMobile );
   window.removeEventListener( 'scroll', onScroll );
 } );
-
 const contentStyle = computed<Record<string, string | number>>( () => {
-  const y = isMobile.value ? 0 : 12 * scrollYProgress.value;
+  if ( isMobile.value ) {
+    return {
+      transform: 'translateY(0)',
+      opacity: 1,
+    };
+  }
+  const y = 12 * scrollYProgress.value;
   return {
     transform: `translateY(${y}%)`,
     opacity: 1,
