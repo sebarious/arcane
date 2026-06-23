@@ -56,7 +56,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Pull } from '../types';
+import type { Pull } from '../../types';
 
 const props = defineProps<{
   pull: Pull;
