@@ -22,7 +22,7 @@ const motionOptions = {
   enter: {
     x: '-50%',
     transition: {
-      duration: 28000,
+      duration: 20000,
       repeat: Infinity,
       easing: 'linear',
     },

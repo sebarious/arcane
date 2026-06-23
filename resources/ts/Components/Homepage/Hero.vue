@@ -13,7 +13,7 @@
       <!-- Left: Copy -->
       <div>
         <!-- Live badge -->
-        <div v-motion="isMobile ? undefined : liveBadgeMotion"
+        <div v-motion="liveBadgeMotion"
           class="inline-flex items-center gap-2 px-3 py-1.5 border border-[#DCC175]/25 bg-[#DCC175]/8 mb-9"
           :style="{ borderRadius: '3px' }">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -50,7 +50,7 @@
         </p>
 
         <!-- CTAs -->
-        <div v-motion="isMobile ? undefined : ctaRowMotion" class="flex gap-4 flex-wrap">
+        <div v-motion="ctaRowMotion" class="flex gap-4 flex-wrap">
           <a href="#pool"
             class="px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
@@ -64,7 +64,7 @@
         </div>
 
         <!-- Pack tier tiles — mobile only -->
-        <div v-motion="isMobile ? undefined : mobileTiersMotion" class="flex gap-2.5 mt-8 lg:hidden">
+        <div v-motion="mobileTiersMotion" class="flex gap-2.5 mt-8 lg:hidden">
           <div v-for=" tier in PACK_TIERS " :key="tier.name"
             class="flex-1 px-3 py-2.5 backdrop-blur-xl flex flex-col gap-0.5" :style="{
               borderRadius: '6px',
@@ -96,9 +96,9 @@
     </div>
 
     <!-- Scroll cue -->
-    <div v-motion="isMobile ? undefined : scrollCueMotion"
+    <div v-motion="scrollCueMotion"
       class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-      <div v-motion="isMobile ? undefined : scrollLineMotion" class="w-px h-10 bg-gradient-to-b from-amber-400/35 to-transparent"
+      <div v-motion="scrollLineMotion" class="w-px h-10 bg-gradient-to-b from-amber-400/35 to-transparent"
         :style="{ transformOrigin: 'top' }" />
     </div>
   </section>
