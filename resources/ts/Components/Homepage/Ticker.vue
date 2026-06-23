@@ -2,7 +2,7 @@
   <section class="py-4 border-y border-[#DCC175]/10 overflow-hidden">
     <div v-motion="motionOptions" class="flex gap-12 whitespace-nowrap">
       <span v-for="( item, i) in doubled" :key="i"
-        class="text-[10px] tracking-[0.35em] uppercase text-[#DCC175]/35 flex items-center gap-12"
+        class="text-[10px] tracking-[0.35em] uppercase text-[#DCC175]/60 flex items-center gap-12"
         :style="{ fontFamily: 'Jost, sans-serif' }">
         {{ item }}
         <span :style="{ color: '#DCC175' }">✦</span>

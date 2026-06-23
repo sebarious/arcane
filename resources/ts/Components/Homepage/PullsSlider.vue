@@ -10,7 +10,7 @@
       </div>
       <div class="flex items-center gap-3">
         <button @click="prev"
-          class="w-10 h-10 rounded-full border border-[#DCC175]/25 flex items-center justify-center text-[#DCC175]/60 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-200">
+          class="w-10 h-10 rounded-full border border-[#DCC175]/25 flex items-center justify-center text-[#DCC175]/60 hover:border-[#DCC175]/70 hover:text-[#DCC175] transition-all duration-200">
           <ChevronLeft :size="18" />
         </button>
         <div class="flex gap-1.5">
@@ -18,7 +18,7 @@
             :style="dotStyle( i )" />
         </div>
         <button @click="next"
-          class="w-10 h-10 rounded-full border border-[#DCC175]/25 flex items-center justify-center text-[#DCC175]/60 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-200">
+          class="w-10 h-10 rounded-full border border-[#DCC175]/25 flex items-center justify-center text-[#DCC175]/60 hover:border-[#DCC175]/70 hover:text-[#DCC175] transition-all duration-200">
           <ChevronRight :size="18" />
         </button>
       </div>

@@ -15,7 +15,7 @@
           {{ "What's in" }} <HoloText>the Pool</HoloText>
         </h2>
       </div>
-      <p class="text-sm text-[#DCC175]/35 max-w-xs leading-relaxed"
+      <p class="text-sm text-[#DCC175]/60 max-w-xs leading-relaxed"
         :style="{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }">
         Every card listed below is available at your local shop. Full odds
         transparency — always.
@@ -36,7 +36,7 @@
 
     <div v-motion="linkMotion" class="mt-10 text-center">
       <a href="#"
-        class="inline-block text-[10px] text-[#DCC175]/50 tracking-[0.3em] uppercase border-b border-[#DCC175]/20 pb-0.5 hover:text-[#DCC175]/80 hover:border-[#DCC175]/50 transition-colors"
+        class="inline-block text-[10px] text-[#DCC175]/70 tracking-[0.3em] uppercase border-b border-[#DCC175]/50 pb-0.5 hover:text-[#DCC175]/80 hover:border-[#DCC175]/70 transition-colors"
         :style="{ fontFamily: 'Jost, sans-serif' }">
         Find Your Nearest Shop →
       </a>

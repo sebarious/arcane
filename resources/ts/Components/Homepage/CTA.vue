@@ -9,7 +9,7 @@
 
     <div class="max-w-3xl mx-auto text-center relative z-10">
       <div v-motion="contentMotion">
-        <span class="text-[10px] tracking-[0.5em] uppercase text-[#DCC175]/40 block mb-7"
+        <span class="text-[10px] tracking-[0.5em] uppercase text-[#DCC175]/60 block mb-7"
           :style="{ fontFamily: 'Jost, sans-serif' }">
           Ready?
         </span>
@@ -20,7 +20,7 @@
         }">
           <HoloText>Open Your Pack</HoloText>
         </h2>
-        <p class="text-[#DCC175]/40 mb-14 max-w-sm mx-auto text-base leading-relaxed"
+        <p class="text-[#DCC175]/60 mb-14 max-w-sm mx-auto text-base leading-relaxed"
           :style="{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }">
           Check the live pool at your nearest participating shop and grab
           your mystery pack today.

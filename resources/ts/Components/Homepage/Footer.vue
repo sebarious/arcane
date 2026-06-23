@@ -5,12 +5,12 @@
         <div>
           <img :src="arcaneLogo" alt="Arcane" class="h-8 w-auto" />
         </div>
-        <span class="text-xs tracking-[0.25em] text-[#DCC175]/40 uppercase"
+        <span class="text-xs tracking-[0.25em] text-[#DCC175]/60 uppercase"
           :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           Arcane
         </span>
       </div>
-      <span class="text-[10px] text-[#DCC175]/20 tracking-widest" :style="{ fontFamily: 'Jost, sans-serif' }">
+      <span class="text-[10px] text-[#DCC175]/50 tracking-widest" :style="{ fontFamily: 'Jost, sans-serif' }">
         © {{ new Date().getFullYear() }} Arcane. All cards authenticated. All packs sealed fresh.
       </span>
     </div>

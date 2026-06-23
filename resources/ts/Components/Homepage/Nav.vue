@@ -12,7 +12,7 @@
 
       <!-- Desktop links -->
       <div class="hidden md:flex items-center gap-9">
-        <div class="flex gap-9 text-xs tracking-[0.22em] uppercase text-[#DCC175]/40"
+        <div class="flex gap-9 text-xs tracking-[0.22em] uppercase text-[#DCC175]/60"
           :style="{ fontFamily: 'Jost, sans-serif' }">
           <a v-for=" [label, href] in NAV_LINKS " :key="label" :href="href"
             class="hover:text-[#DCC175] transition-colors duration-300">
@@ -41,7 +41,7 @@
       <div class="h-20" />
       <nav class="flex flex-col px-8 gap-1 flex-1">
         <a v-for="( [label, href], i) in NAV_LINKS" :key="label" :href="href" @click="close"
-          class="py-4 text-2xl text-[#DCC175]/50 hover:text-[#DCC175] border-b border-[#DCC175]/8 transition-colors"
+          class="py-4 text-2xl text-[#DCC175]/70 hover:text-[#DCC175] border-b border-[#DCC175]/8 transition-colors"
           :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           {{ label }}
         </a>

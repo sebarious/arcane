@@ -1,5 +1,5 @@
 <template>
-  <section ref="sectionRef" class="relative min-h-screen max-h-screen md:min-h-[95vh] md:max-h-[95vh] flex items-center overflow-hidden"
+  <section ref="sectionRef" class="relative sm:min-h-[95vh] sm:max-h-[95vh] flex items-center overflow-hidden"
     @mousemove="handleMouseMove">
     <!-- Background layers -->
     <HeroBG />
@@ -8,7 +8,7 @@
 
     <!-- Main content grid (parallax + fade via computed style) -->
     <div
-      class="relative z-10 w-full px-8 lg:px-16 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center pt-6 lg:pt-14"
+      class="relative z-10 w-full px-8 lg:px-16 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center pt-24 pb-16 lg:pt-14 lg:pb-0"
       :style="contentStyle">
       <!-- Left: Copy -->
       <div>
@@ -162,22 +162,27 @@ const onScroll = () => {
   scrollYProgress.value = p;
 };
 
+const isMobile = ref( false );
+const checkMobile = (): void => {
+  isMobile.value = window.innerWidth < 1024;
+};
 onMounted( () => {
+  checkMobile();
+  window.addEventListener( 'resize', checkMobile );
   window.addEventListener( 'scroll', onScroll, { passive: true } );
-  onScroll(); // initial
+  onScroll();
 } );
 onUnmounted( () => {
+  window.removeEventListener( 'resize', checkMobile );
   window.removeEventListener( 'scroll', onScroll );
 } );
 
-const contentStyle = computed( () => {
-  // y: 0% -> 28% as you scroll
-  const y = 28 * scrollYProgress.value;
-  // start fading only after 30% scroll, and be fully gone by 100%
-  const fadeStart = 0.6;
+const contentStyle = computed<Record<string, string | number>>( () => {
+  const y = isMobile.value ? 0 : 28 * scrollYProgress.value;
+  const fadeStart = 0.3;
   const fadeEnd = 1;
   let opacity = 1;
-  if ( scrollYProgress.value > fadeStart ) {
+  if ( !isMobile.value && scrollYProgress.value > fadeStart ) {
     const t =
       ( scrollYProgress.value - fadeStart ) / ( fadeEnd - fadeStart || 1 );
     opacity = 1 - Math.min( 1, Math.max( 0, t ) );

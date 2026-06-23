@@ -13,7 +13,7 @@
     <div class="flex flex-col justify-between flex-1 min-w-0 relative z-10">
       <div class="flex justify-between items-start">
         <span
-          class="text-[9px] tracking-[0.2em] uppercase px-1.5 py-0.5 bg-[#DCC175]/10 text-[#DCC175] border border-[#DCC175]/20"
+          class="text-[9px] tracking-[0.2em] uppercase px-1.5 py-0.5 bg-[#DCC175]/10 text-[#DCC175] border border-[#DCC175]/50"
           :style="{ borderRadius: '2px', fontFamily: 'Jost, sans-serif' }">
           {{ card.grade }}
         </span>
@@ -26,7 +26,7 @@
           :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           {{ card.name }}
         </h4>
-        <p class="text-[10px] text-[#DCC175]/35 truncate mb-1" :style="{ fontFamily: 'Jost, sans-serif' }">
+        <p class="text-[10px] text-[#DCC175]/60 truncate mb-1" :style="{ fontFamily: 'Jost, sans-serif' }">
           {{ card.set }}
         </p>
         <p class="text-[10px] text-purple-300/50" :style="{ fontFamily: 'Jost, sans-serif' }">

@@ -14,17 +14,17 @@
         <div
           class="absolute inset-0 bg-gradient-to-br from-amber-900/0 to-amber-900/0 group-hover:from-amber-900/8 group-hover:to-transparent transition-all duration-500" />
         <div class="flex items-start justify-between mb-6">
-          <span class="text-[10px] text-[#DCC175]/40 tracking-[0.3em]" :style="{ fontFamily: 'Jost, sans-serif' }">
+          <span class="text-[10px] text-[#DCC175]/60 tracking-[0.3em]" :style="{ fontFamily: 'Jost, sans-serif' }">
             {{ step.num }}
           </span>
-          <div class="w-9 h-9 rounded-full bg-[#DCC175]/10 border border-[#DCC175]/20 flex items-center justify-center">
+          <div class="w-9 h-9 rounded-full bg-[#DCC175]/10 border border-[#DCC175]/50 flex items-center justify-center">
             <component :is="step.icon" :size="16" class="text-[#DCC175]" />
           </div>
         </div>
         <h3 class="text-xl text-white mb-3 tracking-tight" :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           {{ step.title }}
         </h3>
-        <p class="text-sm text-[#DCC175]/40 leading-relaxed"
+        <p class="text-sm text-[#DCC175]/60 leading-relaxed"
           :style="{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }">
           {{ step.desc }}
         </p>
