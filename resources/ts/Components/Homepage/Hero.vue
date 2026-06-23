@@ -178,18 +178,10 @@ onUnmounted( () => {
 } );
 
 const contentStyle = computed<Record<string, string | number>>( () => {
-  const y = isMobile.value ? 0 : 28 * scrollYProgress.value;
-  const fadeStart = 0.3;
-  const fadeEnd = 1;
-  let opacity = 1;
-  if ( !isMobile.value && scrollYProgress.value > fadeStart ) {
-    const t =
-      ( scrollYProgress.value - fadeStart ) / ( fadeEnd - fadeStart || 1 );
-    opacity = 1 - Math.min( 1, Math.max( 0, t ) );
-  }
+  const y = isMobile.value ? 0 : 12 * scrollYProgress.value;
   return {
     transform: `translateY(${y}%)`,
-    opacity,
+    opacity: 1,
   };
 } );
 
