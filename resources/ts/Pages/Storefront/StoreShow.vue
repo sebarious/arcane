@@ -91,7 +91,7 @@ const generalMotion = {
       <div class="content-stretch flex flex-col h-[408px] items-start overflow-clip relative shrink-0 w-full">
         <div class="content-stretch flex h-[200px] lg:h-[340px] items-start relative shrink-0 w-full">
           <div aria-hidden class="absolute inset-0 pointer-events-none">
-            <img alt="Hero banner" class="absolute max-w-none object-cover size-full" :src="imgBanner" />
+            <img alt="Hero banner" class="absolute max-w-none object-cover size-full" :src="imgBanner" loading="lazy" />
             <div class="absolute bg-[rgba(13,11,20,0.4)] inset-0" />
           </div>
         </div>

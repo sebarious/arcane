@@ -10,7 +10,7 @@
         'will-change-transform',
         active ? 'scale-105 opacity-100 shadow-xl' : 'scale-90 opacity-50'
       ]" :style="{ aspectRatio: '63/88', borderRadius: '10px' }">
-        <img :src="pull.card.image" :alt="pull.card.name" class="w-full h-full object-cover" draggable="false" />
+        <img :src="pull.card.image" :alt="pull.card.name" class="w-full h-full object-cover" draggable="false" loading="lazy" />
       </div>
     </div>
 

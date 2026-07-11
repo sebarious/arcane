@@ -17,13 +17,13 @@
           <!-- FRONT: pack -->
           <div :style="frontFaceStyle">
             <img :src="arcanePack" alt="Arcane Mystery Pack" class="w-full h-full object-cover select-none"
-              draggable="false" />
+              draggable="false" loading="lazy" />
           </div>
 
           <!-- BACK: revealed card -->
           <div :style="backFaceStyle">
             <img :src="currentCard" alt="Pokémon card" class="w-full h-full object-cover select-none"
-              draggable="false" />
+              draggable="false" loading="lazy" />
           </div>
         </div>
       </div>

@@ -8,7 +8,7 @@
     }" />
     <div class="flex-shrink-0 h-full overflow-hidden relative z-10"
       :style="{ aspectRatio: '63/88', borderRadius: '3px' }">
-      <img :src="pull.card.image" :alt="pull.card.name" class="w-full h-full object-cover" />
+      <img :src="pull.card.image" :alt="pull.card.name" class="w-full h-full object-cover" loading="lazy" />
     </div>
     <div class="flex flex-col justify-center flex-1 min-w-0 relative z-10">
       <div>

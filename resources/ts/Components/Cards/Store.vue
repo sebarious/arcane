@@ -8,7 +8,7 @@
           <img :src="store.logo" alt="" class="h-full w-full object-contain" loading="lazy" />
         </template>
         <template v-else>
-          <img src="/images/logo.png" alt="Arcane" class="h-12 mx-auto" />
+          <img src="/images/logo.png" alt="Arcane" class="h-12 mx-auto" loading="lazy" />
         </template>
       </div>
       <div class="w-full">

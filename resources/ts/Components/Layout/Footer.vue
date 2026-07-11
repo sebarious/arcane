@@ -3,7 +3,7 @@
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-2.5">
         <div>
-          <img :src="arcaneLogo" alt="Arcane" class="h-8 w-auto" />
+          <img :src="arcaneLogo" alt="Arcane" class="h-8 w-auto" loading="lazy" />
         </div>
         <span class="text-xs tracking-[0.25em] text-[#DCC175]/60 uppercase"
           :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">

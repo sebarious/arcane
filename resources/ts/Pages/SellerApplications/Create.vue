@@ -315,8 +315,8 @@ const generalMotion = {
               class="absolute border border-[rgba(124,58,237,0.4)] border-solid inset-0 pointer-events-none rounded-[12px]" />
             <div class="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-full">
               <div class="h-[35px] relative shrink-0 w-[32px]">
-                <img alt="" class="absolute inset-0 max-w-none object-cover pointer-events-none size-full"
-                  :src="arcaneLogo" />
+                <img alt="Arcane" class="absolute inset-0 max-w-none object-cover pointer-events-none size-full"
+                  :src="arcaneLogo" loading="lazy" />
               </div>
               <p
                 class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[28px] text-white">
@@ -386,6 +386,7 @@ const generalMotion = {
               <div class="-rotate-12 flex-none">
                 <div class="opacity-8 relative shadow-[0px_0px_28px_0px_rgba(201,168,76,0.2)] size-[420px]">
                   <img alt="Arcane" class="absolute inset-0 max-w-none object-contain pointer-events-none size-full"
+                    loading="lazy"
                     :src="arcaneLogo" />
                 </div>
               </div>

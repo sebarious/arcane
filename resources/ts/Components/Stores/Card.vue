@@ -16,7 +16,7 @@
         <div class="-translate-x-1/2 -translate-y-1/2 absolute blur-[20px] left-1/2 size-[80px] top-1/2"
           :style="blurStyle" />
         <template v-if=" store.logo ">
-          <img :src="store.logo" alt=""
+          <img :src="store.logo" :alt="store.name"
             class="-translate-x-1/2 -translate-y-1/2 absolute left-1/2 size-[100px] top-1/2"
             loading="lazy" />
         </template>
