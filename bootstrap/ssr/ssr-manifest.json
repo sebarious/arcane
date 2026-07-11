@@ -1,3 +1,437 @@
 {
-  "bootstrap/ssr/app2.js": []
+  "\u0000plugin-vue:export-helper": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "node_modules/laravel-vite-plugin/inertia-helpers/index.js": [],
+  "resources/ts/Assets/Arcane_pack.png": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Assets/Charizard.png": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Assets/Link___Arcane.png": [
+    "/build/assets/Nav-Bb-_Zprs.js",
+    "/build/assets/Link___Arcane-Cz3234Pi.png"
+  ],
+  "resources/ts/Assets/Lugia.png": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Assets/Mew.png": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Assets/Pikachu.png": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Assets/Rayquaza.png": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Assets/Umbreon.png": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2.png": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Components/FloatingRings.vue": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/FloatingRings.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/HeroBG.vue": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/HeroBG.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/HeroSparkles.vue": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/HeroSparkles.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/HoloText.vue": [
+    "/build/assets/HoloText-C1kAbqXE.js"
+  ],
+  "resources/ts/Components/HoloText.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/HoloText-C1kAbqXE.js"
+  ],
+  "resources/ts/Components/Homepage/CTA.vue": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/CTA.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/FloatingPack.vue": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/FloatingPack.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/Hero.vue": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/Hero.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/HowItWorks.vue": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/HowItWorks.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/PoolTile.vue": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/Homepage/PoolTile.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/Homepage/SplitWords.vue": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/SplitWords.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/Ticker.vue": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/Ticker.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Homepage/data.ts": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Components/Icons/Logos/Discord.vue": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Components/Icons/Logos/Facebook.vue": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Components/Icons/Logos/Instagram.vue": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Components/Icons/Logos/TikTok.vue": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Components/Icons/Logos/Twitter.vue": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Components/Icons/Logos/Youtube.vue": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Components/Layout/Footer.vue": [
+    "/build/assets/Nav-Bb-_Zprs.js",
+    "/build/assets/Link___Arcane-Cz3234Pi.png"
+  ],
+  "resources/ts/Components/Layout/Footer.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Nav-Bb-_Zprs.js",
+    "/build/assets/Link___Arcane-Cz3234Pi.png"
+  ],
+  "resources/ts/Components/Layout/Nav.vue": [
+    "/build/assets/Nav-Bb-_Zprs.js",
+    "/build/assets/Link___Arcane-Cz3234Pi.png"
+  ],
+  "resources/ts/Components/Layout/Nav.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Nav-Bb-_Zprs.js",
+    "/build/assets/Link___Arcane-Cz3234Pi.png"
+  ],
+  "resources/ts/Components/Layout/Orbs.vue": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/Layout/Orbs.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/Layout/SellerHeader.vue": [
+    "/build/assets/SellerHeader-BH0x5cAj.js"
+  ],
+  "resources/ts/Components/Layout/SellerHeader.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/SellerHeader-BH0x5cAj.js"
+  ],
+  "resources/ts/Components/LivePool.vue": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/LivePool.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/FloatingRings-DGLKUBIF.js"
+  ],
+  "resources/ts/Components/PullCard.vue": [
+    "/build/assets/PullsSlider-CAM7cC_x.js"
+  ],
+  "resources/ts/Components/PullCard.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/PullsSlider-CAM7cC_x.js"
+  ],
+  "resources/ts/Components/PullsSlider.vue": [
+    "/build/assets/PullsSlider-CAM7cC_x.js"
+  ],
+  "resources/ts/Components/PullsSlider.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/PullsSlider-CAM7cC_x.js"
+  ],
+  "resources/ts/Components/Stores/Card.vue": [
+    "/build/assets/StoreIndex-tT5Xy6S-.js"
+  ],
+  "resources/ts/Components/Stores/Card.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/StoreIndex-tT5Xy6S-.js"
+  ],
+  "resources/ts/Components/Stores/Hero.vue": [
+    "/build/assets/StoreIndex-tT5Xy6S-.js"
+  ],
+  "resources/ts/Components/Stores/Hero.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/StoreIndex-tT5Xy6S-.js"
+  ],
+  "resources/ts/Components/Stores/svg.ts": [
+    "/build/assets/StoreIndex-tT5Xy6S-.js"
+  ],
+  "resources/ts/Pages/Auth/ForgotPassword.vue": [
+    "/build/assets/ForgotPassword-B-r2EEpY.js"
+  ],
+  "resources/ts/Pages/Auth/ForgotPassword.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/ForgotPassword-B-r2EEpY.js"
+  ],
+  "resources/ts/Pages/Auth/Login.vue": [
+    "/build/assets/Login-Cn0ZmYau.js"
+  ],
+  "resources/ts/Pages/Auth/Login.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Login-Cn0ZmYau.js"
+  ],
+  "resources/ts/Pages/Auth/ResetPassword.vue": [
+    "/build/assets/ResetPassword-BDGNKG8R.js"
+  ],
+  "resources/ts/Pages/Auth/ResetPassword.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/ResetPassword-BDGNKG8R.js"
+  ],
+  "resources/ts/Pages/Sell/Create.vue": [
+    "/build/assets/Create-lM63Pil9.js"
+  ],
+  "resources/ts/Pages/Sell/Create.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Create-lM63Pil9.js"
+  ],
+  "resources/ts/Pages/Sell/ThankYou.vue": [
+    "/build/assets/ThankYou-D5GjAv2e.js"
+  ],
+  "resources/ts/Pages/Sell/ThankYou.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/ThankYou-D5GjAv2e.js"
+  ],
+  "resources/ts/Pages/Seller/BatchRequest.vue": [
+    "/build/assets/BatchRequest-CT5mtSdW.js"
+  ],
+  "resources/ts/Pages/Seller/BatchRequest.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/BatchRequest-CT5mtSdW.js"
+  ],
+  "resources/ts/Pages/Seller/BatchShow.vue": [
+    "/build/assets/BatchShow-BGf7SdAo.js"
+  ],
+  "resources/ts/Pages/Seller/BatchShow.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/BatchShow-BGf7SdAo.js"
+  ],
+  "resources/ts/Pages/Seller/BatchesIndex.vue": [
+    "/build/assets/BatchesIndex-CKMSPFWv.js"
+  ],
+  "resources/ts/Pages/Seller/BatchesIndex.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/BatchesIndex-CKMSPFWv.js"
+  ],
+  "resources/ts/Pages/Seller/Dashboard.vue": [
+    "/build/assets/Dashboard-DVyALoHA.js"
+  ],
+  "resources/ts/Pages/Seller/Dashboard.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Dashboard-DVyALoHA.js"
+  ],
+  "resources/ts/Pages/SellerApplications/Create.vue": [
+    "/build/assets/Create-D9Jstvcb.js"
+  ],
+  "resources/ts/Pages/SellerApplications/Create.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Create-D9Jstvcb.js"
+  ],
+  "resources/ts/Pages/SellerApplications/ThankYou.vue": [
+    "/build/assets/ThankYou-B3QZXXVt.js"
+  ],
+  "resources/ts/Pages/SellerApplications/ThankYou.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/ThankYou-B3QZXXVt.js"
+  ],
+  "resources/ts/Pages/Storefront/BatchListShow.vue": [
+    "/build/assets/BatchListShow-lV537PKE.js"
+  ],
+  "resources/ts/Pages/Storefront/BatchListShow.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/BatchListShow-lV537PKE.js"
+  ],
+  "resources/ts/Pages/Storefront/StoreIndex.vue": [
+    "/build/assets/StoreIndex-tT5Xy6S-.js"
+  ],
+  "resources/ts/Pages/Storefront/StoreIndex.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/StoreIndex-tT5Xy6S-.js"
+  ],
+  "resources/ts/Pages/Storefront/StoreShow.vue": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Pages/Storefront/StoreShow.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/StoreShow-T9Z4DxjM.js",
+    "/build/assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2-CyZbh1bB.png"
+  ],
+  "resources/ts/Pages/Welcome.vue": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/Pages/Welcome.vue?vue&type=script&setup=true&lang.ts": [
+    "/build/assets/Welcome-C4mGKelr.js",
+    "/build/assets/Arcane_pack-rTmMKIQw.png",
+    "/build/assets/Charizard-DXJpWvGQ.png",
+    "/build/assets/Umbreon-CW-O5A1-.png",
+    "/build/assets/Pikachu-DQCTH0jM.png",
+    "/build/assets/Lugia-C3KNsBl2.png",
+    "/build/assets/Mew-DY9bLn_u.png",
+    "/build/assets/Rayquaza-4Fu-xvhf.png"
+  ],
+  "resources/ts/ssr.ts": []
 }
