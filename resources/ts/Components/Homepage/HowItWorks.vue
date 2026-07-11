@@ -1,6 +1,6 @@
 <template>
   <section id="how-it-works" class="px-8 lg:px-16 py-[12px] lg:py-[42px]">
-    <div v-motion="headerMotion" class="mb-16">
+    <div class="mb-16">
       <h2 class="text-3xl lg:text-5xl xl:text-6xl text-white tracking-tight leading-none"
         :style="{ fontFamily: 'Cinzel, serif', fontWeight: 700 }">
         How It <HoloText>Works</HoloText>
@@ -8,7 +8,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div v-for="( step, i) in steps" :key="step.num" v-motion="cardMotion( i )"
+      <div v-for="( step, i) in steps" :key="step.num"
         class="p-8 border border-[#DCC175]/10 bg-[#0e0e1d]/60 relative overflow-hidden group"
         :style="{ borderRadius: '4px' }">
         <div

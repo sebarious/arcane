@@ -13,7 +13,7 @@
       <!-- Left: Copy -->
       <div>
         <!-- Live badge -->
-        <div v-motion="liveBadgeMotion"
+        <div
           class="inline-flex items-center gap-2 px-3 py-1.5 border border-[#DCC175]/25 bg-[#DCC175]/8 mb-9"
           :style="{ borderRadius: '3px' }">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -39,7 +39,7 @@
         </div>
 
         <!-- Subtext -->
-        <p v-motion="subtextMotion" class="text-base leading-relaxed mb-10 max-w-md" :style="{
+        <p class="text-base leading-relaxed mb-10 max-w-md" :style="{
           fontFamily: 'Jost, sans-serif',
           fontWeight: 300,
           color: '#e8e4f0',
@@ -50,7 +50,7 @@
         </p>
 
         <!-- CTAs -->
-        <div v-motion="ctaRowMotion" class="flex gap-4 flex-wrap">
+        <div class="flex gap-4 flex-wrap">
           <Link href="/stores"
             class="px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
@@ -64,7 +64,7 @@
         </div>
 
         <!-- Pack tier tiles — mobile only -->
-        <div v-motion="mobileTiersMotion" class="flex gap-2.5 mt-8 lg:hidden">
+        <div class="flex gap-2.5 mt-8 lg:hidden">
           <div v-for=" tier in PACK_TIERS " :key="tier.name"
             class="flex-1 px-3 py-2.5 backdrop-blur-xl flex flex-col gap-0.5" :style="{
               borderRadius: '6px',

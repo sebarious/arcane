@@ -1,7 +1,7 @@
 <template>
   <span class="inline-flex flex-wrap gap-x-[0.25em]" :class="className">
     <span v-for="( word, i) in words" :key="i" class="overflow-hidden inline-block">
-      <span v-motion="wordMotion( i )" class="inline-block" :style="style">
+      <span class="inline-block" :style="style">
         {{ word }}
       </span>
     </span>

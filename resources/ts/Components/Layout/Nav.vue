@@ -1,6 +1,6 @@
 <template>
   <div>
-    <nav v-motion="navMotion" :class="[
+    <nav :class="[
       'fixed top-0 left-0 right-0 z-50 px-6 lg:px-16 py-5 flex items-center justify-between transition-all duration-500',
       scrolled
         ? 'backdrop-blur-2xl bg-[#06060b]/70 border-b border-[#DCC175]/10'
@@ -36,7 +36,7 @@
     </nav>
 
     <!-- Mobile drawer -->
-    <div v-motion="drawerMotion" class="fixed inset-0 z-[100] md:hidden flex flex-col" v-if="open"
+    <div class="fixed inset-0 z-[100] md:hidden flex flex-col" v-if="open"
       :style="{ background: 'rgba(6,6,11,0.97)', backdropFilter: 'blur(24px)' }" :aria-hidden="!open">
       <div class="h-20" />
       <nav class="flex flex-col px-8 gap-1 flex-1">

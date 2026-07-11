@@ -96,7 +96,6 @@ const generalMotion = {
           </div>
         </div>
         <div
-          v-motion="generalMotion"
           class="absolute content-stretch lg:flex gap-[24px] items-start left-0 px-[64px] right-0 top-[150px] lg:top-[272px] space-y-6">
           <div class="relative rounded-[50px] shrink-0 size-[100px] bg-black">
             <img :alt="store.name"
@@ -158,7 +157,7 @@ const generalMotion = {
         </div>
       </div>
 
-      <div class="relative w-full" v-motion="generalMotion">
+      <div class="relative w-full">
         <div
           class="content-stretch space-y-8 lg:space-y-0 lg:flex gap-[32px] items-start px-[64px] py-[40px] relative size-full">
           <div class="content-stretch flex flex-col gap-[32px] items-start relative w-full">

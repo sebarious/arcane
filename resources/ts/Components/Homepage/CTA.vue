@@ -1,14 +1,14 @@
 <template>
   <section class="px-8 lg:px-16 py-[50px] lg:py-[102px] relative overflow-hidden max-h-[80vh] flex items-center">
     <div class="absolute inset-0 pointer-events-none">
-      <div v-motion="bgMotion" class="absolute inset-0" :style="{
+      <div class="absolute inset-0" :style="{
         background:
           'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.18) 0%, transparent 58%)',
       }" />
     </div>
 
     <div class="max-w-3xl mx-auto text-center relative z-10">
-      <div v-motion="contentMotion">
+      <div>
         <span class="text-[10px] tracking-[0.5em] uppercase text-[#DCC175]/60 block mb-7"
           :style="{ fontFamily: 'Jost, sans-serif' }">
           Ready?
