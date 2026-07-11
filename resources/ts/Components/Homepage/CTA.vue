@@ -26,7 +26,7 @@
           your mystery pack today.
         </p>
 
-        <a href="#pool"
+        <Link href="/stores"
           class="inline-block px-14 py-4 text-black text-xs tracking-[0.3em] uppercase font-bold relative overflow-hidden group"
           :style="{
             background: 'linear-gradient(135deg, #DCC175, #e8d49a)',
@@ -37,14 +37,15 @@
             background: 'linear-gradient(135deg, #7c3aed, #9d5cf5)',
           }" />
           <span class="relative">Find a Shop</span>
-        </a>
+        </Link>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import HoloText from './HoloText.vue';
+import HoloText from '../HoloText.vue';
+import { Link } from '@inertiajs/vue3';
 
 const bgMotion = {
   initial: { scale: 1, opacity: 0.7 },

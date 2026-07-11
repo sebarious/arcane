@@ -1,12 +1,12 @@
 // src/data.ts
-import arcanePack from './imports/Arcane_pack.png';
-import arcaneLogo from './imports/Link___Arcane.png';
-import imgCharizard from './imports/Charizard.png';
-import imgUmbreon from './imports/Umbreon.png';
-import imgPikachu from './imports/Pikachu.png';
-import imgLugia from './imports/Lugia.png';
-import imgMew from './imports/Mew.png';
-import imgRayquaza from './imports/Rayquaza.png';
+import arcanePack from '@/Assets/Arcane_pack.png';
+import arcaneLogo from '@/Assets/Link___Arcane.png';
+import imgCharizard from '@/Assets/Charizard.png';
+import imgUmbreon from '@/Assets/Umbreon.png';
+import imgPikachu from '@/Assets/Pikachu.png';
+import imgLugia from '@/Assets/Lugia.png';
+import imgMew from '@/Assets/Mew.png';
+import imgRayquaza from '@/Assets/Rayquaza.png';
 
 export const pulls = [
   { name: 'Charizard ex', set: 'Obsidian Flames', grade: 'PSA 9', rarity: 'Ultra', value: '£85', img: imgCharizard },
@@ -36,7 +36,7 @@ export const steps: Step[] = [
     num: '01',
     icon: Shield,
     title: 'Authenticated Singles',
-    desc: 'Every card in our pool is graded PSA 9 or 10. Near-mint condition, verified authentic, toploaded from the moment it arrives.',
+    desc: 'Every card in our pool is Near-mint condition, verified authentic, toploaded from the moment it arrives.',
   },
   {
     num: '02',

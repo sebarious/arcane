@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import Header from '@/Components/Layout/Header.vue';
+import Nav from '@/Components/Layout/Nav.vue';
+import imgBanner from "@/Assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2.png";
+import Discord from '@/Components/Icons/Logos/Discord.vue';
+import Facebook from '@/Components/Icons/Logos/Facebook.vue';
+import Instagram from '@/Components/Icons/Logos/Instagram.vue';
+import Twitter from '@/Components/Icons/Logos/Twitter.vue';
+import Youtube from '@/Components/Icons/Logos/Youtube.vue';
+import TikTok from '@/Components/Icons/Logos/TikTok.vue';
+import { MapPinIcon } from '@heroicons/vue/24/outline';
+import { ShieldCheck, Globe } from 'lucide-vue-next';
+import PullsSlider from '@/Components/PullsSlider.vue';
+import Footer from '@/Components/Layout/Footer.vue';
 
 type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic';
 
@@ -46,6 +57,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
+console.log(props);
+
 const bandPillClass = ( band: Rarity | null ): string => {
   if ( !band ) return 'bg-arcane-border text-arcane-muted';
   return {
@@ -59,96 +72,235 @@ const bandPillClass = ( band: Rarity | null ): string => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
-    <Header />
-
-    <main class="flex-1 bg-arcane-bg">
-      <div class="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        <!-- Store hero (same as before, maybe without odds now) -->
-
-        <!-- Recent pulls -->
-        <section class="card-panel p-4 md:p-5">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-semibold">Recent pulls</h2>
-            <span class="text-[11px] text-arcane-muted">
-              Latest cards pulled from Arcane packs at this store.
-            </span>
-          </div>
-
-          <div v-if=" recentPulls.length === 0 " class="text-xs text-arcane-muted">
-            No recent pulls yet. Come back after a few packs have been opened.
-          </div>
-
-          <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            <div v-for=" pull in recentPulls " :key="pull.id" class="flex flex-col items-center text-center gap-1">
-              <div
-                class="w-full max-w-[130px] aspect-[245/342] rounded-lg overflow-hidden border border-arcane-border/60 bg-arcane-surface/80 flex items-center justify-center opacity-60">
-                <template v-if=" pull.card?.image ">
-                  <img :src="pull.card.image" alt="" class="w-full h-full object-cover" loading="lazy" />
-                </template>
-                <template v-else>
-                  <div class="text-[10px] text-arcane-muted px-2">
-                    Image not available
-                  </div>
-                </template>
-              </div>
-              <div class="w-full max-w-[130px]">
-                <div class="text-[11px] font-semibold truncate">
-                  {{ pull.card?.name ?? 'Unknown' }}
-                </div>
-                <div class="text-[10px] text-arcane-muted truncate">
-                  {{ pull.card?.set }} · {{ pull.card?.number }}
-                </div>
-                <div class="mt-1 flex items-center justify-center gap-1 text-[10px] text-arcane-muted">
-                  <span class="rarity-pill" :class="bandPillClass( pull.card?.band ?? null )">
-                    {{ pull.card?.band ?? '' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Card lists (batches) -->
-        <section class="card-panel p-4 md:p-5">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-semibold">Card lists</h2>
-            <span class="text-[11px] text-arcane-muted">
-              Tap a list to view remaining hits for that batch.
-            </span>
-          </div>
-
-          <div v-if=" batches.length === 0 " class="text-xs text-arcane-muted">
-            No Arcane batches are currently live at this store.
-          </div>
-
-          <div v-else class="space-y-2">
-            <Link v-for=" batch in batches " :key="batch.id"
-              :href="`/${store.slug}/${batch.id}`"
-              class="flex items-center justify-between gap-3 border border-arcane-border/60 rounded-lg px-3 py-2.5 bg-arcane-surface/80 hover:border-arcane-accent/60 transition">
-            <div class="space-y-2">
-              <div class="text-sm font-semibold">
-                {{ batch.reference }}
-              </div>
-              <div class="flex items-center gap-2">
-                <div v-if=" batch.game_label ">
-                  <span
-                    class="px-2 py-[2px] rounded-full text-[10px] bg-arcane-elevated text-arcane-muted border border-arcane-border/70">
-                    {{ batch.game_label }}
-                  </span>
-                </div>
-                <div class="text-xs text-arcane-muted">
-                  {{ ( batch.type ?? '' ).toUpperCase() }} · {{ batch.pack_count }} packs
-                </div>
-              </div>
-            </div>
-            <div class="text-[11px] text-arcane-muted">
-              View card list →
-            </div>
-            </Link>
-          </div>
-        </section>
+  <main class="bg-[#06060b] overflow-x-hidden">
+    <div class="relative shrink-0">
+      <div
+        class="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex items-center justify-between px-[64px] py-[20px] relative size-full">
+        <div class="h-[49px] relative shrink-0">
+          <Nav />
+        </div>
       </div>
-    </main>
-  </div>
+    </div>
+
+    <div class="content-stretch flex flex-col items-start relative shrink-0 w-full">
+      <div class="content-stretch flex flex-col h-[408px] items-start overflow-clip relative shrink-0 w-full">
+        <div class="content-stretch flex h-[200px] lg:h-[340px] items-start relative shrink-0 w-full">
+          <div aria-hidden class="absolute inset-0 pointer-events-none">
+            <img alt="Hero banner" class="absolute max-w-none object-cover size-full" :src="imgBanner" />
+            <div class="absolute bg-[rgba(13,11,20,0.4)] inset-0" />
+          </div>
+        </div>
+        <div
+          class="absolute content-stretch lg:flex gap-[24px] items-start left-0 px-[64px] right-0 top-[150px] lg:top-[272px] space-y-6">
+          <div class="relative rounded-[50px] shrink-0 size-[100px] bg-black">
+            <img :alt="store.name"
+              class="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[50px] size-full"
+              :src="store.logo" />
+          </div>
+          <div class="content-stretch flex flex-col gap-[12px] items-start pb-[20px] relative shrink-0">
+            <p
+              class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[36px] lg:text-[48px] text-white lg:whitespace-nowrap">
+              {{ store.name }}</p>
+            <div class="content-stretch flex gap-[24px] items-center relative shrink-0">
+              <div v-if="store.location" class="content-stretch flex gap-[6px] items-center relative shrink-0">
+                <div class="relative shrink-0 size-[16px]">
+                  <MapPinIcon class="size-5 text-[#a3a3a3]" />
+                </div>
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[14px] whitespace-nowrap">
+                  {{ store.location }}</p>
+              </div>
+              <div class="content-stretch flex gap-[16px] items-center relative shrink-0">
+                <div class="relative shrink-0 size-[18px]">
+                  <a :href="store?.social_links?.facebook" rel="noopener noreferrer" target="_blank">
+                    <Facebook class="size-5" />
+                  </a>
+                </div>
+                <div class="relative shrink-0 size-[18px]" v-if="store?.social_links?.instagram">
+                  <a :href="store?.social_links?.instagram" rel="noopener noreferrer" target="_blank">
+                    <Instagram class="size-5" />
+                  </a>
+                </div>
+                <div class="relative shrink-0 size-[18px]" v-if="store?.social_links?.youtube">
+                  <a :href="store?.social_links?.youtube" rel="noopener noreferrer" target="_blank">
+                    <Youtube class="size-5" />
+                  </a>
+                </div>
+                <div class="relative shrink-0 size-[18px]" v-if="store?.social_links?.x">
+                  <a :href="store?.social_links?.x" rel="noopener noreferrer" target="_blank">
+                    <Twitter class="size-5" />
+                  </a>
+                </div>
+                <div class="relative shrink-0 size-[18px]" v-if="store?.social_links?.tiktok">
+                  <a :href="store?.social_links?.tiktok" rel="noopener noreferrer" target="_blank">
+                    <TikTok class="size-5" />
+                  </a>
+                </div>
+                <div class="relative shrink-0 size-[18px]" v-if="store?.social_links?.discord">
+                  <a :href="store?.social_links?.discord" rel="noopener noreferrer" target="_blank">
+                    <Discord class="size-5" />
+                  </a>
+                </div>
+                <div class="relative shrink-0 size-[18px]" v-if="store?.social_links?.website">
+                  <a :href="store?.social_links?.website" rel="noopener noreferrer" target="_blank">
+                    <Globe class="size-5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative w-full">
+        <div
+          class="content-stretch space-y-8 lg:space-y-0 lg:flex gap-[32px] items-start px-[64px] py-[40px] relative size-full">
+          <div class="content-stretch flex flex-col gap-[32px] items-start relative w-full">
+            <div
+              class="[word-break:break-word] content-stretch flex flex-col gap-[16px] items-start relative shrink-0 max-w-xl">
+              <p
+                class="font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[24px] text-white whitespace-nowrap">
+                About This Store</p>
+              <p v-if="store?.description"
+                class="font-['Jost',sans-serif] font-normal leading-[26px] min-w-full relative shrink-0 text-[#a3a3a3] text-[16px] ">
+                {{ store?.description }}</p>
+            </div>
+            <div class="content-stretch flex gap-[12px] items-start relative shrink-0">
+              <div
+                class="bg-[rgba(201,168,76,0.1)] content-stretch flex gap-[8px] items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(201,168,76,0.25)] border-solid inset-0 pointer-events-none rounded-[4px]" />
+                <ShieldCheck class="size-4 text-[#c9a84c]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#c9a84c] text-[12px] uppercase whitespace-nowrap">
+                  Verified Seller</p>
+              </div>
+            </div>
+          </div>
+          <div
+            class="bg-[#13101e] content-stretch flex flex-col gap-[24px] items-start p-[24px] relative rounded-[12px] w-full">
+            <div aria-hidden
+              class="absolute border border-[rgba(220,193,117,0.1)] border-solid inset-0 pointer-events-none rounded-[12px]" />
+            <div
+              class="[word-break:break-word] content-stretch flex gap-[24px] items-start leading-[normal] relative shrink-0 w-full whitespace-nowrap">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative">
+                <p
+                  class="font-['Jost',sans-serif] font-normal relative shrink-0 text-[12px] text-[rgba(255,255,255,0.35)] uppercase">
+                  Active Batches</p>
+                <p class="font-['Cinzel',sans-serif] font-bold relative shrink-0 text-[28px] text-white">{{
+                  store?.total_batches ?? 0 }}</p>
+              </div>
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative">
+                <p
+                  class="font-['Jost',sans-serif] font-normal relative shrink-0 text-[12px] text-[rgba(255,255,255,0.35)] uppercase">
+                  Packs Remaining</p>
+                <p class="font-['Cinzel',sans-serif] font-bold relative shrink-0 text-[28px] text-white">{{
+                  store?.total_packs_remaining ?? 0 }}
+                </p>
+              </div>
+            </div>
+            <div class="h-0 relative shrink-0 w-full">
+              <div class="absolute inset-[-1px_0_0_0]">
+                <svg class="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 480 1">
+                  <line id="Line" stroke="var(--stroke-0, #DCC175)" strokeOpacity="0.101961" x2="480" y1="0.5"
+                    y2="0.5" />
+                </svg>
+              </div>
+            </div>
+            <div
+              class="[word-break:break-word] content-stretch flex gap-[24px] items-start leading-[normal] relative shrink-0 w-full whitespace-nowrap">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative">
+                <p
+                  class="font-['Jost',sans-serif] font-normal relative shrink-0 text-[12px] text-[rgba(255,255,255,0.35)] uppercase">
+                  Cards Pulled</p>
+                <p class="font-['Cinzel',sans-serif] font-bold relative shrink-0 text-[28px] text-white">{{
+                  store?.total_pull_count ?? 0 }}
+                </p>
+              </div>
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative">
+                <p
+                  class="font-['Jost',sans-serif] font-normal relative shrink-0 text-[12px] text-[rgba(255,255,255,0.35)] uppercase">
+                  Customer since</p>
+                <p class="font-['Cinzel',sans-serif] font-bold relative shrink-0 text-[28px] text-white">{{
+                  store?.created_at }}</p>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative shrink-0 w-full">
+        <div class="content-stretch flex flex-col gap-[24px] items-start px-[64px] py-[40px] relative size-full">
+          <div class="content-stretch flex flex-col items-start relative w-full">
+            <div class="content-stretch flex items-center relative shrink-0">
+              <h2
+                class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[32px] text-white whitespace-nowrap">
+                Active Batches</h2>
+            </div>
+          </div>
+          <div class="bg-[#13101e] relative rounded-[8px] w-full">
+            <div aria-hidden
+              class="absolute border border-[rgba(220,193,117,0.1)] border-solid inset-0 pointer-events-none rounded-[8px]" />
+            <div class="flex flex-row items-center size-full">
+              <template v-for="batch in batches" :key="batch.reference">
+                <div class="content-stretch flex items-center justify-between p-[20px] relative size-full">
+                  <div class="content-stretch space-y-5 lg:space-y-0 lg:flex gap-[32px] items-center relative">
+                    <div
+                      class="[word-break:break-word] content-stretch lg:flex flex-col gap-[4px] items-start leading-[normal] relative lg:whitespace-nowrap">
+                      <p
+                        class="font-['Jost',sans-serif] font-normal relative shrink-0 text-[12px] text-[rgba(255,255,255,0.35)] uppercase">
+                        Batch Ref</p>
+                      <p class="font-['Jost',sans-serif] font-semibold relative shrink-0 text-[16px] text-white">
+                        {{ batch.reference }}</p>
+                    </div>
+                    <div class="content-stretch flex gap-[12px] items-start relative shrink-0">
+                      <div
+                        class="bg-[rgba(123,79,233,0.1)] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0"
+                        data-name="Frame">
+                        <div aria-hidden
+                          class="absolute border border-[rgba(123,79,233,0.25)] border-solid inset-0 pointer-events-none rounded-[4px]" />
+                        <p
+                          class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#7b4fe9] text-[12px] uppercase whitespace-nowrap">
+                          {{ batch.type  }}</p>
+                      </div>
+                      <div
+                        class="bg-[rgba(255,255,255,0.04)] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0">
+                        <div aria-hidden
+                          class="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[4px]" />
+                        <p
+                          class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#a3a3a3] text-[12px] uppercase whitespace-nowrap">
+                          {{ batch.game_label }}</p>
+                      </div>
+                    </div>
+                    <div
+                      class="[word-break:break-word] content-stretch flex flex-col font-['Jost',sans-serif] font-normal gap-[4px] items-start leading-[normal] relative shrink-0 whitespace-nowrap">
+                      <p class="relative shrink-0 text-[12px] text-[rgba(255,255,255,0.35)] uppercase">Created</p>
+                      <p class="relative shrink-0 text-[14px] text-white">{{ batch.created_at }}</p>
+                    </div>
+                    <div
+                      class="[word-break:break-word] content-stretch flex flex-col font-['Jost',sans-serif] font-normal gap-[4px] items-start leading-[normal] relative shrink-0 whitespace-nowrap">
+                      <p class="relative shrink-0 text-[12px] text-[rgba(255,255,255,0.35)] uppercase">Availability
+                      </p>
+                      <p class="relative shrink-0 text-[14px] text-white">{{ batch.remaining_packs }} packs Left</p>
+                    </div>
+                  </div>
+                  <div
+                    class="bg-[#7b4fe9] content-stretch drop-shadow-[0px_0px_8px_rgba(123,79,233,0.5)] flex items-start px-[24px] py-[12px] relative rounded-[4px] shrink-0">
+                    <p
+                      class="[word-break:break-word] font-['Jost',sans-serif] font-bold leading-[normal] relative shrink-0 text-[14px] text-white uppercase whitespace-nowrap">
+                      <a :href="`${store.slug}/${batch.id}`">Explore</a></p>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <PullsSlider :pulls="recentPulls" />
+  </main>
+
+  <Footer />
 </template>

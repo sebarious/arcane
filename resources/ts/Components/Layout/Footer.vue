@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import arcaneLogo from './imports/Link___Arcane.png';
+import arcaneLogo from '@/Assets/Link___Arcane.png';
 
 const socials = ['Instagram', 'TikTok', 'Discord'];
 </script>

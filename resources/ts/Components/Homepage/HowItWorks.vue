@@ -1,5 +1,5 @@
 <template>
-  <section id="how-it-works" class="px-8 lg:px-16 py-[12px] lg:py-[42px] max-w-7xl mx-auto">
+  <section id="how-it-works" class="px-8 lg:px-16 py-[12px] lg:py-[42px]">
     <div v-motion="headerMotion" class="mb-16">
       <h2 class="text-3xl lg:text-5xl xl:text-6xl text-white tracking-tight leading-none"
         :style="{ fontFamily: 'Cinzel, serif', fontWeight: 700 }">
@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import HoloText from './HoloText.vue';
+import HoloText from '../HoloText.vue';
 import { steps } from './data';
 
 const headerMotion = {

@@ -8,9 +8,9 @@
     <main class="relative z-20">
       <Hero />
       <Ticker />
-      <PullsSlider />
+      <PullsSlider :pulls="recentPulls" />
       <HowItWorks />
-      <LivePool />
+      <LivePool :pulls="whatsInThePool" />
       <CTA />
       <Footer />
     </main>
@@ -18,15 +18,21 @@
 </template>
 
 <script setup lang="ts">
-import Orbs from '../Components/Homepage/Orbs.vue';
-import Nav from '../Components/Homepage/Nav.vue';
+import Orbs from '../Components/Layout/Orbs.vue';
+import Nav from '../Components/Layout/Nav.vue';
 import Hero from '../Components/Homepage/Hero.vue';
 import Ticker from '../Components/Homepage/Ticker.vue';
-import PullsSlider from '../Components/Homepage/PullsSlider.vue';
+import PullsSlider from '../Components/PullsSlider.vue';
 import HowItWorks from '../Components/Homepage/HowItWorks.vue';
-import LivePool from '../Components/Homepage/LivePool.vue';
+import LivePool from '../Components/LivePool.vue';
 import CTA from '../Components/Homepage/CTA.vue';
-import Footer from '../Components/Homepage/Footer.vue';
+import Footer from '../Components/Layout/Footer.vue';
+import type { Pull } from '../types';
+
+const props = defineProps<{
+  recentPulls: Pull[];
+  whatsInThePool: Pull[];
+}>();
 
 const filmGrainStyle = {
   backgroundImage:

@@ -34,7 +34,7 @@ class StoreResource extends Resource
     {
         return $schema->components([
             Section::make('Identity')
-                ->columns(2)
+                ->columnSpanFull()
                 ->schema([
                     Forms\Components\TextInput::make('name')
                         ->required()
@@ -85,14 +85,14 @@ class StoreResource extends Resource
                 ]),
 
             Section::make('Contact')
-                ->columns(2)
+                ->columnSpanFull()
                 ->schema([
                     Forms\Components\TextInput::make('contact_email')->email()->required(),
                     Forms\Components\TextInput::make('phone')->tel(),
                 ]),
 
             Section::make('Address')
-                ->columns(2)
+                ->columnSpanFull()
                 ->schema([
                     Forms\Components\TextInput::make('address_line_1')->required()->columnSpanFull(),
                     Forms\Components\TextInput::make('address_line_2')->columnSpanFull(),
@@ -102,7 +102,92 @@ class StoreResource extends Resource
                     Forms\Components\TextInput::make('vat_number')->label('VAT number'),
                 ]),
 
+            Section::make('Public profile')
+                ->columnSpanFull()
+                ->schema([
+                    Forms\Components\TextInput::make('location')
+                        ->label('Public location')
+                        ->placeholder('e.g. Leeds, Bristol, Online only')
+                        ->maxLength(255),
+
+                    Forms\Components\Textarea::make('description')
+                        ->label('Brief description')
+                        ->rows(4)
+                        ->columnSpanFull()
+                        ->placeholder('Short public-facing description of the store'),
+
+
+                Forms\Components\CheckboxList::make('platforms_form')
+                    ->label('Platforms used')
+                    ->options([
+                        'physical_store' => 'Physical store',
+                        'ebay'           => 'eBay',
+                        'cardmarket'     => 'Cardmarket',
+                        'whatnot'        => 'Whatnot',
+                        'instagram'      => 'Instagram',
+                        'tiktok_shop'    => 'TikTok Shop',
+                        'website'        => 'Website',
+                    ])
+                    ->columns(2)
+                    ->columnSpanFull()
+                    ->dehydrated(true)
+                    ->afterStateHydrated(function ($component, $state, $record) {
+                        if (! $record || ! is_array($record->platforms)) {
+                            $component->state([]);
+                            return;
+                        }
+                        $selected = collect($record->platforms)
+                            ->filter(fn($enabled) => (bool) $enabled)
+                            ->keys()
+                            ->values()
+                            ->all();
+                        $component->state($selected);
+                    }),
+
+                Forms\Components\Repeater::make('social_links_form')
+                    ->label('Social links')
+                    ->schema([
+                        Forms\Components\Select::make('platform')
+                            ->label('Platform')
+                            ->options([
+                                'website'   => 'Website',
+                                'instagram' => 'Instagram',
+                                'tiktok'    => 'TikTok',
+                                'youtube'   => 'YouTube',
+                                'x'         => 'X / Twitter',
+                                'facebook'  => 'Facebook',
+                                'discord'   => 'Discord',
+                            ])
+                            ->required(),
+                        Forms\Components\TextInput::make('url')
+                            ->label('URL')
+                            ->url()
+                            ->required()
+                            ->placeholder('https://...')
+                            ->maxLength(2048),
+                    ])
+                    ->columns(2)
+                    ->columnSpanFull()
+                    ->defaultItems(0)
+                    ->dehydrated(true)
+                    ->afterStateHydrated(function ($component, $state, $record) {
+                        if (! $record || ! is_array($record->social_links)) {
+                            $component->state([]);
+                            return;
+                        }
+                        $rows = collect($record->social_links)
+                            ->map(fn($url, $platform) => [
+                                'platform' => $platform,
+                                'url'      => $url,
+                            ])
+                            ->values()
+                            ->all();
+                        $component->state($rows);
+                    }),
+                ]),
+
             Section::make('Public page')
+                ->columnSpanFull()
                 ->schema([
                     Forms\Components\Toggle::make('public_page_enabled')
                         ->label('Visible on the storefront list')

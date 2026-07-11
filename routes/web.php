@@ -51,9 +51,9 @@ Route::middleware('guest')->group(function () {
         ->name('password.update');
 });
 
-Route::get('/apply', CreateSellerApplicationController::class)->name('seller-applications.create');
-Route::post('/apply', StoreSellerApplicationController::class)->name('seller-applications.store');
-Route::get('/apply/thanks', SellerApplicationThankYouController::class)->name('seller-applications.thankyou');
+Route::get('/apply', CreateSellerApplicationController::class)->name('application.create');
+Route::post('/apply', StoreSellerApplicationController::class)->name('application.store');
+Route::get('/apply/thanks', SellerApplicationThankYouController::class)->name('application.thankyou');
 Route::get('/sell', SubmissionCreateController::class)->name('sell.create');
 Route::post('/sell', SubmissionStoreController::class)->name('sell.store');
 Route::get('/sell/thanks/{reference}', SubmissionThankYouController::class)->name('sell.thankyou');
@@ -91,4 +91,4 @@ Route::post('/q/{token}/confirm', QrConfirmController::class)->name('qr.confirm'
 
 Route::get('/stores', StoreIndexController::class)->name('stores.index');
 Route::get('/{store:slug}', StoreShowController::class)->name('stores.show');
-Route::get('/{store:slug}/{batch}', BatchListController::class)->name('store.lists.show');
+Route::get('/{store:slug}/{batch}', BatchListController::class)->name('stores.lists.show');

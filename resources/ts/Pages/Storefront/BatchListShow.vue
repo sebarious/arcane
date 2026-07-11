@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
-import Header from '@/Components/Layout/Header.vue'
+import Footer from '@/Components/Layout/Footer.vue';
+import Nav from '@/Components/Layout/Nav.vue';
 
 type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic'
 
@@ -57,34 +58,74 @@ const totalOdds = computed( () =>
   ( Object.values( odds ) as number[] ).reduce( ( sum, x ) => sum + x, 0 )
 )
 
-const bandOrder: { key: Rarity; label: string }[] = [
-  { key: 'mythic',    label: 'Mythic' },
-  { key: 'legendary', label: 'Legendary' },
-  { key: 'super',     label: 'Super' },
-  { key: 'rare',      label: 'Rare' },
-  { key: 'common',    label: 'Common' },
-]
+const bandOrder: { key: Rarity; label: string, colors: Record<string, string> }[] = [
+  {
+    key: 'mythic',
+    label: 'Mythic',
+    colors: {
+      border: 'rgba(220,193,117,0.1)',
+      gradient_from: 'rgba(201,168,76,0.1)',
+      text: '#c9a84c',
+      background: 'rgba(201,168,76,0.13)',
+      inner_border: 'rgba(201,168,76,0.27)',
+      shadow: 'rgba(201,168,76,0.13)',
+      card_border: 'rgba(201,168,76,0.25)'
+    }
+  },
+  {
+    key: 'legendary',
+    label: 'Legendary',
+    colors: {
+      border: 'rgba(220,193,117,0.1)',
+      gradient_from: 'rgba(123,79,233,0.1)',
+      text: '#7b4fe9',
+      background: 'rgba(123,79,233,0.13)',
+      inner_border: 'rgba(123,79,233,0.27)',
+      shadow: 'rgba(123,79,233,0.13)',
+      card_border: 'rgba(123,79,233,0.25)'
+    }
+  },
+  {
+    key: 'super',
+    label: 'Super',
+    colors: {
+      border: 'rgba(220,193,117,0.1)',
+      gradient_from: 'rgba(45,212,191,0.1)',
+      text: '#2dd4bf',
+      background: 'rgba(45,212,191,0.13)',
+      inner_border: 'rgba(45,212,191,0.27)',
+      shadow: 'rgba(45,212,191,0.13)',
+      card_border: 'rgba(45,212,191,0.25)'
+    }
+  },
+  {
+    key: 'rare',
+    label: 'Rare',
+    colors: {
+      border: 'rgba(220,193,117,0.1)',
+      gradient_from: 'rgba(59,130,246,0.1)',
+      text: '#3b82f6',
+      background: 'rgba(59,130,246,0.13)',
+      inner_border: 'rgba(59,130,246,0.27)',
+      shadow: 'rgba(59,130,246,0.13)',
+      card_border: 'rgba(59,130,246,0.25)'
+    }
+  },
+  {
+    key: 'common',
+    label: 'Common',
+    colors: {
+      border: 'rgba(220,193,117,0.1)',
+      gradient_from: 'rgba(163,163,163,0.1)',
+      text: '#a3a3a3',
+      background: 'rgba(163,163,163,0.13)',
+      inner_border: 'rgba(163,163,163,0.27)',
+      shadow: 'rgba(163,163,163,0.13)',
+      card_border: 'rgba(163,163,163,0.25)'
+    }
+  },
+];
 
-const pillClass = (band: Rarity | null): string => {
-  if (!band) return 'bg-arcane-border text-arcane-muted'
-  return {
-    common:    'bg-arcane-common/20 text-arcane-common',
-    rare:      'bg-arcane-rare/20 text-arcane-rare',
-    super:     'bg-arcane-super/20 text-arcane-super',
-    legendary: 'bg-arcane-legendary/20 text-arcane-legendary',
-    mythic:    'bg-arcane-mythic/20 text-arcane-mythic',
-  }[band]
-}
-
-const oddsBarClass = ( band: Rarity ): string => {
-  return {
-    common: 'bg-arcane-common/40',
-    rare: 'bg-arcane-rare/40',
-    super: 'bg-arcane-super/40',
-    legendary: 'bg-arcane-legendary/40',
-    mythic: 'bg-arcane-mythic/40',
-  }[band];
-};
 let channel: any = null;
 onMounted( () => {
   if ( !window.Echo ) return;
@@ -116,104 +157,192 @@ const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
-    <Header />
+  <main class="bg-[#0d0b14] overflow-x-hidden">
+    <div class="relative shrink-0">
+      <div
+        class="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex items-center justify-between px-8 lg:px-[64px] py-[20px] relative size-full">
+        <div class="h-[49px] relative shrink-0">
+          <Nav />
+        </div>
+      </div>
+    </div>
 
-    <main class="flex-1 bg-arcane-bg">
-      <div class="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        <!-- Batch hero -->
-        <section class="card-panel p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 class="font-display text-2xl mb-1">
-              Card list – {{ batch.reference }}
-            </h1>
-            <p class="text-arcane-muted text-sm">
-              {{ store.name }} ·
-              <span class="uppercase">{{ batch.type ?? '' }}</span>
-              <span v-if="batch.game_label"> · {{ batch.game_label }}</span>
-            </p>
-            <p class="text-arcane-muted text-xs mt-2">
-              Showing cards still in sealed Arcane packs for this batch.
-            </p>
+    <div class="relative shrink-0 w-full">
+      <div class="content-stretch flex flex-col gap-[24px] items-start px-8 lg:px-[64px] py-[40px] relative size-full">
+        <div class="content-stretch flex items-center relative shrink-0">
+          <p
+            class="[word-break:break-word] font-['Jost','Noto_Sans','Noto_Sans_Math','Noto_Sans_Symbols','Noto_Sans_Symbols2',sans-serif] font-medium leading-[normal] relative shrink-0 text-[#7b4fe9] text-[14px] whitespace-nowrap">
+            <a :href="'/' + store.slug" class="hover:underline">
+              ← Back to {{ store.name }}
+            </a>
+          </p>
+        </div>
+        <div class="content-stretch flex items-end justify-between relative shrink-0 w-full">
+          <div class="content-stretch flex flex-col gap-[16px] items-start relative">
+            <p
+              class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative text-[48px] text-white">
+              {{ store.name }} Card List</p>
+            <div class="content-stretch flex gap-[12px] items-center relative shrink-0">
+              <div
+                class="bg-[rgba(123,79,233,0.1)] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(123,79,233,0.25)] border-solid inset-0 pointer-events-none rounded-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#7b4fe9] text-[11px] uppercase whitespace-nowrap">
+                  {{ batch.type }}</p>
+              </div>
+              <div
+                class="bg-[rgba(255,255,255,0.04)] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#a3a3a3] text-[11px] uppercase whitespace-nowrap">
+                  {{ batch.pack_count }} packs</p>
+              </div>
+              <p
+                class="[word-break:break-word] font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[14px]">
+                Created {{ batch.created_at }}</p>
+            </div>
           </div>
-          <div class="text-xs text-arcane-muted md:text-right">
-            <p><span class="text-arcane-text font-semibold">{{ Object.entries(bands).reduce((acc, [, info]) => acc +
-                info.count, 0) }}/{{ batch.pack_count }}</span> packs</p>
-          </div>
-        </section>
+        </div>
+      </div>
+    </div>
 
-        <section class="card-panel p-4 md:p-5">
-          <div class="mt-3 space-y-2">
-            <div class="flex items-center justify-between text-[11px] text-arcane-muted">
-              <span>Hit odds by rarity (approx.)</span>
-            </div>
-            <div class="flex h-2 rounded-full overflow-hidden border border-arcane-border/60 bg-arcane-surface/70">
-              <div v-for=" band in bandOrder " :key="band.key" :class="oddsBarClass( band.key )"
-                :style="{ width: ( ( odds[band.key] / totalOdds ) * 100 ).toFixed( 1 ) + '%' }" />
-            </div>
-            <div class="flex flex-wrap gap-2 mt-1 text-[10px] text-arcane-muted">
-              <div v-for=" band in bandOrder " :key="band.key" class="flex items-center gap-1">
-                <span class="inline-flex w-3 h-1 rounded-full" :class="oddsBarClass( band.key )" />
-                <span>{{ band.label }}: ~{{ ( ( odds[band.key] / totalOdds ) * 100 ).toFixed( 1 ) }}%</span>
+    <div class="relative shrink-0 w-full">
+      <div class="content-stretch flex items-start px-8 lg:px-[64px] relative size-full">
+        <div class="bg-[#13101e] flex-[1_0_0] min-w-px relative rounded-[12px]">
+          <div aria-hidden
+            class="absolute border border-[rgba(220,193,117,0.1)] border-solid inset-0 pointer-events-none rounded-[12px]" />
+          <div class="content-stretch flex flex-col gap-[20px] items-start p-[24px] relative size-full">
+            <div class="content-start flex flex-wrap gap-[12px] items-start relative shrink-0 w-full">
+              <div
+                class="content-stretch flex gap-[8px] items-center px-[16px] py-[8px] relative rounded-[40px] shrink-0"
+                :style="{
+                  backgroundImage: 'linear-gradient(163.443deg, rgba(201, 168, 76, 0.2) 0%, rgba(201, 168, 76, 0.067) 100%)'
+                }">
+                <div aria-hidden
+                  class="absolute border border-[rgba(201,168,76,0.25)] border-solid inset-0 pointer-events-none rounded-[40px]" />
+                <p
+                  class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#c9a84c] text-[12px] whitespace-nowrap">
+                  MYTHIC</p>
+                <div class="bg-[#c9a84c] opacity-50 relative rounded-[2px] shrink-0 size-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#c9a84c] text-[12px] whitespace-nowrap">
+                  {{ ( ( odds.mythic / totalOdds ) * 100 ).toFixed( 1 ) }}%</p>
+              </div>
+              <div
+                class="bg-[rgba(123,79,233,0.1)] content-stretch flex gap-[8px] items-center px-[16px] py-[8px] relative rounded-[40px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(123,79,233,0.25)] border-solid inset-0 pointer-events-none rounded-[40px]" />
+                <p
+                  class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#7b4fe9] text-[12px] whitespace-nowrap">
+                  LEGENDARY</p>
+                <div class="bg-[#7b4fe9] opacity-50 relative rounded-[2px] shrink-0 size-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#7b4fe9] text-[12px] whitespace-nowrap">
+                  {{ ( ( odds.legendary / totalOdds ) * 100 ).toFixed( 1 ) }}%</p>
+              </div>
+              <div
+                class="bg-[rgba(45,212,191,0.1)] content-stretch flex gap-[8px] items-center px-[16px] py-[8px] relative rounded-[40px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(45,212,191,0.25)] border-solid inset-0 pointer-events-none rounded-[40px]" />
+                <p
+                  class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#2dd4bf] text-[12px] whitespace-nowrap">
+                  SUPER</p>
+                <div class="bg-[#2dd4bf] opacity-50 relative rounded-[2px] shrink-0 size-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#2dd4bf] text-[12px] whitespace-nowrap">
+                  {{ ( ( odds.super / totalOdds ) * 100 ).toFixed( 1 ) }}%</p>
+              </div>
+              <div
+                class="bg-[rgba(59,130,246,0.1)] content-stretch flex gap-[8px] items-center px-[16px] py-[8px] relative rounded-[40px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(59,130,246,0.25)] border-solid inset-0 pointer-events-none rounded-[40px]" />
+                <p
+                  class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#3b82f6] text-[12px] whitespace-nowrap">
+                  RARE</p>
+                <div class="bg-[#3b82f6] opacity-50 relative rounded-[2px] shrink-0 size-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#3b82f6] text-[12px] whitespace-nowrap">
+                  {{ ( ( odds.rare / totalOdds ) * 100 ).toFixed( 1 ) }}%</p>
+              </div>
+              <div
+                class="bg-[rgba(163,163,163,0.1)] content-stretch flex gap-[8px] items-center px-[16px] py-[8px] relative rounded-[40px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(163,163,163,0.25)] border-solid inset-0 pointer-events-none rounded-[40px]" />
+                <p
+                  class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#a3a3a3] text-[12px] whitespace-nowrap">
+                  COMMON</p>
+                <div class="bg-[#a3a3a3] opacity-50 relative rounded-[2px] shrink-0 size-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#a3a3a3] text-[12px] whitespace-nowrap">
+                  {{ ( ( odds.common / totalOdds ) * 100 ).toFixed( 1 ) }}%</p>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
+    </div>
 
-        <!-- Rarity sections -->
-        <section class="space-y-6">
-          <div v-for="band in bandOrder" :key="band.key" class="card-panel p-4 md:p-5">
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <span class="rarity-pill" :class="pillClass(band.key)">
-                  {{ band.label }}
-                </span>
+    <div class="relative shrink-0 w-full">
+      <div
+        class="content-stretch flex flex-col gap-[80px] items-start pb-[120px] pt-[60px] px-8 lg:px-[64px] relative size-full">
+        <div v-for=" band in bandOrder " :key="band.key"
+          class="content-stretch flex flex-col gap-[32px] items-start relative shrink-0 w-full">
+          <div class="content-stretch flex items-center justify-between py-[16px] relative shrink-0 w-full">
+            <div aria-hidden
+              :class="['absolute border-b border-solid inset-0 pointer-events-none', `border-[${band.colors.border}]`]" />
+            <div
+              :class="['absolute bg-gradient-to-r bottom-0', `from-[${band.colors.gradient_from}]`, 'left-0', 'to-[rgba(0,0,0,0)]', 'top-0', 'w-[400px]']" />
+            <div class="content-stretch flex gap-[16px] items-center relative shrink-0 px-[16px] w-full">
+              <p
+                :class="['[word-break:break-word]', 'font-[\'Cinzel\',sans-serif]', 'font-bold', 'leading-[normal]', 'relative', 'shrink-0', `text-[${band.colors.text}]`, 'text-[24px]', 'whitespace-nowrap']">
+                {{ band.label }}</p>
+              <div
+                :class="[`bg-[${band.colors.background}]`, 'content-stretch', 'flex', 'items-start', 'px-[8px]', 'py-[2px]', 'relative', 'rounded-[4px]', 'shrink-0']">
+                <div aria-hidden
+                  :class="['absolute', 'border', `border-[${band.colors.inner_border}]`, 'border-solid', 'inset-0', 'pointer-events-none', 'rounded-[4px]']" />
+                <p
+                  :class="['[word-break:break-word]', 'font-[\'Jost\',sans-serif]', 'font-semibold', 'leading-[normal]', 'relative', 'shrink-0', `text-[${band.colors.text}]`, 'text-[12px]', 'whitespace-nowrap']">
+                  {{ bands[band.key]?.count ?? 0 }}</p>
               </div>
-              <span class="text-sm text-arcane-muted">
-                {{ bands[band.key]?.count ?? 0 }} remaining
-              </span>
             </div>
-
-            <div v-if="(bands[band.key]?.count ?? 0) === 0" class="text-xs text-arcane-muted">
-              No cards of this band are currently left in sealed Arcane packs for this batch.
-            </div>
-
-            <div v-else>
-              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <div v-for="card in bands[band.key].cards"
-                  :key="(card.name || '') + (card.number || '') + (card.set || '')"
-                  class="flex flex-col items-center text-center gap-1">
-                  <div
-                    class="w-full max-w-[130px] aspect-[245/342] rounded-lg overflow-hidden border border-arcane-border/60 bg-arcane-surface/80 flex items-center justify-center">
-                    <template v-if="card.image">
-                      <img :src="card.image" alt="" class="w-full h-full object-cover transition"
-                        :loading="imageLoading(band.key)" />
-                    </template>
-                    <template v-else>
-                      <div class="text-[10px] text-arcane-muted px-2">
-                        Image not available
-                      </div>
-                    </template>
-                  </div>
-                  <div class="w-full max-w-[130px]">
-                    <div class="text-[11px] font-semibold truncate">
-                      {{ card.name }}
-                    </div>
-                    <div class="text-[10px] text-arcane-muted truncate">
-                      {{ card.set }} · {{ card.number }}
+          </div>
+          <div
+            class="content-stretch grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-[24px] relative shrink-0 w-full">
+            <div v-for=" card in bands[band.key].cards "
+              :key="( card.name || '' ) + ( card.number || '' ) + ( card.set || '' )"
+              :class="['bg-[#13101e]', `drop-shadow-[0px_0px_8px_${band.colors.shadow}]`, 'flex-[1_0_0]', 'min-w-px', 'relative', 'rounded-[8px]']">
+              <div aria-hidden
+                :class="['absolute', 'border', `border-[${band.colors.card_border}]`, 'border-solid', 'inset-0', 'pointer-events-none', 'rounded-[8px]']" />
+              <div class="content-stretch flex flex-col gap-[16px] items-start p-[12px] relative size-full">
+                <div class="aspect-[2.5/3.5] relative rounded-[6px] shrink-0 w-full">
+                  <img v-if="card?.image" :loading="imageLoading( band.key )"
+                    class="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[6px] size-full"
+                    :alt="card?.name ?? ''" :src="card.image" />
+                </div>
+                <div
+                  class="[word-break:break-word] content-stretch flex flex-col gap-[8px] items-start leading-[normal] relative shrink-0 w-full whitespace-nowrap">
+                  <div class="content-stretch flex flex-col gap-[2px] items-start relative shrink-0 w-full">
+                    <p
+                      class="font-['Cinzel:Bold',sans-serif] font-bold overflow-hidden relative shrink-0 text-[16px] text-ellipsis text-white w-full">
+                      {{ card.name }}</p>
+                    <div
+                      class="content-stretch flex font-['Jost',sans-serif] font-normal gap-[6px] items-center relative shrink-0 w-full">
+                      <p
+                        class="flex-[1_0_0] min-w-px overflow-hidden relative text-[#a3a3a3] text-[12px] text-ellipsis">
+                        {{ card.set }}</p>
+                      <p class="relative shrink-0 text-[10px] text-[rgba(255,255,255,0.35)]">#{{ card.number }}</p>
                     </div>
                   </div>
                 </div>
               </div>
-              <p class="text-[11px] text-arcane-muted mt-2"
-                v-if="(bands[band.key]?.count ?? 0) > bands[band.key].cards.length">
-                Showing {{ bands[band.key].cards.length }} of {{ bands[band.key].count }}
-                remaining {{ band.label.toLowerCase() }}.
-              </p>
             </div>
           </div>
-        </section>
+        </div>
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
+
+  <Footer />
 </template>

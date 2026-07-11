@@ -25,7 +25,7 @@
 
     <p style="margin-top: 24px;">
       Review this in the admin panel:
-      <a href="{{ url('/admin/seller-applications') }}">{{ url('/admin/seller-applications') }}</a>
+      <a href="{{ url('/admin/application') }}">{{ url('/admin/application') }}</a>
     </p>
   </div>
 </body>

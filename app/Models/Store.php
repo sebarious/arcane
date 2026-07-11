@@ -8,13 +8,30 @@ use Illuminate\Support\Facades\URL;
 class Store extends Model
 {
     protected $fillable = [
-        'user_id', 'slug', 'name', 'contact_email', 'phone',
-        'address_line_1', 'address_line_2', 'city', 'postcode', 'country',
-        'vat_number', 'public_page_enabled', 'status', 'logo'
+        'user_id',
+        'slug',
+        'name',
+        'description',
+        'platforms',
+        'social_links',
+        'location',
+        'contact_email',
+        'phone',
+        'address_line_1',
+        'address_line_2',
+        'city',
+        'postcode',
+        'country',
+        'vat_number',
+        'public_page_enabled',
+        'status',
+        'logo'
     ];
 
     protected $casts = [
         'public_page_enabled' => 'boolean',
+        'platforms'           => 'array',
+        'social_links'        => 'array',
     ];
 
     public function user()      { return $this->belongsTo(User::class); }

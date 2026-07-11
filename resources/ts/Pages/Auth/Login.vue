@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 const page = usePage<{ props: { flash?: { status?: string; }; }; }>()
+import Footer from '@/Components/Layout/Footer.vue';
+import Nav from '@/Components/Layout/Nav.vue';
 
 const form = useForm( {
   email: '',
@@ -14,60 +16,133 @@ const submit = () => {
 </script>
 
 <template>
-  <div class="futuristic-grid">
-    <div class="min-h-screen flex items-center justify-center bg-arcane-bg/80 text-arcane-text">
-      <div class="card-panel w-full max-w-md p-6">
-        <div class="mb-6 text-center">
-          <div class="font-display text-2xl tracking-[0.3em] text-arcane-accent mb-2">
-            <img src="/images/logo.png" alt="Arcane" class="h-20 mx-auto" />
-          </div>
-          <p class="text-arcane-muted text-sm">
-            Sign in to access your dashboard.
-          </p>
+  <main class="bg-[#0d0b14] overflow-x-hidden">
+    <div class="relative shrink-0">
+      <div
+        class="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex items-center justify-between px-8 lg:px-[64px] py-[20px] relative size-full">
+        <div class="h-[49px] relative shrink-0">
+          <Nav />
         </div>
-
-        <div v-if=" (page.props.flash as any)?.status "
-          class="mb-4 rounded border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
-          {{ (page.props.flash as any).status }}
-        </div>
-
-        <form @submit.prevent="submit" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium mb-1" for="email">Email</label>
-            <input id="email" v-model="form.email" type="email" autocomplete="email" required
-              class="w-full rounded border border-arcane-border bg-arcane-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white" />
-            <div v-if=" form.errors.email " class="text-xs text-red-400 mt-1">
-              {{ form.errors.email }}
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium mb-1" for="password">Password</label>
-            <input id="password" v-model="form.password" type="password" autocomplete="current-password" required
-              class="w-full rounded border border-arcane-border bg-arcane-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white" />
-            <div v-if=" form.errors.password " class="text-xs text-red-400 mt-1">
-              {{ form.errors.password }}
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between text-xs text-arcane-muted">
-            <label class="inline-flex items-center gap-2">
-              <input v-model="form.remember" type="checkbox" class="rounded border-arcane-border bg-arcane-surface" />
-              <span>Remember me</span>
-            </label>
-            <Link href="/forgot-password" class="hover:text-arcane-accent">
-            Forgot password?
-            </Link>
-          </div>
-
-          <div class="outline-root w-full">
-            <button type="submit" class="btn-primary w-full justify-center outline-inner" :disabled="form.processing">
-              <span v-if=" form.processing ">Signing in…</span>
-              <span v-else>Sign in</span>
-            </button>
-          </div>
-        </form>
       </div>
     </div>
-  </div>
+
+    <div class="relative shrink-0 w-full">
+      <div
+        class="content-stretch flex flex-col gap-[56px] items-start pb-[120px] pt-[80px] px-8 lg:px-[64px] relative max-w-[600px] mx-auto">
+        <div
+          class="[word-break:break-word] content-stretch flex flex-col gap-[12px] items-center text-center mx-auto relative shrink-0">
+          <p class="font-['Cinzel',sans-serif] font-bold leading-[0] relative shrink-0 text-[48px] text-white">
+            <span class="leading-[normal]">Log</span>
+            <span class="leading-[normal] text-[#c9a84c]"> in</span>
+          </p>
+          <p class="font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[18px]">
+            Fill out the details below to access the seller dashboard.</p>
+        </div>
+        <div class="-translate-y-1/2 absolute right-[-220px] size-[720px] top-[calc(50%-0.5px)]">
+          <div class="absolute inset-[-22.22%]">
+            <svg class="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 1040 1040">
+              <g filter="url(#filter0_f_145_2261)" id="Ellipse" opacity="0.18">
+                <circle cx="520" cy="520" fill="url(#paint0_radial_145_2261)" r="360" />
+              </g>
+              <defs>
+                <filter colorInterpolationFilters="sRGB" filterUnits="userSpaceOnUse" height="1040"
+                  id="filter0_f_145_2261" width="1040" x="0" y="0">
+                  <feFlood floodOpacity="0" result="BackgroundImageFix" />
+                  <feBlend in="SourceGraphic" in2="BackgroundImageFix" mode="normal" result="shape" />
+                  <feGaussianBlur result="effect1_foregroundBlur_145_2261" stdDeviation="80" />
+                </filter>
+                <radialGradient cx="0" cy="0" gradientTransform="translate(520 520) rotate(-90) scale(509.112)"
+                  gradientUnits="userSpaceOnUse" id="paint0_radial_145_2261" r="1">
+                  <stop stopColor="#7C3AED" />
+                  <stop offset="1" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+        <div
+          class="content-stretch space-y-8 lg:space-y-0 lg:flex lg:gap-[32px] lg:items-start relative lg:shrink-0 w-full max-w-[600px] mx-auto">
+          <div
+            class="bg-[#13101e] content-stretch drop-shadow-[0px_0px_9px_rgba(124,58,237,0.2)] flex flex-col gap-[24px] items-start p-[40px] relative rounded-[16px] shrink-0 flex-1">
+            <div aria-hidden
+              class="absolute border border-[rgba(124,58,237,0.4)] border-solid inset-0 pointer-events-none rounded-[16px]" />
+
+            <div class="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
+              <div class="content-stretch flex items-center relative shrink-0">
+                <label for="email"
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
+                  Email address</label>
+              </div>
+              <div
+                class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] shrink-0 w-full">
+                <div aria-hidden="true"
+                  class="absolute border border-[#3d2f6e] border-solid inset-0 pointer-events-none rounded-[6px]">
+                </div>
+                <div class="flex flex-row items-center size-full">
+                  <div class="content-stretch flex items-center p-[14px] relative size-full">
+                    <input id="email" type="email" v-model="form.email"
+                      class="w-full bg-transparent border-none outline-none text-[15px] text-white font-['Jost',sans-serif] font-normal leading-[normal] placeholder:opacity-40 placeholder:text-white focus:ring-0 focus:outline-none" />
+                  </div>
+                </div>
+                <div v-if=" form.errors.email " class="text-[11px] text-red-400 mt-1">
+                  {{ form.errors.email }}
+                </div>
+              </div>
+            </div>
+
+            <div class="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
+              <div class="content-stretch flex items-center relative shrink-0">
+                <label for="password"
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
+                  Password</label>
+              </div>
+              <div
+                class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] shrink-0 w-full">
+                <div aria-hidden="true"
+                  class="absolute border border-[#3d2f6e] border-solid inset-0 pointer-events-none rounded-[6px]">
+                </div>
+                <div class="flex flex-row items-center size-full">
+                  <div class="content-stretch flex items-center p-[14px] relative size-full">
+                    <input id="password" type="password" v-model="form.password"
+                      class="w-full bg-transparent border-none outline-none text-[15px] text-white font-['Jost',sans-serif] font-normal leading-[normal] placeholder:opacity-40 placeholder:text-white focus:ring-0 focus:outline-none" />
+                  </div>
+                </div>
+                <div v-if=" form.errors.password " class="text-[11px] text-red-400 mt-1">
+                  {{ form.errors.password }}
+                </div>
+              </div>
+            </div>
+
+            <div class="w-full">
+              <div class="flex items-center justify-between text-xs text-white/60">
+                <label class="inline-flex items-center gap-2">
+                  <input v-model="form.remember" type="checkbox"
+                    class="rounded border-arcane-border bg-arcane-surface" />
+                  <span>Remember me</span>
+                </label>
+                <Link href="/forgot-password" class="text-white/60 hover:text-white transition duration-150 ease-in-out">
+                Forgot password?
+                </Link>
+              </div>
+            </div>
+
+            <div class="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
+              <button type="submit" @click="submit" :disabled="form.processing"
+                class="content-stretch drop-shadow-[0px_0px_9px_rgba(201,168,76,0.25)] flex h-[56px] items-start justify-center py-[16px] relative rounded-[4px] shrink-0 w-full"
+                style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);"
+                data-name="Frame">
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#0d0b14] text-[16px] uppercase whitespace-nowrap">
+                  <span v-if=" form.processing ">Signing in...</span>
+                  <span v-else>Sign in</span>
+                </p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
 </template>

@@ -7,6 +7,7 @@ use App\Models\Store;
 use Inertia\Inertia;
 use App\Enums\Game;
 use App\Models\Batch;
+use Illuminate\Support\Facades\Cache;
 
 class StoreIndexController extends Controller
 {
@@ -32,14 +33,22 @@ class StoreIndexController extends Controller
             ->map(function ($rows) {
                 return $rows->pluck('game')->unique()->values();
             });
+
+        $whatsInThePool = Cache::remember('pulls.live-pool', now()->addHour(), function () {
+            return whats_in_the_pool();
+        });
+
         return Inertia::render('Storefront/StoreIndex', [
             'stores' => $stores->map(function (Store $store) use ($gamesByStore) {
                 $gameValues = $gamesByStore[$store->id] ?? collect();
 
                 return [
-                    'id'       => $store->id,
-                    'slug'     => $store->slug,
-                    'name'     => $store->name,
+                    'id'          => $store->id,
+                    'slug'        => $store->slug,
+                    'name'        => $store->name,
+                    'description' => $store->description,
+                    'location'    => $store->location,
+                    'platforms'   => $store->platforms,
                     'logo'     => $store->logo,
                     'games'    => $gameValues->map(
                         fn(Game $g) => [
@@ -49,6 +58,7 @@ class StoreIndexController extends Controller
                     )->values(),
                 ];
             })->values(),
+            'whatsInThePool' => $whatsInThePool
         ]);
     }
 }

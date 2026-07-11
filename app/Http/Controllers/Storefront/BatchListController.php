@@ -59,7 +59,7 @@ class BatchListController extends Controller
                 'type'      => $batch->type?->value,
                 'game'      => $batch->game?->value,
                 'game_label' => $batch->game ? $batch->game->label() : null,
-                'created_at' => $batch->created_at?->toIso8601String(),
+                'created_at' => $batch->created_at?->format('d M Y'),
                 'pack_count' => $batch->pack_count,
             ],
             'bands' => $bands,

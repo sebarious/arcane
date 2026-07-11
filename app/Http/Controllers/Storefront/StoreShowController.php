@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Storefront;
 
+use App\Enums\Game;
 use App\Http\Controllers\Controller;
+use App\Models\Pack;
 use App\Models\Store;
 use Inertia\Inertia;
-use App\Enums\Game;
 
 class StoreShowController extends Controller
 {
@@ -20,6 +21,14 @@ class StoreShowController extends Controller
             ->whereIn('status', ['committed', 'dispatched'])
             ->orderByDesc('created_at')
             ->get(['id', 'reference', 'type', 'game', 'pack_count', 'created_at']);
+
+        $totalNumberOfPulls = $store->batches()
+            ->whereIn('status', ['committed', 'dispatched', 'completed'])
+            ->withCount(['packs as sold_packs_count' => function ($query) {
+                $query->where('status', 'sold');
+            }])
+            ->get()
+            ->sum('sold_packs_count');
 
         // Recent pulls (sold cards)
         $recentPulls = $store->batches()
@@ -52,13 +61,30 @@ class StoreShowController extends Controller
             })
             ->values();
 
+        // Total packs remaining are the $batches pack_count - sold packs count
+        $totalActivePacks = $batches->sum('pack_count');
+
+        // Get pack count of sold packs for the batches
+        $soldPackCount = Pack::whereIn('batch_id', $batches->pluck('id'))
+            ->where('status', 'sold')
+            ->count();
+
         return Inertia::render('Storefront/StoreShow', [
             'store'   => [
-                'id'       => $store->id,
-                'slug'     => $store->slug,
-                'name'     => $store->name,
-                'city'     => $store->city,
-                'postcode' => $store->postcode,
+                'id'          => $store->id,
+                'slug'        => $store->slug,
+                'name'        => $store->name,
+                'city'        => $store->city,
+                'postcode'    => $store->postcode,
+                'location'    => $store->location,
+                'description' => $store->description,
+                'platforms'   => $store->platforms,
+                'logo'        => $store->logo,
+                'social_links' => $store->social_links,
+                'created_at'  => $store->created_at?->format('M Y'),
+                'total_batches' => $store->batches()->count(),
+                'total_packs_remaining' => $totalActivePacks - $soldPackCount,
+                'total_pull_count' => $totalNumberOfPulls,
             ],
             'batches' => $batches->map(function ($batch) {
                 return [
@@ -67,8 +93,9 @@ class StoreShowController extends Controller
                     'type'      => $batch->type?->value,
                     'game'       => $batch->game?->value,
                     'game_label' => $batch->game ? $batch->game->label() : null,
-                    'created_at' => $batch->created_at?->toIso8601String(),
+                    'created_at' => $batch->created_at?->format('M Y'),
                     'pack_count' => $batch->pack_count,
+                    'remaining_packs' => $batch->pack_count - $batch->packs()->where('status', 'sold')->count(),
                 ];
             })->values(),
             'recentPulls' => $recentPulls,

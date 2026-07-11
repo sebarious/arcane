@@ -52,6 +52,6 @@ class StoreSellerApplicationController extends Controller
                 ->sendToDatabase($admin);
         }
 
-        return redirect()->route('seller-applications.thankyou');
+        return redirect()->route('application.thankyou');
     }
 }

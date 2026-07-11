@@ -8,7 +8,7 @@
 
     <!-- Main content grid (parallax + fade via computed style) -->
     <div
-      class="relative z-10 w-full px-8 lg:px-16 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center pt-24 pb-16 lg:pt-14 lg:pb-0"
+      class="relative z-10 w-full px-8 lg:px-16 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center pt-24 pb-16 lg:pt-14 lg:pb-0"
       :style="contentStyle">
       <!-- Left: Copy -->
       <div>
@@ -51,11 +51,11 @@
 
         <!-- CTAs -->
         <div v-motion="ctaRowMotion" class="flex gap-4 flex-wrap">
-          <a href="#pool"
+          <Link href="/stores"
             class="px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
             Browse Stores
-          </a>
+        </Link>
           <a href="#how-it-works"
             class="px-8 py-3.5 text-[#DCC175]/70 text-xs tracking-[0.22em] uppercase border border-[#DCC175]/25 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-300 backdrop-blur-sm"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
@@ -106,11 +106,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import HeroBG from './HeroBG.vue';
-import HeroSparkles from './HeroSparkles.vue';
-import FloatingRings from './FloatingRings.vue';
+import HeroBG from '../HeroBG.vue';
+import HeroSparkles from '../HeroSparkles.vue';
+import FloatingRings from '../FloatingRings.vue';
 import FloatingPack from './FloatingPack.vue';
 import SplitWords from './SplitWords.vue';
+import { Link } from '@inertiajs/vue3';
 
 // --- local PACK_TIERS (same as React) ---------------------------------------
 const PACK_TIERS = [

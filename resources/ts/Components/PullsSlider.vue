@@ -1,7 +1,7 @@
 <template>
   <section id="pulls" class="py-[52px] lg:py-[82px]">
     <!-- Header -->
-    <div class="px-8 lg:px-16 max-w-7xl mx-auto flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-6">
+    <div class="px-8 lg:px-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-6">
       <div>
         <h2 class="text-3xl lg:text-5xl xl:text-6xl text-white tracking-tight leading-none"
           :style="{ fontFamily: 'Cinzel, serif', fontWeight: 700 }">
@@ -40,19 +40,22 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import HoloText from './HoloText.vue';
 import PullCard from './PullCard.vue';
-import { pulls } from './data';
-import type { Pull } from '../../types';
+import type { Pull } from '../types';
+
+const props = defineProps<{
+  pulls: Pull[];
+}>();
 
 const CARD_W = 280;
 const CARD_GAP = 20;
 const STEP = CARD_W + CARD_GAP;
-const INF_PULLS = [...pulls, ...pulls, ...pulls];
-const INF_OFFSET = pulls.length;
+const INF_PULLS = [...props.pulls, ...props.pulls, ...props.pulls];
+const INF_OFFSET = props.pulls.length;
 
 const current = ref( INF_OFFSET );
 const trackRef = ref<HTMLDivElement | null>( null );
 
-const activePullIndex = computed( () => current.value % pulls.length );
+const activePullIndex = computed( () => current.value % props.pulls.length );
 
 const trackStyle = computed( () => ( {
   gap: `${CARD_GAP}px`,
@@ -71,13 +74,13 @@ const dotStyle = ( i: number ) => ( {
 } );
 
 const prev = () => {
-  const next = current.value - 1;
-  current.value = next < 1 ? INF_OFFSET - 1 : next;
+  const nextIndex = current.value - 1;
+  current.value = nextIndex < 1 ? INF_OFFSET - 1 : nextIndex;
 };
 
 const next = () => {
-  const n = current.value + 1;
-  current.value = n > INF_PULLS.length - 2 ? INF_OFFSET + 1 : n;
+  const nextIndex = current.value + 1;
+  current.value = nextIndex > INF_PULLS.length - 2 ? INF_OFFSET + 1 : nextIndex;
 };
 
 const goTo = ( i: number ) => {
