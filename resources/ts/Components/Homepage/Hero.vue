@@ -13,15 +13,17 @@
       <!-- Left: Copy -->
       <div>
         <!-- Live badge -->
-        <div v-motion="liveBadgeMotion"
-          class="inline-flex items-center gap-2 px-3 py-1.5 border border-[#DCC175]/25 bg-[#DCC175]/8 mb-9"
-          :style="{ borderRadius: '3px' }">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span class="text-[10px] text-[#DCC175]/70 tracking-[0.3em] uppercase"
-            :style="{ fontFamily: 'Jost, sans-serif' }">
-            Live Pool — {{ (totalAvailableCards ?? 0).toLocaleString() }} Cards Available
-          </span>
-        </div>
+        <ClientOnly>
+          <div v-motion="liveBadgeMotion"
+            class="inline-flex items-center gap-2 px-3 py-1.5 border border-[#DCC175]/25 bg-[#DCC175]/8 mb-9"
+            :style="{ borderRadius: '3px' }">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span class="text-[10px] text-[#DCC175]/70 tracking-[0.3em] uppercase"
+              :style="{ fontFamily: 'Jost, sans-serif' }">
+              Live Pool — {{ (totalAvailableCards ?? 0).toLocaleString() }} Cards Available
+            </span>
+          </div>
+        </ClientOnly>
 
         <!-- Heading: One Card. Infinite Chase. -->
         <div class="mb-8" :style="{
@@ -39,54 +41,60 @@
         </div>
 
         <!-- Subtext -->
-        <p v-motion="subtextMotion" class="text-base leading-relaxed mb-10 max-w-md" :style="{
-          fontFamily: 'Jost, sans-serif',
-          fontWeight: 300,
-          color: '#e8e4f0',
-        }">
-          Authenticated, near‑mint Pokémon singles sealed into mystery packs —
-          one toploaded hit per pack, every time. See the live card pool before
-          you buy.
-        </p>
+        <ClientOnly>
+          <p v-motion="subtextMotion" class="text-base leading-relaxed mb-10 max-w-md" :style="{
+            fontFamily: 'Jost, sans-serif',
+            fontWeight: 300,
+            color: '#e8e4f0',
+          }">
+            Authenticated, near‑mint Pokémon singles sealed into mystery packs —
+            one toploaded hit per pack, every time. See the live card pool before
+            you buy.
+          </p>
+        </ClientOnly>
 
         <!-- CTAs -->
-        <div v-motion="ctaRowMotion" class="flex gap-4 flex-wrap">
-          <Link href="/stores"
-            class="px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
-            :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
+        <ClientOnly>
+          <div v-motion="ctaRowMotion" class="flex gap-4 flex-wrap">
+            <Link href="/stores"
+              class="px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
+              :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
             Browse Stores
-        </Link>
-          <a href="#how-it-works"
-            class="px-8 py-3.5 text-[#DCC175]/70 text-xs tracking-[0.22em] uppercase border border-[#DCC175]/25 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-300 backdrop-blur-sm"
-            :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-            Sign Up
-          </a>
-        </div>
+            </Link>
+            <a href="#how-it-works"
+              class="px-8 py-3.5 text-[#DCC175]/70 text-xs tracking-[0.22em] uppercase border border-[#DCC175]/25 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-300 backdrop-blur-sm"
+              :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
+              Sign Up
+            </a>
+          </div>
+        </ClientOnly>
 
         <!-- Pack tier tiles — mobile only -->
-        <div v-motion="mobileTiersMotion" class="flex gap-2.5 mt-8 lg:hidden">
-          <div v-for=" tier in PACK_TIERS " :key="tier.name"
-            class="flex-1 px-3 py-2.5 backdrop-blur-xl flex flex-col gap-0.5" :style="{
-              borderRadius: '6px',
-              background: tier.bg,
-              border: `1px solid ${tier.border}`,
-              boxShadow: `0 4px 24px rgba(0,0,0,0.6), 0 0 18px ${tier.glow}`,
-            }">
-            <span class="text-[10px] font-bold tracking-[0.12em] uppercase" :style="{
-              color: tier.color,
-              fontFamily: 'Cinzel, serif',
-              textShadow: `0 0 10px ${tier.glow}`,
-            }">
-              {{ tier.name }}
-            </span>
-            <span class="text-[9px] tracking-widest" :style="{
-              color: `${tier.color}90`,
-              fontFamily: 'Jost, sans-serif',
-            }">
-              {{ tier.qty }}
-            </span>
+        <ClientOnly>
+          <div v-motion="mobileTiersMotion" class="flex gap-2.5 mt-8 lg:hidden">
+            <div v-for=" tier in PACK_TIERS " :key="tier.name"
+              class="flex-1 px-3 py-2.5 backdrop-blur-xl flex flex-col gap-0.5" :style="{
+                borderRadius: '6px',
+                background: tier.bg,
+                border: `1px solid ${tier.border}`,
+                boxShadow: `0 4px 24px rgba(0,0,0,0.6), 0 0 18px ${tier.glow}`,
+              }">
+              <span class="text-[10px] font-bold tracking-[0.12em] uppercase" :style="{
+                color: tier.color,
+                fontFamily: 'Cinzel, serif',
+                textShadow: `0 0 10px ${tier.glow}`,
+              }">
+                {{ tier.name }}
+              </span>
+              <span class="text-[9px] tracking-widest" :style="{
+                color: `${tier.color}90`,
+                fontFamily: 'Jost, sans-serif',
+              }">
+                {{ tier.qty }}
+              </span>
+            </div>
           </div>
-        </div>
+        </ClientOnly>
       </div>
 
       <!-- Right: floating pack (desktop only) -->
@@ -96,11 +104,13 @@
     </div>
 
     <!-- Scroll cue -->
-    <div v-motion="scrollCueMotion"
-      class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-      <div v-motion="scrollLineMotion" class="w-px h-10 bg-gradient-to-b from-amber-400/35 to-transparent"
-        :style="{ transformOrigin: 'top' }" />
-    </div>
+    <ClientOnly>
+      <div v-motion="scrollCueMotion"
+        class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+        <div v-motion="scrollLineMotion" class="w-px h-10 bg-gradient-to-b from-amber-400/35 to-transparent"
+          :style="{ transformOrigin: 'top' }" />
+      </div>
+    </ClientOnly>
   </section>
 </template>
 
