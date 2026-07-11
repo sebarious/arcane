@@ -126,32 +126,6 @@ const bandOrder: { key: Rarity; label: string, colors: Record<string, string> }[
   },
 ];
 
-let channel: any = null;
-onMounted( () => {
-  if ( !window.Echo ) return;
-  channel = window.Echo.channel( `store.${props.store.id}` )
-    .listen( '.PackSold', ( payload: { band: Rarity | null; } ) => {
-      const band = payload.band;
-      if ( !band ) return;
-      const current = bands.value[band];
-      if ( !current ) return;
-      const newCount = Math.max( 0, current.count - 1 );
-      bands.value = {
-        ...bands.value,
-        [band]: {
-          ...current,
-          count: newCount,
-          // If you later send per-card sold flags, you can update them here too.
-        },
-      };
-    } );
-} );
-onBeforeUnmount( () => {
-  if ( channel && window.Echo ) {
-    window.Echo.leaveChannel( `store.${props.store.id}` );
-  }
-} )
-
 const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
   band === 'mythic' || band === 'legendary' ? 'eager' : 'lazy'
 
