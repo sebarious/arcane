@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
 
     @routes
-    @vite(['resources/css/app.css', 'resources/ts/app.ts'])
+    @vite(['resources/ts/app.ts'])
     @inertiaHead
 </head>
 
