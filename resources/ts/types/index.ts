@@ -54,4 +54,5 @@ export interface Store {
   city: string;
   postcode: string;
   games: StoreGame[];
+  logo: string;
 }

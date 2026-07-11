@@ -21,6 +21,14 @@ interface Store {
   name: string;
   city: string;
   postcode: string;
+  logo: string;
+  location: string;
+  social_links: any;
+  description: string;
+  total_batches: number;
+  total_packs_remaining: number;
+  total_pull_count: number;
+  created_at: string;
 }
 
 interface Batch {
@@ -31,6 +39,7 @@ interface Batch {
   pack_count: number;
   game: string | null;
   game_label: string | null;
+  remaining_packs: number;
 }
 
 interface PullCard {
@@ -299,7 +308,7 @@ const bandPillClass = ( band: Rarity | null ): string => {
       </div>
     </div>
 
-    <PullsSlider :pulls="recentPulls" />
+    <PullsSlider :pulls="(recentPulls as any[])" />
   </main>
 
   <Footer />

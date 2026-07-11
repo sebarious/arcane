@@ -69,12 +69,10 @@ import { Link, usePage } from '@inertiajs/vue3';
 const page = usePage();
 
 const NAV_LINKS: [string, string, boolean][] = [
-  ['Stores', '/stores', !!page?.props?.route?.name?.startsWith('stores')],
-  ['Sell to Us', '/sell', !!page?.props?.route?.name?.startsWith('sell')],
-  ['Log In', '/login', !!page?.props?.route?.name?.startsWith('login')],
+  ['Stores', '/stores', !!(page?.props?.route as any)?.name?.startsWith('stores')],
+  ['Sell to Us', '/sell', !!(page?.props?.route as any)?.name?.startsWith('sell')],
+  ['Log In', '/login', !!(page?.props?.route as any)?.name?.startsWith('login')],
 ];
-
-console.log('NAV_LINKS', NAV_LINKS);
 
 const scrolled = ref( false );
 const open = ref( false );
