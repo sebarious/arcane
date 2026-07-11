@@ -53,14 +53,13 @@ export const steps: Step[] = [
 ];
 
 export const tickerItems = [
-  'PSA Graded',
   'Near Mint Only',
   'Live Card Pool',
   'Toploaded Hits',
   'Authenticated Singles',
   'Mystery Packs',
   'Full Transparency',
-  'Local Shop Network',
+  'Hit Guaranteed',
 ];
 
 export const CARD_IMAGES = [imgCharizard, imgUmbreon, imgPikachu, imgLugia, imgMew, imgRayquaza];
