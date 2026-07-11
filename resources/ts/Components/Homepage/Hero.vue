@@ -274,7 +274,7 @@ const scrollCueMotion = {
   initial: { opacity: 0 },
   enter: {
     opacity: 1,
-    transition: { delay: 2200 },
+    transition: { delay: 750 },
   },
 };
 
@@ -283,7 +283,7 @@ const scrollLineMotion = {
   enter: {
     scaleY: [0, 1, 0],
     transition: {
-      duration: 2200,
+      duration: 750,
       repeat: Infinity,
       easing: 'easeInOut',
     },
