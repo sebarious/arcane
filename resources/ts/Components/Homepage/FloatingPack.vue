@@ -69,7 +69,7 @@ const props = defineProps<{
 const PACK_TIERS = [
   {
     name: 'Sapphire',
-    qty: 'x100',
+    qty: 'x125',
     color: '#93c5fd',
     glow: 'rgba(59,130,246,0.7)',
     bg: 'linear-gradient(135deg, #0c1f6e 0%, #1a4db5 100%)',
