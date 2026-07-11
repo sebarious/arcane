@@ -240,20 +240,20 @@ const liveBadgeMotion = {
 };
 
 const subtextMotion = {
-  initial: { opacity: 0, y: 0 },
+  initial: { opacity: 0, y: 18 },
   enter: {
     opacity: 1,
     y: 0,
-    transition: { delay: 1000, duration: 900 },
+    transition: { delay: 350, duration: 900 },
   },
 };
 
 const ctaRowMotion = {
-  initial: { opacity: 0, y: 0 },
+  initial: { opacity: 0, y: 18 },
   enter: {
     opacity: 1,
     y: 0,
-    transition: { delay: 1250, duration: 900 },
+    transition: { delay: 500, duration: 900 },
   },
 };
 
@@ -263,7 +263,7 @@ const mobileTiersMotion = {
     opacity: 1,
     y: 0,
     transition: {
-      delay: 1400,
+      delay: 600,
       duration: 800,
       easing: [0.16, 1, 0.3, 1],
     },
