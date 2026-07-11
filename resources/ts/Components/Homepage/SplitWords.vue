@@ -29,9 +29,9 @@ const wordMotion = ( i: number ) => ( {
     opacity: 1,
     rotateX: 0,
     transition: {
-      duration: 850,
+      duration: 350,
       easing: [0.16, 1, 0.3, 1],
-      delay: delay.value * 1000 + i * 120,
+      delay: 350,
     },
   },
 } );
