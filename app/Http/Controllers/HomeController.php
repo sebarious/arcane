@@ -11,6 +11,16 @@ class HomeController extends Controller
 {
     public function __invoke(Request $request)
     {
+        $totalAvailableCards = Cache::remember('pulls.total-available', now()->addHour(), function () {
+            return Pack::query()
+                ->where('status', 'sealed')
+                ->whereHas('batch', function ($query) {
+                    $query->whereIn('status', ['committed', 'dispatched', 'completed']);
+                })
+                ->whereHas('card')
+                ->count();
+        });
+
         $recentPulls = Cache::remember('pulls.recent', now()->addHour(), function () {
             return Pack::query()
                 ->where('status', 'sold')
@@ -70,6 +80,7 @@ class HomeController extends Controller
         return Inertia::render('Welcome', [
             'recentPulls' => $recentPulls,
             'whatsInThePool' => $whatsInThePool,
+            'totalAvailableCards' => $totalAvailableCards,
         ]);
     }
 }

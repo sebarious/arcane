@@ -6,7 +6,7 @@
     <Nav />
 
     <main class="relative z-20">
-      <Hero />
+      <Hero :total-available-cards="totalAvailableCards" />
       <Ticker />
       <PullsSlider :pulls="recentPulls" />
       <HowItWorks />
@@ -32,6 +32,7 @@ import type { Pull } from '../types';
 const props = defineProps<{
   recentPulls: Pull[];
   whatsInThePool: Pull[];
+  totalAvailableCards: number;
 }>();
 
 const filmGrainStyle = {

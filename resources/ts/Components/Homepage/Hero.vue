@@ -19,7 +19,7 @@
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span class="text-[10px] text-[#DCC175]/70 tracking-[0.3em] uppercase"
             :style="{ fontFamily: 'Jost, sans-serif' }">
-            Live Pool — 8 Cards Available
+            Live Pool — {{ (totalAvailableCards ?? 0).toLocaleString() }} Cards Available
           </span>
         </div>
 
@@ -112,6 +112,10 @@ import FloatingRings from '../FloatingRings.vue';
 import FloatingPack from './FloatingPack.vue';
 import SplitWords from './SplitWords.vue';
 import { Link } from '@inertiajs/vue3';
+
+const props = defineProps<{
+  totalAvailableCards: number;
+}>();
 
 // --- local PACK_TIERS (same as React) ---------------------------------------
 const PACK_TIERS = [
