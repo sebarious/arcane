@@ -94,13 +94,6 @@
         <FloatingPack :mouseX="rawX" :mouseY="rawY" />
       </div>
     </div>
-
-    <!-- Scroll cue -->
-    <div v-motion="scrollCueMotion"
-      class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-      <div v-motion="scrollLineMotion" class="w-px h-10 bg-gradient-to-b from-amber-400/35 to-transparent"
-        :style="{ transformOrigin: 'top' }" />
-    </div>
   </section>
 </template>
 
@@ -266,26 +259,6 @@ const mobileTiersMotion = {
       delay: 600,
       duration: 800,
       easing: [0.16, 1, 0.3, 1],
-    },
-  },
-};
-
-const scrollCueMotion = {
-  initial: { opacity: 0 },
-  enter: {
-    opacity: 1,
-    transition: { delay: 750 },
-  },
-};
-
-const scrollLineMotion = {
-  initial: { scaleY: 0 },
-  enter: {
-    scaleY: [0, 1, 0],
-    transition: {
-      duration: 750,
-      repeat: Infinity,
-      easing: 'easeInOut',
     },
   },
 };
