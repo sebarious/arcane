@@ -66,17 +66,13 @@ interface Props {
 
 const props = defineProps<Props>();
 
-console.log(props);
-
-const bandPillClass = ( band: Rarity | null ): string => {
-  if ( !band ) return 'bg-arcane-border text-arcane-muted';
-  return {
-    common: 'bg-arcane-common/20 text-arcane-common',
-    rare: 'bg-arcane-rare/20 text-arcane-rare',
-    super: 'bg-arcane-super/20 text-arcane-super',
-    legendary: 'bg-arcane-legendary/20 text-arcane-legendary',
-    mythic: 'bg-arcane-mythic/20 text-arcane-mythic',
-  }[band];
+const generalMotion = {
+  initial: { opacity: 0, y: 18 },
+  enter: {
+    opacity: 1,
+    y: 0,
+    transition: { delay: 350, duration: 900 },
+  },
 };
 </script>
 
@@ -100,6 +96,7 @@ const bandPillClass = ( band: Rarity | null ): string => {
           </div>
         </div>
         <div
+          v-motion="generalMotion"
           class="absolute content-stretch lg:flex gap-[24px] items-start left-0 px-[64px] right-0 top-[150px] lg:top-[272px] space-y-6">
           <div class="relative rounded-[50px] shrink-0 size-[100px] bg-black">
             <img :alt="store.name"
@@ -161,7 +158,7 @@ const bandPillClass = ( band: Rarity | null ): string => {
         </div>
       </div>
 
-      <div class="relative w-full">
+      <div class="relative w-full" v-motion="generalMotion">
         <div
           class="content-stretch space-y-8 lg:space-y-0 lg:flex gap-[32px] items-start px-[64px] py-[40px] relative size-full">
           <div class="content-stretch flex flex-col gap-[32px] items-start relative w-full">

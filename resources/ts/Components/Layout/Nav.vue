@@ -107,7 +107,7 @@ const navMotion = {
   enter: {
     y: 0,
     opacity: 1,
-    transition: { duration: 900, easing: [0.16, 1, 0.3, 1] },
+    transition: { duration: 500, easing: [0.16, 1, 0.3, 1] },
   },
 };
 
@@ -116,12 +116,12 @@ const drawerMotion = {
   enter: {
     opacity: 1,
     x: '0%',
-    transition: { duration: 350, easing: [0.16, 1, 0.3, 1] },
+    transition: { duration: 250, easing: [0.16, 1, 0.3, 1] },
   },
   leave: {
     opacity: 0,
     x: '100%',
-    transition: { duration: 350, easing: [0.16, 1, 0.3, 1] },
+    transition: { duration: 250, easing: [0.16, 1, 0.3, 1] },
   },
 };
 </script>

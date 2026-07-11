@@ -9,6 +9,7 @@
           class="absolute bg-gradient-to-b from-[rgba(255,185,0,0.35)] h-[5.363px] left-0 to-[rgba(0,0,0,0)] top-0 w-px" />
       </div>
       <div
+        v-motion="heroTitleMotion"
         class="lg:absolute content-stretch flex flex-col gap-[24px] lg:h-[326px] items-center justify-center left-0 pb-[48px] pt-[80px] px-8 lg:px-16 top-[-15px] w-full">
         <div
           class="[word-break:break-word] content-stretch flex flex-col gap-[12px] items-start relative shrink-0 w-full">
@@ -26,6 +27,7 @@
         </div>
       </div>
       <div
+        v-motion="heroCardsMotion"
         class="lg:absolute content-stretch flex flex-col gap-[32px] lg:h-[378px] items-center justify-center left-0 pb-[80px] px-8 lg:px-16 top-[311px] w-full">
         <div
           class="content-stretch space-y-8 lg:space-y-0 lg:flex lg:gap-[24px] lg:items-start relative lg:shrink-0 w-full">
@@ -47,4 +49,22 @@ import type { Store } from '../../types';
 const props = defineProps<{
   stores: Store[];
 }>();
+
+const heroTitleMotion = {
+  initial: { opacity: 0, y: 18 },
+  enter: {
+    opacity: 1,
+    y: 0,
+    transition: { delay: 350, duration: 900 },
+  },
+};
+
+const heroCardsMotion = {
+  initial: { opacity: 0, y: 18 },
+  enter: {
+    opacity: 1,
+    y: 0,
+    transition: { delay: 500, duration: 900 },
+  },
+};
 </script>

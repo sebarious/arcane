@@ -154,6 +154,15 @@ onBeforeUnmount( () => {
 
 const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
   band === 'mythic' || band === 'legendary' ? 'eager' : 'lazy'
+
+const generalMotion = {
+  initial: { opacity: 0, y: 18 },
+  enter: {
+    opacity: 1,
+    y: 0,
+    transition: { delay: 350, duration: 900 },
+  },
+};
 </script>
 
 <template>
@@ -167,7 +176,7 @@ const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
       </div>
     </div>
 
-    <div class="relative shrink-0 w-full">
+    <div class="relative shrink-0 w-full" v-motion="generalMotion">
       <div class="content-stretch flex flex-col gap-[24px] items-start px-8 lg:px-[64px] py-[40px] relative size-full">
         <div class="content-stretch flex items-center relative shrink-0">
           <p
@@ -208,7 +217,7 @@ const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
       </div>
     </div>
 
-    <div class="relative shrink-0 w-full">
+    <div class="relative shrink-0 w-full" v-motion="generalMotion">
       <div class="content-stretch flex items-start px-8 lg:px-[64px] relative size-full">
         <div class="bg-[#13101e] flex-[1_0_0] min-w-px relative rounded-[12px]">
           <div aria-hidden
@@ -284,7 +293,7 @@ const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
       </div>
     </div>
 
-    <div class="relative shrink-0 w-full">
+    <div class="relative shrink-0 w-full" v-motion="generalMotion">
       <div
         class="content-stretch flex flex-col gap-[80px] items-start pb-[120px] pt-[60px] px-8 lg:px-[64px] relative size-full">
         <div v-for=" band in bandOrder " :key="band.key"

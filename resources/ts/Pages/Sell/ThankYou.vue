@@ -6,6 +6,15 @@ interface Props {
   reference: string;
 }
 const props = defineProps<Props>();
+
+const generalMotion = {
+  initial: { opacity: 0, y: 18 },
+  enter: {
+    opacity: 1,
+    y: 0,
+    transition: { delay: 350, duration: 900 },
+  },
+};
 </script>
 
 <template>
@@ -19,7 +28,7 @@ const props = defineProps<Props>();
       </div>
     </div>
 
-    <div class="relative shrink-0 w-full">
+    <div class="relative shrink-0 w-full" v-motion="generalMotion">
       <div
         class="content-stretch flex flex-col gap-[56px] items-start justify-center pb-[120px] pt-[80px] px-8 lg:px-[64px] relative size-full">
         <div
