@@ -10,7 +10,7 @@
           Arcane
         </span>
       </div>
-      <span class="text-[10px] text-[#DCC175]/50 tracking-widest" :style="{ fontFamily: 'Jost, sans-serif' }">
+      <span class="text-[10px] text-[#DCC175]/50 tracking-widest text-center" :style="{ fontFamily: 'Jost, sans-serif' }">
         © {{ new Date().getFullYear() }} Arcane. All cards authenticated. All packs sealed fresh.
       </span>
     </div>
