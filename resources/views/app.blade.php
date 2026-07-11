@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title inertia>{{ config('app.name', 'Arcane') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <meta name="description" content="Authenticated, near‑mint Pokémon singles sealed into mystery packs — one toploaded hit per pack, with a live card pool you can see before you buy.">
 
     @routes
     @vite(['resources/ts/app.ts'])
