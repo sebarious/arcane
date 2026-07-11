@@ -1,6 +1,6 @@
 <template>
   <section id="pool" class="py-[52px] lg:py-[82px] w-full">
-    <div
+    <div v-motion="headerMotion"
       class="px-8 lg:px-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14">
       <div>
         <div class="flex items-center gap-2 mb-5">
@@ -23,18 +23,18 @@
     </div>
 
     <div class="overflow-hidden mb-4">
-      <div class="flex">
+      <div v-motion="row1Motion" class="flex">
         <PoolTile v-for="( card, i) in row1Doubled" :key="i" :pull="card" />
       </div>
     </div>
 
     <div class="overflow-hidden">
-      <div class="flex">
+      <div v-motion="row2Motion" class="flex">
         <PoolTile v-for="( card, i) in row2Doubled" :key="i" :pull="card" />
       </div>
     </div>
 
-    <div class="mt-10 text-center">
+    <div v-motion="linkMotion" class="mt-10 text-center">
       <Link href="/stores"
         class="inline-block text-[10px] text-[#DCC175]/70 tracking-[0.3em] uppercase border-b border-[#DCC175]/50 pb-0.5 hover:text-[#DCC175]/80 hover:border-[#DCC175]/70 transition-colors"
         :style="{ fontFamily: 'Jost, sans-serif' }">
