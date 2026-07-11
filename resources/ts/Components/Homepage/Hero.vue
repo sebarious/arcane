@@ -240,7 +240,7 @@ const liveBadgeMotion = {
 };
 
 const subtextMotion = {
-  initial: { opacity: 0, y: 18 },
+  initial: { opacity: 0, y: 0 },
   enter: {
     opacity: 1,
     y: 0,
@@ -249,7 +249,7 @@ const subtextMotion = {
 };
 
 const ctaRowMotion = {
-  initial: { opacity: 0, y: 18 },
+  initial: { opacity: 0, y: 0 },
   enter: {
     opacity: 1,
     y: 0,
