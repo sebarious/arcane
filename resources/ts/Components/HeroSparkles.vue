@@ -1,7 +1,10 @@
 <template>
-  <div class="absolute inset-0 pointer-events-none overflow-hidden">
-    <div v-for=" p in particles " :key="p.id" v-motion="particleMotion( p )" class="absolute" :style="particleStyle( p )" />
-  </div>
+  <ClientOnly>
+    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+      <div v-for=" p in particles " :key="p.id" v-motion="particleMotion( p )" class="absolute"
+        :style="particleStyle( p )" />
+    </div>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">

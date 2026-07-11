@@ -1,7 +1,9 @@
 <template>
-  <span v-motion="motionOptions" :class="['inline-block text-transparent bg-clip-text', className]" :style="baseStyle">
-    <slot />
-  </span>
+  <ClientOnly>
+    <span v-motion="motionOptions" :class="['inline-block text-transparent bg-clip-text', className]" :style="baseStyle">
+      <slot />
+    </span>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">

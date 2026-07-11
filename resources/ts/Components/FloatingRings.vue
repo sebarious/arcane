@@ -1,11 +1,14 @@
 <template>
-  <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
-    <div v-for="( size, i) in sizes" :key="size" v-motion="ringMotion( i )" class="absolute rounded-full border" :style="{
-      width: size + 'px',
-      height: size + 'px',
-      borderColor: ringColor( i ),
-    }" />
-  </div>
+  <ClientOnly>
+    <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
+      <div v-for="( size, i) in sizes" :key="size" v-motion="ringMotion( i )" class="absolute rounded-full border"
+        :style="{
+        width: size + 'px',
+        height: size + 'px',
+        borderColor: ringColor( i ),
+      }" />
+    </div>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
