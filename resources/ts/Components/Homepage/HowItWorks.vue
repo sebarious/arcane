@@ -7,7 +7,7 @@
       </h2>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div v-for="( step, i) in steps" :key="step.num"
         class="p-8 border border-[#DCC175]/10 bg-[#0e0e1d]/60 relative overflow-hidden group"
         :style="{ borderRadius: '4px' }">
@@ -17,9 +17,6 @@
           <span class="text-[10px] text-[#DCC175]/60 tracking-[0.3em]" :style="{ fontFamily: 'Jost, sans-serif' }">
             {{ step.num }}
           </span>
-          <div class="w-9 h-9 rounded-full bg-[#DCC175]/10 border border-[#DCC175]/50 flex items-center justify-center">
-            <component :is="step.icon" :size="16" class="text-[#DCC175]" />
-          </div>
         </div>
         <h3 class="text-xl text-white mb-3 tracking-tight" :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           {{ step.title }}

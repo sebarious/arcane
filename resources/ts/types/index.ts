@@ -37,7 +37,6 @@ export type LiveCard = {
 };
 export type Step = {
   num: string;
-  icon: any; // lucide-vue-next components are functional components
   title: string;
   desc: string;
 };

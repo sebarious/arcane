@@ -34,22 +34,24 @@ import type { Step } from '../../types'; // optional, if you created types.ts
 export const steps: Step[] = [
   {
     num: '01',
-    icon: Shield,
-    title: 'Authenticated Singles',
-    desc: 'Every card in our pool is Near-mint condition, verified authentic, toploaded from the moment it arrives.',
+    title: 'Packed & Sealed by Arcane.',
+    desc: 'Every mystery pack is assembled, quality checked and sealed by Arcane before it’s dispatched.\n\nStreamers never handle or preview the contents beforehand, meaning nobody knows what’s inside until it’s opened live. Every opening begins with a genuinely sealed pack.',
   },
   {
     num: '02',
-    icon: Package,
-    title: 'Sealed Mystery Pack',
-    desc: "We pull one card blind from the live pool and seal it into your pack. You won't know which card until you open it — that's the magic.",
+    title: 'Every Pull. Proven Live.',
+    desc: "Each card is revealed, scanned and verified using its unique QR code, permanently recording every pull as it happens. This creates a live, tamper-proof history that buyers, sellers and viewers can trust with complete confidence.",
   },
   {
     num: '03',
-    icon: Eye,
-    title: 'Live Pool Transparency',
-    desc: 'See exactly which cards are still in your local shop\'s pool before you buy. No blind guessing — full odds visibility, always.',
+    title: 'Live Pull Rates. Always Accurate.',
+    desc: 'Every pull instantly updates the published odds for that mystery batch.\n\nCustomers always see the current pull rates, remaining chase cards and live batch progress—ensuring complete transparency from the first pack to the last.',
   },
+  {
+    num: '04',
+    title: 'Live Market Pricing - Powered by PulseTCG',
+    desc: 'Every Arcane mystery batch is generated to order using PulseTCG - the UK’s leading trading card market pricing platform.\n\nBy using live market data at the moment each batch is created, every card is valued using the most up- to - date pricing available.This ensures complete transparency for both buyers and sellers, with valuations that accurately reflect the current market.\n\nNo inflated values.No stale price lists.No artificial odds—just genuine, real - time market pricing.'
+  }
 ];
 
 export const tickerItems = [
