@@ -7,7 +7,7 @@
         Flexible Selling <HoloText>Tiers</HoloText>
       </h2>
       <p class="text-base leading-relaxed text-white/70">
-        Built to Grow With You. Arcane offers three transparent pricing tiers designed to suit all sellers and buyers
+        Built to Grow With You. Arcane offers three transparent pricing tiers designed to suit all sellers and buyers.
       </p>
     </div>
 
