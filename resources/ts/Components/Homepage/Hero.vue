@@ -12,8 +12,7 @@
       <!-- Left: Copy -->
       <div>
         <!-- Live badge -->
-        <div
-          class="inline-flex items-center gap-2 px-3 py-1.5 border border-[#DCC175]/25 bg-[#DCC175]/8 mb-9"
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 border border-[#DCC175]/25 bg-[#DCC175]/8 mb-9"
           :style="{ borderRadius: '3px' }">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span class="text-[10px] text-[#DCC175]/70 tracking-[0.3em] uppercase"
@@ -30,10 +29,10 @@
           lineHeight: 1.05,
         }">
           <div class="overflow-hidden mb-1">
-            <SplitWords text="One Card." className="text-white" :delay="0.25" />
+            <SplitWords text="Know the Odds." className="text-white" :delay="0.25" />
           </div>
           <div class="overflow-hidden whitespace-nowrap">
-            <SplitWords text="Infinite Chase." :delay="0.5" :style="infiniteChaseStyle" />
+            <SplitWords text="Love Every Pull." :delay="0.5" :style="infiniteChaseStyle" />
           </div>
         </div>
 
@@ -43,9 +42,8 @@
           fontWeight: 300,
           color: '#e8e4f0',
         }">
-          Authenticated, near‑mint Pokémon singles sealed into mystery packs —
-          one toploaded hit per pack, every time. See the live card pool before
-          you buy.
+          Mystery packs built on transparency. Live card pools, real-time pricing and verified pulls give you complete
+          confidence before every purchase.
         </p>
 
         <!-- CTAs -->
@@ -53,8 +51,8 @@
           <Link href="/apply"
             class="px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-            Apply Now
-        </Link>
+          Apply Now
+          </Link>
           <a href="/stores"
             class="px-8 py-3.5 text-[#DCC175]/70 text-xs tracking-[0.22em] uppercase border border-[#DCC175]/25 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-300 backdrop-blur-sm"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
