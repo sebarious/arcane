@@ -8,8 +8,7 @@
 
     <!-- Main content grid (parallax + fade via computed style) -->
     <div
-      class="relative z-10 w-full px-8 lg:px-16 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center pt-24 pb-16 lg:pt-14 lg:pb-0"
-      :style="contentStyle">
+      class="relative z-10 w-full px-8 lg:px-16 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center pt-24 pb-16 lg:pt-14 lg:pb-0">
       <!-- Left: Copy -->
       <div>
         <!-- Live badge -->
@@ -175,29 +174,6 @@ onUnmounted( () => {
   window.removeEventListener( 'scroll', onScroll );
 } );
 
-const contentStyle = computed<Record<string, string | number>>( () => {
-  if( isMobile.value ) {
-    return {
-      transform: 'translateY(0)',
-      opacity: 1,
-    };
-  }
-
-  const y = isMobile.value ? 0 : 28 * scrollYProgress.value;
-  const fadeStart = 0.3;
-  const fadeEnd = 1;
-  let opacity = 1;
-  if ( !isMobile.value && scrollYProgress.value > fadeStart ) {
-    const t =
-      ( scrollYProgress.value - fadeStart ) / ( fadeEnd - fadeStart || 1 );
-    opacity = 1 - Math.min( 1, Math.max( 0, t ) );
-  }
-  return {
-    transform: `translateY(${y}%)`,
-    opacity,
-  };
-} );
-
 // --- mouse tracking replacement for useMotionValue --------------------------
 
 const rawX = ref( 0 ); // -0.5 .. 0.5
@@ -221,45 +197,5 @@ const infiniteChaseStyle = {
   WebkitTextFillColor: 'transparent',
   backgroundClip: 'text',
   display: 'inline-block',
-};
-
-const liveBadgeMotion = {
-  initial: { opacity: 0, y: 20 },
-  enter: {
-    opacity: 1,
-    y: 0,
-    transition: { delay: 200, duration: 800 },
-  },
-};
-
-const subtextMotion = {
-  initial: { opacity: 0, y: 18 },
-  enter: {
-    opacity: 1,
-    y: 0,
-    transition: { delay: 350, duration: 900 },
-  },
-};
-
-const ctaRowMotion = {
-  initial: { opacity: 0, y: 18 },
-  enter: {
-    opacity: 1,
-    y: 0,
-    transition: { delay: 500, duration: 900 },
-  },
-};
-
-const mobileTiersMotion = {
-  initial: { opacity: 0, y: 16 },
-  enter: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: 600,
-      duration: 800,
-      easing: [0.16, 1, 0.3, 1],
-    },
-  },
 };
 </script>

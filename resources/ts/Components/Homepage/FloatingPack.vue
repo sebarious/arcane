@@ -14,15 +14,53 @@
       <div class="relative z-10 transition-transform duration-200" :style="wrapperStyle">
         <!-- flipping object -->
         <div class="relative" :style="flipContainerStyle">
-          <!-- FRONT: pack -->
-          <div :style="frontFaceStyle">
-            <img :src="arcanePack" alt="Arcane Mystery Pack" class="w-full h-full object-cover select-none"
+          <!-- BACK: revealed card -->
+          <div :style="backCard1">
+            <img :src="CARD_IMAGES[0]" alt="Pokémon card" class="w-full h-full object-cover select-none"
               draggable="false" loading="lazy" />
+
+            <div
+              class="absolute bottom-0 left-0 right-0 h-[50%] bg-gradient-to-t from-black/100 to-transparent pointer-events-none">
+              <div class="absolute bottom-4 left-2.5">
+                <span class="text-[9px] px-2 py-0.5 tracking-[0.15em] uppercase font-bold" :style="{
+                  borderRadius: '2px',
+                  fontFamily: 'Jost, sans-serif',
+                  color: RARITY_COLORS['super'].badge,
+                  background: `${RARITY_COLORS['super'].badge}18`,
+                  border: `1px solid ${RARITY_COLORS['super'].badge}40`,
+                }">
+                  Super
+                </span>
+                <p class="text-xs font-medium text-white/80 mt-1">Victini</p>
+              </div>
+            </div>
           </div>
 
           <!-- BACK: revealed card -->
-          <div :style="backFaceStyle">
-            <img :src="currentCard" alt="Pokémon card" class="w-full h-full object-cover select-none"
+          <div :style="backCard2" class="back-card">
+            <img :src="CARD_IMAGES[1]" alt="Pokémon card" class="w-full h-full object-cover select-none"
+              draggable="false" loading="lazy" />
+
+            <div
+              class="absolute bottom-0 left-0 right-0 h-[50%] bg-gradient-to-t from-black/100 to-transparent pointer-events-none">
+              <div class="absolute bottom-4 right-2.5 text-right">
+                <span class="text-[9px] px-2 py-0.5 tracking-[0.15em] uppercase font-bold" :style="{
+                  borderRadius: '2px',
+                  fontFamily: 'Jost, sans-serif',
+                  color: RARITY_COLORS['mythic'].badge,
+                  background: `${RARITY_COLORS['mythic'].badge}18`,
+                  border: `1px solid ${RARITY_COLORS['mythic'].badge}40`,
+                }">
+                  Mythic
+                </span>
+                <p class="text-xs font-medium text-white/80 mt-1">Mew Ex</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- FRONT: pack -->
+          <div :style="sharedFaceStyle">
+            <img :src="arcanePack" alt="Arcane Mystery Pack" class="w-full h-full object-cover select-none"
               draggable="false" loading="lazy" />
           </div>
         </div>
@@ -60,11 +98,43 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { CARD_IMAGES, arcanePack } from './data';
+import type { Pull } from '../../types';
 
 const props = defineProps<{
   mouseX: number;
   mouseY: number;
 }>();
+
+const RARITY_COLORS: Record<
+  Pull['card']['band'],
+  { glow: string; shimmer: string; badge: string; }
+> = {
+  common: {
+    glow: 'rgba(163,163,163,0.65)',
+    shimmer: 'rgba(163,163,163,0.1)',
+    badge: '#a3a3a3',
+  },
+  rare: {
+    glow: 'rgba(59,130,246,0.75)',
+    shimmer: 'rgba(59,130,246,0.1)',
+    badge: '#3b82f6',
+  },
+  super: {
+    glow: 'rgba(45,212,191,0.75)',
+    shimmer: 'rgba(45,212,191,0.1)',
+    badge: '#2dd4bf',
+  },
+  legendary: {
+    glow: 'rgba(123,79,233,0.65)',
+    shimmer: 'rgba(123,79,233,0.1)',
+    badge: '#7b4fe9',
+  },
+  mythic: {
+    glow: 'rgba(201,168,76,0.75)',
+    shimmer: 'rgba(201, 168, 76, 0.2)',
+    badge: '#c9a84c',
+  },
+};
 
 const PACK_TIERS = [
   {
@@ -94,29 +164,17 @@ const PACK_TIERS = [
 ] as const;
 
 const cardIndex = ref( 0 );
-const rotationY = ref( 0 );
 const ringRotation = ref( 0 );
 
-let flipInterval: number | null = null;
 let ringInterval: number | null = null;
 
 onMounted( () => {
-  flipInterval = window.setInterval( () => {
-    rotationY.value += 180;
-
-    // update card just before the next "front" becomes visible
-    window.setTimeout( () => {
-      cardIndex.value = ( cardIndex.value + 1 ) % CARD_IMAGES.length;
-    }, 450 );
-  }, 3000 );
-
   ringInterval = window.setInterval( () => {
     ringRotation.value += 1;
   }, 16 );
 } );
 
 onUnmounted( () => {
-  if ( flipInterval !== null ) window.clearInterval( flipInterval );
   if ( ringInterval !== null ) window.clearInterval( ringInterval );
 } );
 
@@ -138,9 +196,6 @@ const flipContainerStyle = computed<Record<string, string>>( () => ( {
   width: '330px',
   aspectRatio: '63 / 88',
   position: 'relative',
-  transformStyle: 'preserve-3d',
-  transition: 'transform 0.9s cubic-bezier(0.16, 1, 0.3, 1)',
-  transform: `rotateY(${rotationY.value}deg)`,
 } ) );
 
 const sharedFaceStyle: Record<string, string> = {
@@ -149,18 +204,26 @@ const sharedFaceStyle: Record<string, string> = {
   borderRadius: '10px',
   overflow: 'hidden',
   backfaceVisibility: 'hidden',
-  boxShadow: '0 0 40px rgba(124,58,237,0.45), 0 30px 60px rgba(0,0,0,0.75)',
 };
 
-const frontFaceStyle = {
+const backCard1 = computed<Record<string, string>>( () => ( {
   ...sharedFaceStyle,
-  transform: 'rotateY(0deg)',
-};
+  left: '-187.5px',
+  width: '250px',
+  height: '350px',
+  top: '50%',
+  transform: 'translateY(-50%) rotate(-12deg)',
+} ) );
 
-const backFaceStyle = {
+const backCard2 = computed<Record<string, string>>( () => ( {
   ...sharedFaceStyle,
-  transform: 'rotateY(180deg)',
-};
+  left: '100%',
+  marginLeft: '-62.5px',
+  width: '250px',
+  height: '350px',
+  top: '50%',
+  transform: 'translateY(-50%) rotate(12deg)',
+} ) );
 
 const ringStyle = computed<Record<string, string>>( () => ( {
   transform: `rotate(${ringRotation.value}deg)`,

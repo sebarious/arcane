@@ -19,7 +19,7 @@ class RarityBander
         'rare'      => ['min' => 400,   'max' => 1099], // 7.495
         'super'     => ['min' => 1100,  'max' => 4999], // 30.495
         'legendary' => ['min' => 5000,  'max' => 14999], // 99.995
-        'mythic'    => ['min' => 15000,  'max' => 34999], // 249.995
+        'mythic'    => ['min' => 15000,  'max' => 34999], // 349.995
     ];
 
     /** @param array<string, array{min:int,max:int}>|null $thresholds */

@@ -1,16 +1,16 @@
 // src/data.ts
 import arcanePack from '@/Assets/Arcane_pack.png';
 import arcaneLogo from '@/Assets/Link___Arcane.png';
-import imgCharizard from '@/Assets/Charizard.png';
-import imgUmbreon from '@/Assets/Umbreon.png';
+import imgVictini from '@/Assets/svp-208.png';
+import imgBubbleMew from '@/Assets/sv4pt5-232.png';
 import imgPikachu from '@/Assets/Pikachu.png';
 import imgLugia from '@/Assets/Lugia.png';
 import imgMew from '@/Assets/Mew.png';
 import imgRayquaza from '@/Assets/Rayquaza.png';
 
 export const pulls = [
-  { name: 'Charizard ex', set: 'Obsidian Flames', grade: 'PSA 9', rarity: 'Ultra', value: '£85', img: imgCharizard },
-  { name: 'Umbreon VMAX', set: 'Evolving Skies', grade: 'PSA 10', rarity: 'Legendary', value: '£350', img: imgUmbreon },
+  { name: 'Charizard ex', set: 'Obsidian Flames', grade: 'PSA 9', rarity: 'Ultra', value: '£85', img: imgVictini },
+  { name: 'Umbreon VMAX', set: 'Evolving Skies', grade: 'PSA 10', rarity: 'Legendary', value: '£350', img: imgBubbleMew },
   { name: 'Pikachu VMAX', set: 'Vivid Voltage', grade: 'PSA 9', rarity: 'Rare', value: '£200', img: imgPikachu },
   { name: 'Lugia V', set: 'Silver Tempest', grade: 'PSA 10', rarity: 'Legendary', value: '£180', img: imgLugia },
   { name: 'Mew VMAX', set: 'Fusion Strike', grade: 'PSA 9', rarity: 'Common', value: '£95', img: imgMew },
@@ -18,13 +18,13 @@ export const pulls = [
 ];
 
 export const livePool = [
-  { name: 'Charizard V', set: 'Brilliant Stars', grade: 'PSA 9', qty: 1, streamer: '@FlameKing_TV', img: imgCharizard },
+  { name: 'Charizard V', set: 'Brilliant Stars', grade: 'PSA 9', qty: 1, streamer: '@FlameKing_TV', img: imgVictini },
   { name: 'Mewtwo ex', set: 'SV 151', grade: 'PSA 9', qty: 2, streamer: '@PsychicPulls', img: imgLugia },
-  { name: 'Gardevoir ex', set: 'Scarlet & Violet', grade: 'PSA 9', qty: 1, streamer: '@GardeStream', img: imgUmbreon },
+  { name: 'Gardevoir ex', set: 'Scarlet & Violet', grade: 'PSA 9', qty: 1, streamer: '@GardeStream', img: imgBubbleMew },
   { name: 'Miraidon ex', set: 'Scarlet & Violet', grade: 'PSA 10', qty: 1, streamer: '@VoltBreaker', img: imgPikachu },
   { name: 'Iron Valiant ex', set: 'Paradox Rift', grade: 'PSA 9', qty: 3, streamer: '@IronPackTV', img: imgRayquaza },
   { name: 'Iono Full Art', set: 'Paldea Evolved', grade: 'PSA 9', qty: 1, streamer: '@IonoStation', img: imgMew },
-  { name: 'Pidgeot ex', set: 'Obsidian Flames', grade: 'PSA 9', qty: 2, streamer: '@BirdCatcher99', img: imgCharizard },
+  { name: 'Pidgeot ex', set: 'Obsidian Flames', grade: 'PSA 9', qty: 2, streamer: '@BirdCatcher99', img: imgVictini },
   { name: 'Roaring Moon ex', set: 'Paradox Rift', grade: 'PSA 10', qty: 1, streamer: '@MoonPulls', img: imgRayquaza },
 ];
 
@@ -62,6 +62,6 @@ export const tickerItems = [
   'Hit Guaranteed',
 ];
 
-export const CARD_IMAGES = [imgCharizard, imgUmbreon, imgPikachu, imgLugia, imgMew, imgRayquaza];
+export const CARD_IMAGES = [imgVictini, imgBubbleMew, imgPikachu, imgLugia, imgMew, imgRayquaza];
 
 export { arcanePack, arcaneLogo };
