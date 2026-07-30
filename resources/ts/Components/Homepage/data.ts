@@ -50,7 +50,7 @@ export const steps: Step[] = [
   {
     num: '04',
     title: 'Live Market Pricing - Powered by PulseTCG',
-    desc: 'Every Arcane mystery batch is generated to order using PulseTCG - the UK’s leading trading card market pricing platform.\n\nBy using live market data at the moment each batch is created, every card is valued using the most up- to - date pricing available.This ensures complete transparency for both buyers and sellers, with valuations that accurately reflect the current market.\n\nNo inflated values.No stale price lists.No artificial odds—just genuine, real - time market pricing.'
+    desc: 'Built to order. Priced in real time.Every batch uses live PulseTCG pricing, ensuring accurate valuations and complete transparency from the moment it’s created.\n\nNo outdated valuations. No guesswork. Just real-time pricing.'
   }
 ];
 
