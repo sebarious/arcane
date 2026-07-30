@@ -14,14 +14,14 @@
         <div
           class="absolute inset-0 bg-gradient-to-br from-amber-900/0 to-amber-900/0 group-hover:from-amber-900/8 group-hover:to-transparent transition-all duration-500" />
         <div class="flex items-start justify-between mb-6">
-          <span class="text-[10px] text-[#DCC175]/60 tracking-[0.3em]" :style="{ fontFamily: 'Jost, sans-serif' }">
+          <span class="text-[10px] text-[#DCC175] tracking-[0.3em]" :style="{ fontFamily: 'Jost, sans-serif' }">
             {{ step.num }}
           </span>
         </div>
         <h3 class="text-xl text-white mb-3 tracking-tight" :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           {{ step.title }}
         </h3>
-        <p class="text-sm text-[#DCC175]/60 leading-relaxed"
+        <p class="text-sm text-white/70 leading-relaxed"
           :style="{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }">
           {{ step.desc }}
         </p>

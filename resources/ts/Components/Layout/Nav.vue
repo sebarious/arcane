@@ -12,10 +12,10 @@
 
       <!-- Desktop links -->
       <div class="hidden md:flex items-center gap-9">
-        <div class="flex gap-9 text-xs tracking-[0.22em] uppercase text-[#DCC175]/60"
+        <div class="flex gap-9 text-xs tracking-[0.22em] uppercase text-[#DCC175]"
           :style="{ fontFamily: 'Jost, sans-serif' }">
           <a v-for=" [label, href, active] in NAV_LINKS " :key="label" :href="href"
-            :class="['hover:text-[#DCC175] transition-colors duration-300', active ? 'text-white underline' : 'text-[#DCC175]/60']">
+            :class="['hover:text-[#DCC175] transition-colors duration-300', active ? 'text-white underline' : 'text-[#DCC175]']">
             {{ label }}
           </a>
         </div>
@@ -28,7 +28,7 @@
 
       <!-- Burger button — mobile only -->
       <button
-        class="md:hidden flex items-center justify-center w-10 h-10 text-[#DCC175]/70 hover:text-[#DCC175] transition-colors"
+        class="md:hidden flex items-center justify-center w-10 h-10 text-[#DCC175] hover:text-[#DCC175] transition-colors"
         @click="toggleOpen" aria-label="Toggle menu">
         <X v-if=" open " :size="22" />
         <Menu v-else :size="22" />
@@ -43,7 +43,7 @@
         <a v-for="( [label, href, active], i) in NAV_LINKS" :key="label" :href="href" @click="close"
           :class="[
             'py-4 text-2xl border-b border-[#DCC175]/8 transition-colors',
-            active ? 'text-white underline' : 'text-[#DCC175]/70 hover:text-[#DCC175]',
+            active ? 'text-white underline' : 'text-[#DCC175] hover:text-[#DCC175]',
           ]"
           :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           {{ label }}

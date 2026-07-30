@@ -9,7 +9,7 @@
 
     <div class="max-w-3xl mx-auto text-center relative z-10">
       <div>
-        <span class="text-[10px] tracking-[0.5em] uppercase text-[#DCC175]/60 block mb-7"
+        <span class="text-[10px] tracking-[0.5em] uppercase text-[#DCC175] block mb-7"
           :style="{ fontFamily: 'Jost, sans-serif' }">
           Stream With Confidence.
         </span>
@@ -20,7 +20,7 @@
         }">
           <HoloText>Grow Without Compromise.</HoloText>
         </h2>
-        <p class="text-[#DCC175]/60 mb-14 max-w-lg mx-auto text-base leading-relaxed"
+        <p class="text-white/70 mb-14 max-w-lg mx-auto text-base leading-relaxed"
           :style="{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }">
           Arcane handles the packing, verification and transparency, so you can focus on creating great content. Give
           your audience a mystery experience they can trust—backed by live verification, published pull rates and real

@@ -16,7 +16,7 @@
           :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           {{ pull.card.name}}
         </h4>
-        <p class="text-[10px] text-[#DCC175]/60 truncate mb-1" :style="{ fontFamily: 'Jost, sans-serif' }">
+        <p class="text-[10px] text-[#DCC175] truncate mb-1" :style="{ fontFamily: 'Jost, sans-serif' }">
           {{ pull.card.set }}
         </p>
         <p class="text-[10px] text-purple-300/50" :style="{ fontFamily: 'Jost, sans-serif' }">
