@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
 import arcaneLogo from '@/Assets/Link___Arcane.png';
@@ -34,6 +34,8 @@ const generalMotion = {
 </script>
 
 <template>
+  <Head title="Become a Partner" />
+
   <main class="bg-[#0d0b14] overflow-x-hidden">
     <div class="relative shrink-0">
       <div

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
@@ -31,6 +31,8 @@ const generalMotion = {
 </script>
 
 <template>
+  <Head title="Reset Password" />
+
   <main class="bg-[#0d0b14] overflow-x-hidden">
     <div class="relative shrink-0">
       <div

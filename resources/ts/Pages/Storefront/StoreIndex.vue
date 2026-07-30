@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Head } from '@inertiajs/vue3';
 import Nav from '@/Components/Layout/Nav.vue';
 import Footer from '@/Components/Layout/Footer.vue';
 import Orbs from '@/Components/Layout/Orbs.vue';
@@ -15,6 +16,8 @@ const props = defineProps<Props>();
 </script>
 
 <template>
+  <Head title="Stores" />
+
   <main class="bg-[#06060b] content-stretch flex flex-col items-start relative size-full overflow-x-hidden">
     <Orbs />
 

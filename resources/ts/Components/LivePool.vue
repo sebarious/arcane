@@ -1,5 +1,5 @@
 <template>
-  <section id="pool" class="py-[52px] lg:py-[82px] w-full">
+  <section id="pool" class="py-[52px] lg:py-[82px] w-full" v-if="pulls.length">
     <div v-motion="headerMotion"
       class="px-8 lg:px-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14">
       <div>

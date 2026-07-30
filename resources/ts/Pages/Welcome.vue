@@ -1,4 +1,7 @@
 <template>
+
+  <Head title="Live Pull Rates, Real Cards, Zero Guesswork" />
+
   <div class="bg-background text-foreground min-h-screen relative overflow-x-hidden">
     <!-- film grain overlay -->
     <div class="fixed inset-0 pointer-events-none z-10 opacity-[0.028]" :style="filmGrainStyle" />
@@ -77,7 +80,8 @@
             </div>
 
             <!-- Box 03 -->
-            <div class="p-6 border border-[#DCC175]/10 bg-[#0e0e1d]/60 relative overflow-hidden group rounded col-span-1 sm:col-span-2">
+            <div
+              class="p-6 border border-[#DCC175]/10 bg-[#0e0e1d]/60 relative overflow-hidden group rounded col-span-1 sm:col-span-2">
               <div
                 class="absolute inset-0 bg-gradient-to-br from-amber-900/0 to-amber-900/0 group-hover:from-amber-900/8 group-hover:to-transparent transition-all duration-500">
               </div>
@@ -95,13 +99,14 @@
                 Get started without monthly subscriptions, hidden fees or long-term commitments. Create batches when you
                 want, pause whenever you like and grow at your own pace.
 
-                <br/><br/>Arcane gives you the flexibility to sell your way.
+                <br /><br />Arcane gives you the flexibility to sell your way.
               </p>
             </div>
 
           </div>
         </div>
       </section>
+      <Tiers />
       <CTA />
       <Footer />
     </main>
@@ -119,7 +124,9 @@ import LivePool from '../Components/LivePool.vue';
 import CTA from '../Components/Homepage/CTA.vue';
 import Footer from '../Components/Layout/Footer.vue';
 import HoloText from '../Components/HoloText.vue';
+import Tiers from '../Components/Tiers.vue';
 import type { Pull } from '../types';
+import { Head } from '@inertiajs/vue3';
 
 const props = defineProps<{
   recentPulls: Pull[];

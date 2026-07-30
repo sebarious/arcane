@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import Nav from '@/Components/Layout/Nav.vue';
 import imgBanner from "@/Assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2.png";
 import Discord from '@/Components/Icons/Logos/Discord.vue';
@@ -77,6 +77,8 @@ const generalMotion = {
 </script>
 
 <template>
+  <Head :title="store?.name ? `${store.name} Store` : 'Store'" />
+
   <main class="bg-[#06060b] overflow-x-hidden">
     <div class="relative shrink-0">
       <div

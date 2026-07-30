@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Head } from '@inertiajs/vue3';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
 
@@ -18,6 +19,8 @@ const generalMotion = {
 </script>
 
 <template>
+  <Head title="Thank You" />
+
   <main class="bg-[#0d0b14] overflow-x-hidden">
     <div class="relative shrink-0">
       <div
