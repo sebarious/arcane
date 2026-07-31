@@ -318,10 +318,6 @@ import { RARITY_COLORS } from '@/utils';
 
 </script>
 <style>
-body {
-  background: oklch(0.145 0 0);
-}
-
 .gradient-text {
   background-image: linear-gradient(90deg, #4c1d95, #7c3aed, #a855f7, #c084fc, #ddd6fe, #a855f7, #7c3aed, #4c1d95);
   background-size: 300% 100%;
