@@ -11,6 +11,70 @@
       </p>
     </div>
 
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+
+      <!-- Common -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(163,163,163,0.65); --shimmer: rgba(163,163,163,0.1);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Common</div>
+          <div class="text-2xl font-black text-white">£1–£4</div>
+        </div>
+      </div>
+
+      <!-- Rare -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(59,130,246,0.75); --shimmer: rgba(59,130,246,0.1);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Rare</div>
+          <div class="text-2xl font-black text-white">£5–£11</div>
+        </div>
+      </div>
+
+      <!-- Super -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(45,212,191,0.75); --shimmer: rgba(45,212,191,0.1);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Super</div>
+          <div class="text-2xl font-black text-white">£11–£50</div>
+        </div>
+      </div>
+
+      <!-- Legendary -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(123,79,233,0.65); --shimmer: rgba(123,79,233,0.1);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Legendary</div>
+          <div class="text-2xl font-black text-white">£50–£200</div>
+        </div>
+      </div>
+
+      <!-- Mythic -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(201,168,76,0.75); --shimmer: rgba(201,168,76,0.2);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Mythic</div>
+          <div class="text-2xl font-black text-white">£200+</div>
+        </div>
+      </div>
+
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
       <!-- Sapphire -->
@@ -245,70 +309,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
-
-      <!-- Common -->
-      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
-        style="--glow: rgba(163,163,163,0.65); --shimmer: rgba(163,163,163,0.1);">
-        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
-          <span class="price-dot w-4 h-4 rounded-full"></span>
-        </div>
-        <div>
-          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Common</div>
-          <div class="text-2xl font-black text-white">£1–£4</div>
-        </div>
-      </div>
-
-      <!-- Rare -->
-      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
-        style="--glow: rgba(59,130,246,0.75); --shimmer: rgba(59,130,246,0.1);">
-        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
-          <span class="price-dot w-4 h-4 rounded-full"></span>
-        </div>
-        <div>
-          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Rare</div>
-          <div class="text-2xl font-black text-white">£5–£11</div>
-        </div>
-      </div>
-
-      <!-- Super -->
-      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
-        style="--glow: rgba(45,212,191,0.75); --shimmer: rgba(45,212,191,0.1);">
-        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
-          <span class="price-dot w-4 h-4 rounded-full"></span>
-        </div>
-        <div>
-          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Super</div>
-          <div class="text-2xl font-black text-white">£11–£50</div>
-        </div>
-      </div>
-
-      <!-- Legendary -->
-      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
-        style="--glow: rgba(123,79,233,0.65); --shimmer: rgba(123,79,233,0.1);">
-        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
-          <span class="price-dot w-4 h-4 rounded-full"></span>
-        </div>
-        <div>
-          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Legendary</div>
-          <div class="text-2xl font-black text-white">£50–£200</div>
-        </div>
-      </div>
-
-      <!-- Mythic -->
-      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
-        style="--glow: rgba(201,168,76,0.75); --shimmer: rgba(201,168,76,0.2);">
-        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
-          <span class="price-dot w-4 h-4 rounded-full"></span>
-        </div>
-        <div>
-          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Mythic</div>
-          <div class="text-2xl font-black text-white">£200+</div>
-        </div>
-      </div>
-
     </div>
   </section>
 </template>
