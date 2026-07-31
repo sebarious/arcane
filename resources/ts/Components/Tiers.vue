@@ -6,7 +6,7 @@
         :style="{ fontFamily: 'Cinzel, serif', fontWeight: 700 }">
         Flexible Selling <HoloText>Tiers</HoloText>
       </h2>
-      <p class="text-base leading-relaxed text-white/70">
+      <p class="text-base leading-relaxed text-white/80">
         Built to Grow With You. Arcane offers three transparent pricing tiers designed to suit all sellers and buyers.
       </p>
     </div>
@@ -22,10 +22,11 @@
 
         <div class="tier-chip-sapphire inline-flex items-center gap-2 px-3 py-1.5 rounded-md mb-6">
           <span class="text-lg leading-none">💎</span>
-          <span class="text-[11px] font-bold tracking-[0.12em] uppercase text-blue-200">Sapphire &mdash; Start Strong</span>
+          <span class="text-[11px] font-bold tracking-[0.12em] uppercase text-blue-200">Sapphire &mdash; Start
+            Strong</span>
         </div>
 
-        <p class="text-sm text-white/70 leading-relaxed mb-6">
+        <p class="text-sm text-white/80 leading-relaxed mb-6">
           Perfect for launching your first mystery batch.
         </p>
 
@@ -34,10 +35,58 @@
             <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Batch Size</span>
             <span class="text-sm text-white">125 packs</span>
           </div>
-          <div class="flex items-baseline justify-between">
-            <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Rate</span>
-            <span class="text-2xl font-semibold rate-sapphire">£8.00<span class="text-sm text-white/50 font-normal"> /
-                pack</span></span>
+        </div>
+
+        <div class="space-y-3 border-t border-white/10 pt-6">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-common"></span>Common</span>
+              <span class="text-white/50">113 <span class="text-white/80">· 90.4%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.common.badge}]`]" style="width:90.4%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
+              <span class="text-white/50">6 <span class="text-white/80">· 4.8%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.rare.badge}]`]" style="width:4.8%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-super"></span>Super</span>
+              <span class="text-white/50">3 <span class="text-white/80">· 2.4%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.super.badge}]`]" style="width:2.4%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-legendary"></span>Legendary</span>
+              <span class="text-white/50">2 <span class="text-white/80">· 1.6%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.legendary.badge}]`]" style="width:1.6%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-mythic"></span>Mythic</span>
+              <span class="text-white/50">1 <span class="text-white/80">· 0.8%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.mythic.badge}]`]" style="width:0.8%"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -54,7 +103,7 @@
           <span class="text-[11px] font-bold tracking-[0.12em] uppercase text-red-200">Ruby &mdash; Ready to Grow</span>
         </div>
 
-        <p class="text-sm text-white/70 leading-relaxed mb-6">
+        <p class="text-sm text-white/80 leading-relaxed mb-6">
           More value for sellers looking to scale.
         </p>
 
@@ -63,10 +112,58 @@
             <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Batch Size</span>
             <span class="text-sm text-white">250 packs</span>
           </div>
-          <div class="flex items-baseline justify-between">
-            <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Rate</span>
-            <span class="text-2xl font-semibold rate-ruby">£7.50<span class="text-sm text-white/50 font-normal"> /
-                pack</span></span>
+        </div>
+
+        <div class="space-y-3 border-t border-white/10 pt-6">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-common"></span>Common</span>
+              <span class="text-white/50">200 <span class="text-white/80">· 80.0%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.common.badge}]`]" style="width:80.0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
+              <span class="text-white/50">36 <span class="text-white/80">· 14.4%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.rare.badge}]`]" style="width:14.4%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-super"></span>Super</span>
+              <span class="text-white/50">8 <span class="text-white/80">· 3.2%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.super.badge}]`]" style="width:3.2%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-legendary"></span>Legendary</span>
+              <span class="text-white/50">5 <span class="text-white/80">· 2.0%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.legendary.badge}]`]" style="width:2.0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-mythic"></span>Mythic</span>
+              <span class="text-white/50">1 <span class="text-white/80">· 0.4%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.mythic.badge}]`]" style="width:0.4%"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -80,10 +177,11 @@
 
         <div class="tier-chip-diamond inline-flex items-center gap-2 px-3 py-1.5 rounded-md mb-6">
           <span class="text-lg leading-none">💎</span>
-          <span class="text-[11px] font-bold tracking-[0.12em] uppercase" style="color: rgb(232,240,255)">Diamond &mdash; Built to Scale</span>
+          <span class="text-[11px] font-bold tracking-[0.12em] uppercase" style="color: rgb(232,240,255)">Diamond
+            &mdash; Built to Scale</span>
         </div>
 
-        <p class="text-sm text-white/70 leading-relaxed mb-6">
+        <p class="text-sm text-white/80 leading-relaxed mb-6">
           Our best value for high-volume sellers collections.
         </p>
 
@@ -92,11 +190,122 @@
             <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Batch Size</span>
             <span class="text-sm text-white">500 packs</span>
           </div>
-          <div class="flex items-baseline justify-between">
-            <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Rate</span>
-            <span class="text-2xl font-semibold rate-diamond">£7.00<span class="text-sm text-white/50 font-normal"> /
-                pack</span></span>
+        </div>
+
+        <div class="space-y-3 border-t border-white/10 pt-6">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-common"></span>Common</span>
+              <span class="text-white/50">400 <span class="text-white/80">· 80.0%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.common.badge}]`]" style="width:80.0%"></div>
+            </div>
           </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
+              <span class="text-white/50">73 <span class="text-white/80">· 14.6%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.rare.badge}]`]" style="width:14.6%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-super"></span>Super</span>
+              <span class="text-white/50">15 <span class="text-white/80">· 3.0%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.super.badge}]`]" style="width:3.0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-legendary"></span>Legendary</span>
+              <span class="text-white/50">10 <span class="text-white/80">· 2.0%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.legendary.badge}]`]" style="width:2.0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span <span class="w-2 h-2 rounded-full"
+                  :class="`bg-[${RARITY_COLORS.mythic.badge}]`"></span>Mythic</span>
+              <span class="text-white/50">2 <span class="text-white/80">· 0.4%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.mythic.badge}]`]" style="width:0.4%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
+
+      <!-- Common -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(163,163,163,0.65); --shimmer: rgba(163,163,163,0.1);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Common</div>
+          <div class="text-2xl font-black text-white">£1–£4</div>
+        </div>
+      </div>
+
+      <!-- Rare -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(59,130,246,0.75); --shimmer: rgba(59,130,246,0.1);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Rare</div>
+          <div class="text-2xl font-black text-white">£5–£11</div>
+        </div>
+      </div>
+
+      <!-- Super -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(45,212,191,0.75); --shimmer: rgba(45,212,191,0.1);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Super</div>
+          <div class="text-2xl font-black text-white">£11–£50</div>
+        </div>
+      </div>
+
+      <!-- Legendary -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(123,79,233,0.65); --shimmer: rgba(123,79,233,0.1);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Legendary</div>
+          <div class="text-2xl font-black text-white">£50–£200</div>
+        </div>
+      </div>
+
+      <!-- Mythic -->
+      <div class="price-card rounded-xl p-6 flex flex-col gap-4"
+        style="--glow: rgba(201,168,76,0.75); --shimmer: rgba(201,168,76,0.2);">
+        <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
+          <span class="price-dot w-4 h-4 rounded-full"></span>
+        </div>
+        <div>
+          <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Mythic</div>
+          <div class="text-2xl font-black text-white">£200+</div>
         </div>
       </div>
 
@@ -105,6 +314,8 @@
 </template>
 <script setup lang="ts">
 import HoloText from './HoloText.vue';
+import { RARITY_COLORS } from '@/utils';
+
 </script>
 <style>
 body {
@@ -177,5 +388,24 @@ body {
 }
 .rate-diamond {
   color: rgb(232, 240, 255);
+}
+
+.price-card {
+  background: rgba(14, 14, 29, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+.price-card:hover {
+  box-shadow: 0 0 32px -8px var(--glow);
+}
+.price-icon {
+  background: var(--shimmer);
+  box-shadow: 0 0 20px 0 var(--glow);
+}
+.price-dot {
+  background: var(--badge);
+}
+.price-name {
+  color: var(--badge);
 }
 </style>

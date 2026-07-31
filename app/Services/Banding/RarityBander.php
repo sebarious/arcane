@@ -11,15 +11,15 @@ class RarityBander
      *   common:    £0.75 – £3.99
      *   rare:      £4.00 – £10.99
      *   super:     £11.00 – £49.99
-     *   legendary: £50.00 – £149.99
-     *   mythic:    £150.00 – £349.99
+     *   legendary: £50.00 – £199.99
+     *   mythic:    £200.00 – £399.99
      */
     public const DEFAULT_THRESHOLDS = [
         'common'    => ['min' => 75,    'max' => 399], // 2.37
         'rare'      => ['min' => 400,   'max' => 1099], // 7.495
         'super'     => ['min' => 1100,  'max' => 4999], // 30.495
-        'legendary' => ['min' => 5000,  'max' => 14999], // 99.995
-        'mythic'    => ['min' => 15000,  'max' => 34999], // 349.995
+        'legendary' => ['min' => 5000,  'max' => 19999], // 199.99
+        'mythic'    => ['min' => 20000,  'max' => 39999], // 399.99
     ];
 
     /** @param array<string, array{min:int,max:int}>|null $thresholds */
