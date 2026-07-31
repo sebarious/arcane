@@ -76,28 +76,27 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-      <!-- Sapphire -->
+      <!-- Diamond -->
       <div
-        class="card-sapphire p-8 border bg-[#0e0e1d]/60 relative overflow-hidden group rounded transition-colors duration-500">
+        class="card-diamond p-8 border bg-[#0e0e1d]/60 relative overflow-hidden group rounded transition-colors duration-500">
         <div
-          class="absolute inset-0 bg-gradient-to-br from-blue-900/0 to-blue-900/0 group-hover:from-blue-900/10 group-hover:to-transparent transition-all duration-500">
+          class="absolute inset-0 bg-gradient-to-br from-white/0 to-white/0 group-hover:from-white/10 group-hover:to-transparent transition-all duration-500">
         </div>
 
-        <div class="tier-chip-sapphire inline-flex items-center gap-2 px-3 py-1.5 rounded-md mb-6">
+        <div class="tier-chip-diamond inline-flex items-center gap-2 px-3 py-1.5 rounded-md mb-6">
           <span class="text-lg leading-none">💎</span>
-          <span class="text-[11px] font-bold tracking-[0.12em] uppercase text-blue-200">Sapphire &mdash; Start
-            Strong</span>
+          <span class="text-[11px] font-bold tracking-[0.12em] uppercase" style="color: rgb(232,240,255)">Diamond
+            &mdash; Built to Scale</span>
         </div>
 
         <p class="text-sm text-white/80 leading-relaxed mb-6">
-          Perfect for launching your first mystery batch.
+          Our best value for high-volume sellers collections.
         </p>
 
         <div class="space-y-3 border-t border-white/10 pt-6">
           <div class="flex items-baseline justify-between">
             <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Batch Size</span>
-            <span class="text-sm text-white">125 packs</span>
+            <span class="text-sm text-white">500 packs</span>
           </div>
         </div>
 
@@ -106,50 +105,50 @@
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-common"></span>Common</span>
-              <span class="text-white/50">113 <span class="text-white/80">· 90.4%</span></span>
+              <span class="text-white/50">400 <span class="text-white/80">· 80.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-common" style="width:90.4%"></div>
+              <div class="h-full rounded-full bar-common" style="width:80.0%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
-              <span class="text-white/50">6 <span class="text-white/80">· 4.8%</span></span>
+              <span class="text-white/50">73 <span class="text-white/80">· 14.6%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-rare" style="width:4.8%"></div>
+              <div class="h-full rounded-full bar-rare" style="width:14.6%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-super"></span>Super</span>
-              <span class="text-white/50">3 <span class="text-white/80">· 2.4%</span></span>
+              <span class="text-white/50">15 <span class="text-white/80">· 3.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-super" style="width:2.4%"></div>
+              <div class="h-full rounded-full bar-super" style="width:3.0%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-legendary"></span>Legendary</span>
-              <span class="text-white/50">2 <span class="text-white/80">· 1.6%</span></span>
+              <span class="text-white/50">10 <span class="text-white/80">· 2.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-legendary" style="width:1.6%"></div>
+              <div class="h-full rounded-full bar-legendary" style="width:2.0%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-mythic"></span>Mythic</span>
-              <span class="text-white/50">1 <span class="text-white/80">· 0.8%</span></span>
+              <span class="text-white/50">2 <span class="text-white/80">· 0.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-mythic" style="width:0.8%"></div>
+              <div class="h-full rounded-full bar-mythic" style="width:0.4%"></div>
             </div>
           </div>
         </div>
@@ -232,27 +231,27 @@
         </div>
       </div>
 
-      <!-- Diamond -->
+      <!-- Sapphire -->
       <div
-        class="card-diamond p-8 border bg-[#0e0e1d]/60 relative overflow-hidden group rounded transition-colors duration-500">
+        class="card-sapphire p-8 border bg-[#0e0e1d]/60 relative overflow-hidden group rounded transition-colors duration-500">
         <div
-          class="absolute inset-0 bg-gradient-to-br from-white/0 to-white/0 group-hover:from-white/10 group-hover:to-transparent transition-all duration-500">
+          class="absolute inset-0 bg-gradient-to-br from-blue-900/0 to-blue-900/0 group-hover:from-blue-900/10 group-hover:to-transparent transition-all duration-500">
         </div>
 
-        <div class="tier-chip-diamond inline-flex items-center gap-2 px-3 py-1.5 rounded-md mb-6">
+        <div class="tier-chip-sapphire inline-flex items-center gap-2 px-3 py-1.5 rounded-md mb-6">
           <span class="text-lg leading-none">💎</span>
-          <span class="text-[11px] font-bold tracking-[0.12em] uppercase" style="color: rgb(232,240,255)">Diamond
-            &mdash; Built to Scale</span>
+          <span class="text-[11px] font-bold tracking-[0.12em] uppercase text-blue-200">Sapphire &mdash; Start
+            Strong</span>
         </div>
 
         <p class="text-sm text-white/80 leading-relaxed mb-6">
-          Our best value for high-volume sellers collections.
+          Perfect for launching your first mystery batch.
         </p>
 
         <div class="space-y-3 border-t border-white/10 pt-6">
           <div class="flex items-baseline justify-between">
             <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Batch Size</span>
-            <span class="text-sm text-white">500 packs</span>
+            <span class="text-sm text-white">125 packs</span>
           </div>
         </div>
 
@@ -261,50 +260,50 @@
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-common"></span>Common</span>
-              <span class="text-white/50">400 <span class="text-white/80">· 80.0%</span></span>
+              <span class="text-white/50">113 <span class="text-white/80">· 90.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-common" style="width:80.0%"></div>
+              <div class="h-full rounded-full bar-common" style="width:90.4%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
-              <span class="text-white/50">73 <span class="text-white/80">· 14.6%</span></span>
+              <span class="text-white/50">6 <span class="text-white/80">· 4.8%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-rare" style="width:14.6%"></div>
+              <div class="h-full rounded-full bar-rare" style="width:4.8%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-super"></span>Super</span>
-              <span class="text-white/50">15 <span class="text-white/80">· 3.0%</span></span>
+              <span class="text-white/50">3 <span class="text-white/80">· 2.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-super" style="width:3.0%"></div>
+              <div class="h-full rounded-full bar-super" style="width:2.4%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-legendary"></span>Legendary</span>
-              <span class="text-white/50">10 <span class="text-white/80">· 2.0%</span></span>
+              <span class="text-white/50">2 <span class="text-white/80">· 1.6%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-legendary" style="width:2.0%"></div>
+              <div class="h-full rounded-full bar-legendary" style="width:1.6%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-mythic"></span>Mythic</span>
-              <span class="text-white/50">2 <span class="text-white/80">· 0.4%</span></span>
+              <span class="text-white/50">1 <span class="text-white/80">· 0.8%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-mythic" style="width:0.4%"></div>
+              <div class="h-full rounded-full bar-mythic" style="width:0.8%"></div>
             </div>
           </div>
         </div>

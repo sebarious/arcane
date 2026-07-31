@@ -87,7 +87,7 @@
       </div>
 
       <!-- Right: floating pack (desktop only) -->
-      <div class="hidden lg:block">
+      <div>
         <FloatingPack :mouseX="rawX" :mouseY="rawY" />
       </div>
     </div>

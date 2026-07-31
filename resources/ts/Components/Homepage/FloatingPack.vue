@@ -67,7 +67,7 @@
       </div>
 
       <!-- tier boxes restored -->
-      <div class="flex gap-3 mt-8">
+      <div class="gap-3 mt-8 hidden lg:flex">
         <div v-for=" tier in PACK_TIERS " :key="tier.name"
           class="px-4 py-3 backdrop-blur-xl flex flex-col items-center min-w-[96px] transition-transform duration-300 hover:scale-105"
           :style="{
