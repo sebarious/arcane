@@ -60,8 +60,7 @@ Route::get('/sell/thanks/{reference}', SubmissionThankYouController::class)->nam
 
 Route::get('/image/{path}', [ImageController::class, 'show'])
   ->where('path', '.*')
-  ->name('image.show')
-  ->middleware('signed');
+  ->name('image.show');
 
 Route::middleware(['web', 'auth', 'role:seller'])
   ->prefix('seller')

@@ -106,6 +106,7 @@
           </div>
         </div>
       </section>
+      <Tiers />
       <CTA />
       <Footer />
     </main>

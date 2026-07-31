@@ -109,7 +109,7 @@
               <span class="text-white/50">113 <span class="text-white/80">· 90.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.common.badge}]`]" style="width:90.4%"></div>
+              <div class="h-full rounded-full bar-common" style="width:90.4%"></div>
             </div>
           </div>
           <div>
@@ -119,7 +119,7 @@
               <span class="text-white/50">6 <span class="text-white/80">· 4.8%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.rare.badge}]`]" style="width:4.8%"></div>
+              <div class="h-full rounded-full bar-rare" style="width:4.8%"></div>
             </div>
           </div>
           <div>
@@ -129,7 +129,7 @@
               <span class="text-white/50">3 <span class="text-white/80">· 2.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.super.badge}]`]" style="width:2.4%"></div>
+              <div class="h-full rounded-full bar-super" style="width:2.4%"></div>
             </div>
           </div>
           <div>
@@ -139,7 +139,7 @@
               <span class="text-white/50">2 <span class="text-white/80">· 1.6%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.legendary.badge}]`]" style="width:1.6%"></div>
+              <div class="h-full rounded-full bar-legendary" style="width:1.6%"></div>
             </div>
           </div>
           <div>
@@ -149,7 +149,7 @@
               <span class="text-white/50">1 <span class="text-white/80">· 0.8%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.mythic.badge}]`]" style="width:0.8%"></div>
+              <div class="h-full rounded-full bar-mythic" style="width:0.8%"></div>
             </div>
           </div>
         </div>
@@ -186,7 +186,7 @@
               <span class="text-white/50">200 <span class="text-white/80">· 80.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.common.badge}]`]" style="width:80.0%"></div>
+              <div class="h-full rounded-full bar-common" style="width:80.0%"></div>
             </div>
           </div>
           <div>
@@ -196,7 +196,7 @@
               <span class="text-white/50">36 <span class="text-white/80">· 14.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.rare.badge}]`]" style="width:14.4%"></div>
+              <div class="h-full rounded-full bar-rare" style="width:14.4%"></div>
             </div>
           </div>
           <div>
@@ -206,7 +206,7 @@
               <span class="text-white/50">8 <span class="text-white/80">· 3.2%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.super.badge}]`]" style="width:3.2%"></div>
+              <div class="h-full rounded-full bar-super" style="width:3.2%"></div>
             </div>
           </div>
           <div>
@@ -216,7 +216,7 @@
               <span class="text-white/50">5 <span class="text-white/80">· 2.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.legendary.badge}]`]" style="width:2.0%"></div>
+              <div class="h-full rounded-full bar-legendary" style="width:2.0%"></div>
             </div>
           </div>
           <div>
@@ -226,7 +226,7 @@
               <span class="text-white/50">1 <span class="text-white/80">· 0.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.mythic.badge}]`]" style="width:0.4%"></div>
+              <div class="h-full rounded-full bar-mythic" style="width:0.4%"></div>
             </div>
           </div>
         </div>
@@ -264,7 +264,7 @@
               <span class="text-white/50">400 <span class="text-white/80">· 80.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.common.badge}]`]" style="width:80.0%"></div>
+              <div class="h-full rounded-full bar-common" style="width:80.0%"></div>
             </div>
           </div>
           <div>
@@ -274,7 +274,7 @@
               <span class="text-white/50">73 <span class="text-white/80">· 14.6%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.rare.badge}]`]" style="width:14.6%"></div>
+              <div class="h-full rounded-full bar-rare" style="width:14.6%"></div>
             </div>
           </div>
           <div>
@@ -284,7 +284,7 @@
               <span class="text-white/50">15 <span class="text-white/80">· 3.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.super.badge}]`]" style="width:3.0%"></div>
+              <div class="h-full rounded-full bar-super" style="width:3.0%"></div>
             </div>
           </div>
           <div>
@@ -294,17 +294,17 @@
               <span class="text-white/50">10 <span class="text-white/80">· 2.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.legendary.badge}]`]" style="width:2.0%"></div>
+              <div class="h-full rounded-full bar-legendary" style="width:2.0%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
-              <span class="flex items-center gap-2 text-white/80"><span <span class="w-2 h-2 rounded-full"
-                  :class="`bg-[${RARITY_COLORS.mythic.badge}]`"></span>Mythic</span>
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-mythic"></span>Mythic</span>
               <span class="text-white/50">2 <span class="text-white/80">· 0.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div :class="['h-full rounded-full', `bg-[${RARITY_COLORS.mythic.badge}]`]" style="width:0.4%"></div>
+              <div class="h-full rounded-full bar-mythic" style="width:0.4%"></div>
             </div>
           </div>
         </div>
@@ -314,8 +314,10 @@
 </template>
 <script setup lang="ts">
 import HoloText from './HoloText.vue';
-import { RARITY_COLORS } from '@/utils';
-
+// RARITY_COLORS import removed — the bars below use static CSS classes
+// (dot-*/bar-*) instead of Tailwind classes composed from a runtime value,
+// which Tailwind's build can't detect and which risked a hard crash if the
+// import ever resolved differently than expected. See chat notes.
 </script>
 <style>
 .gradient-text {
@@ -384,6 +386,28 @@ import { RARITY_COLORS } from '@/utils';
 }
 .rate-diamond {
   color: rgb(232, 240, 255);
+}
+
+/* Rarity color scale — shared by the dots in the distribution rows and the bars below them */
+.dot-common,
+.bar-common {
+  background: #a3a3a3;
+}
+.dot-rare,
+.bar-rare {
+  background: #3b82f6;
+}
+.dot-super,
+.bar-super {
+  background: #2dd4bf;
+}
+.dot-legendary,
+.bar-legendary {
+  background: #7b4fe9;
+}
+.dot-mythic,
+.bar-mythic {
+  background: #c9a84c;
 }
 
 .price-card {

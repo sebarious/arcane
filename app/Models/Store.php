@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\URL;
 
 class Store extends Model
 {
@@ -42,7 +41,7 @@ class Store extends Model
 
     public function getLogoAttribute(): ?string
     {
-        return $this->attributes['logo'] ? URL::temporarySignedRoute('image.show', now()->addMinutes(5), ['path' => $this->attributes['logo']]) : null;
+        return $this->attributes['logo'] ? route('image.show', ['path' => $this->attributes['logo']]) : null;
     }
 
     public function getRouteKeyName(): string { return 'slug'; }
