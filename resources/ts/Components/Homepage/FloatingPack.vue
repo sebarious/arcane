@@ -1,17 +1,17 @@
 <template>
-  <div class="flex flex-col items-center justify-center h-[380px] md:h-[520px]">
+  <div class="flex flex-col items-center justify-center h-[280px] md:h-[520px]">
     <div class="relative flex flex-col items-center justify-center" :style="{ perspective: '1200px' }">
       <!-- ambient glow -->
-      <div class="absolute w-[420px] h-[420px] rounded-full blur-3xl" :style="{
+      <div class="hidden md:absolute w-[420px] h-[420px] rounded-full blur-3xl" :style="{
         background:
           'radial-gradient(circle, rgba(124,58,237,0.22) 0%, rgba(220,193,117,0.12) 35%, transparent 72%)',
       }" />
 
       <!-- rotating outer aura -->
-      <div class="absolute w-[380px] h-[380px] rounded-full border border-[#DCC175]/10" :style="ringStyle" />
+      <div class="hidden md:absolute w-[380px] md:h-[380px] rounded-full border border-[#DCC175]/10" :style="ringStyle" />
 
       <!-- floating + tilt wrapper -->
-      <div class="relative z-10 transition-transform duration-200 scale-75 md:scale-100" :style="wrapperStyle">
+      <div class="relative z-10 transition-transform duration-200 scale-50 md:scale-100" :style="wrapperStyle">
         <!-- flipping object -->
         <div class="relative" :style="flipContainerStyle">
           <!-- BACK: revealed card -->
