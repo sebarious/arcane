@@ -12,7 +12,7 @@
       <!-- Left: Copy -->
       <div>
         <!-- Live badge -->
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 border border-[#DCC175]/25 bg-[#DCC175]/8 mb-9"
+        <div v-if=" totalAvailableCards ?? 0 " class="inline-flex items-center gap-2 px-3 py-1.5 border border-[#DCC175]/25 bg-[#DCC175]/8 mb-9"
           :style="{ borderRadius: '3px' }">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span class="text-[10px] text-[#DCC175]/70 tracking-[0.3em] uppercase"
