@@ -150,7 +150,7 @@ class RapidIntake extends Page implements HasForms
                             ->defaultItems(1)
                             ->maxItems(self::MAX_ITEMS)
                             ->columns(12)
-                            ->extraItemActions([$this->manualEntryAction()])
+                            ->extraItemActions([$this->retryFetchAction(), $this->manualEntryAction()])
                             ->schema([
                                 TextInput::make('search_number')
                                     ->label('Number')
@@ -352,6 +352,81 @@ class RapidIntake extends Page implements HasForms
         $resolved = self::decodeResolved($get('resolved')) ?? [];
 
         return $resolved['image_url'] ?? null;
+    }
+
+    // Per-row "try again" — re-resolves just this one row (product_id cache/live
+    // lookup, or a fresh name/number search) instead of re-fetching everything via
+    // the header button. Only shown while the row is still unresolved.
+    protected function retryFetchAction(): Action
+    {
+        return Action::make('retryFetch')
+            ->label('Retry fetch')
+            ->icon(Heroicon::OutlinedArrowPath)
+            ->tooltip('Try fetching this card again.')
+            ->visible(function (array $arguments) {
+                $row = $this->data['rows'][$arguments['item']] ?? [];
+                return blank(self::decodeResolved($row['resolved'] ?? null));
+            })
+            ->action(function (array $arguments) {
+                $itemKey = $arguments['item'];
+                $rows    = $this->data['rows'];
+                if (! isset($rows[$itemKey])) return;
+
+                $row        = $rows[$itemKey];
+                $attributes = $this->resolveSingleRow($row);
+
+                if (! $attributes) {
+                    Notification::make()
+                        ->title('Still not found')
+                        ->body('No match for this card — try adjusting the name/number, or use the ✎ button to enter it manually.')
+                        ->warning()
+                        ->send();
+                    return;
+                }
+
+                $rows[$itemKey]['product_id'] = $attributes['product_id'];
+                $rows[$itemKey]['resolved']   = json_encode($attributes);
+                $rows[$itemKey]['market_value_pounds'] = $attributes['market_value_pence'] !== null
+                    ? round($attributes['market_value_pence'] / 100, 2)
+                    : null;
+
+                if (blank($row['cost_pounds'] ?? null) && $attributes['market_value_pence'] !== null) {
+                    $costRatio = (float) config('services.pulseapi.default_cost_ratio', 0.9);
+                    $rows[$itemKey]['cost_pounds'] = round(($attributes['market_value_pence'] * $costRatio) / 100, 2);
+                }
+
+                $this->data['rows'] = $rows;
+                $this->form->fill($this->data);
+
+                Notification::make()->title('Card resolved')->success()->send();
+            });
+    }
+
+    /**
+     * Resolve a single row's card data for the retry action — a known product_id is
+     * checked cache-first then live; otherwise falls back to a name/number search.
+     * (The bulk "Fetch card data" flow has its own batched version of this for
+     * efficiency across many rows — this is deliberately the single-row path.)
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function resolveSingleRow(array $row): ?array
+    {
+        $productId = $row['product_id'] ?? null;
+
+        if ($productId) {
+            $attributes = PulseApiCardMapper::cachedAttributes($productId);
+            if (! $attributes) {
+                $card = app(PulseApiClient::class)->getCard($productId);
+                $attributes = $card ? PulseApiCardMapper::toInventoryAttributes($card) : null;
+            }
+            if ($attributes) return $attributes;
+        }
+
+        return PulseApiCardMapper::searchBestMatch(
+            (string) ($row['card_name'] ?? ''),
+            (string) ($row['search_number'] ?? ''),
+        );
     }
 
     // Per-row fallback for when PulseAPI can't resolve a card (outage, indexing gap,
