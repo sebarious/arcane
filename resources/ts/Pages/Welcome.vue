@@ -110,6 +110,8 @@
       <CTA />
       <Footer />
     </main>
+
+    <SellCardsPopup />
   </div>
 </template>
 
@@ -125,6 +127,7 @@ import CTA from '../Components/Homepage/CTA.vue';
 import Footer from '../Components/Layout/Footer.vue';
 import HoloText from '../Components/HoloText.vue';
 import Tiers from '../Components/Tiers.vue';
+import SellCardsPopup from '../Components/SellCardsPopup.vue';
 import type { Pull } from '../types';
 import { Head } from '@inertiajs/vue3';
 
