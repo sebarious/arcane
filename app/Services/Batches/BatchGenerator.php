@@ -6,6 +6,7 @@ use App\Enums\BatchType;
 use App\Models\Batch;
 use App\Models\CardInventory;
 use App\Models\Pack;
+use App\Services\Banding\RarityBander;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -92,7 +93,7 @@ class BatchGenerator
             continue 2;
           }
           $selected = $selected->merge(
-            $dedupedPool->take($needed)
+            $this->selectForBand($dedupedPool, $needed, $band)
           );
         }
         if ($selected->count() !== $packCount) continue;
@@ -230,5 +231,83 @@ class BatchGenerator
       })
       ->shuffle()
       ->values();
+  }
+
+  /**
+   * Pick $needed cards for a band. For every band except mythic (a deliberate chase
+   * tier — high variance is the point), split the band's own price range (from
+   * RarityBander) into low/mid/high thirds and draw roughly evenly from each, so the
+   * selection's average market value gravitates toward the middle of the band rather
+   * than wherever a plain random draw happens to land.
+   */
+  protected function selectForBand(Collection $pool, int $needed, string $band): Collection
+  {
+    if ($band === 'mythic') {
+      return $pool->shuffle()->take($needed);
+    }
+
+    $range = (new RarityBander())->thresholds()[$band] ?? null;
+    if (! $range) {
+      return $pool->shuffle()->take($needed);
+    }
+
+    $tierWidth = max(1, ($range['max'] - $range['min']) / 3);
+    $lowMax    = $range['min'] + $tierWidth;
+    $midMax    = $range['min'] + (2 * $tierWidth);
+
+    $tiers = [
+      'low'  => $pool->filter(fn ($c) => $c->market_value_pence < $lowMax),
+      'mid'  => $pool->filter(fn ($c) => $c->market_value_pence >= $lowMax && $c->market_value_pence < $midMax),
+      'high' => $pool->filter(fn ($c) => $c->market_value_pence >= $midMax),
+    ];
+
+    $selected   = collect();
+    $selectedIds = [];
+
+    foreach ($this->tierTargets($needed) as $tier => $count) {
+      $take = $tiers[$tier]->shuffle()->take($count);
+      $selected = $selected->merge($take);
+      $selectedIds = [...$selectedIds, ...$take->pluck('id')->all()];
+    }
+
+    // A tier came up short (not enough stock at that price point) — top up from
+    // whatever's left in the band so we still hit $needed, just less evenly spread.
+    if ($selected->count() < $needed) {
+      $extra = $pool
+        ->reject(fn ($c) => in_array($c->id, $selectedIds, true))
+        ->shuffle()
+        ->take($needed - $selected->count());
+      $selected = $selected->merge($extra);
+    }
+
+    return $selected->values();
+  }
+
+  /**
+   * How many of $needed should come from the low/mid/high thirds of the band's range.
+   * Small counts are special-cased to keep the average centred: 1 alone goes to mid
+   * (best single approximation of the midpoint); 2 splits low+high (their average
+   * approximates the midpoint without needing mid-tier stock).
+   *
+   * @return array{low: int, mid: int, high: int}
+   */
+  protected function tierTargets(int $needed): array
+  {
+    if ($needed <= 0) return ['low' => 0, 'mid' => 0, 'high' => 0];
+    if ($needed === 1) return ['low' => 0, 'mid' => 1, 'high' => 0];
+    if ($needed === 2) return ['low' => 1, 'mid' => 0, 'high' => 1];
+
+    $base      = intdiv($needed, 3);
+    $remainder = $needed % 3;
+    $targets   = ['low' => $base, 'mid' => $base, 'high' => $base];
+
+    if ($remainder === 1) {
+      $targets['mid']++;
+    } elseif ($remainder === 2) {
+      $targets['low']++;
+      $targets['high']++;
+    }
+
+    return $targets;
   }
 }
