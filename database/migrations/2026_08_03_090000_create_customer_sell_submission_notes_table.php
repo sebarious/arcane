@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('customer_sell_submission_notes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_sell_submission_id')->constrained()->cascadeOnDelete();
+            // Custom (short) constraint name — the auto-generated one exceeds MySQL's
+            // 64-char identifier limit (Postgres just silently truncates it instead).
+            $table->foreignId('customer_sell_submission_id')
+                ->constrained(indexName: 'css_notes_submission_id_foreign')
+                ->cascadeOnDelete();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->text('note');
             $table->timestamps();

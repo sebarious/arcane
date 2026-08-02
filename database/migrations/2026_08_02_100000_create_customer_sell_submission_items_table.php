@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('customer_sell_submission_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_sell_submission_id')->constrained()->cascadeOnDelete();
+            // Custom (short) constraint name — the auto-generated one exceeds MySQL's
+            // 64-char identifier limit (Postgres just silently truncates it instead).
+            $table->foreignId('customer_sell_submission_id')
+                ->constrained(indexName: 'css_items_submission_id_foreign')
+                ->cascadeOnDelete();
             $table->string('product_id')->nullable();
             $table->string('card_name');
             $table->string('card_number')->nullable();
