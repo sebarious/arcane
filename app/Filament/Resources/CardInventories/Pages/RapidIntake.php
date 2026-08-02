@@ -13,6 +13,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -20,6 +21,8 @@ use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Flex;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -47,6 +50,7 @@ class RapidIntake extends Page implements HasForms
             'acquired_from'   => '',
             'acquisition_lot' => 'LOT-'.now()->format('Y-md').'-'.strtoupper(Str::random(4)),
             'rows'            => [$this->emptyRow()],
+            'bulk_add_count'  => '10',
         ]);
     }
 
@@ -88,6 +92,58 @@ class RapidIntake extends Page implements HasForms
                         'price before saving.'
                     )
                     ->schema([
+                        Flex::make([
+                            Select::make('bulk_add_count')
+                                ->label('')
+                                ->options([
+                                    '1'  => '1 card',
+                                    '10' => '10 cards',
+                                    '20' => '20 cards',
+                                    '30' => '30 cards',
+                                    '40' => '40 cards',
+                                    '50' => '50 cards',
+                                ])
+                                ->default('10')
+                                ->selectablePlaceholder(false)
+                                ->dehydrated(false),
+                            Actions::make([
+                                Action::make('bulkAdd')
+                                    ->label('Add cards')
+                                    ->icon(Heroicon::OutlinedPlusCircle)
+                                    ->color('gray')
+                                    ->action(function () {
+                                        $count = (int) ($this->data['bulk_add_count'] ?? 1);
+                                        $rows  = $this->data['rows'] ?? [];
+
+                                        $available = self::MAX_ITEMS - count($rows);
+                                        $toAdd     = max(0, min($count, $available));
+
+                                        if ($toAdd <= 0) {
+                                            Notification::make()
+                                                ->title('Already at the limit')
+                                                ->body('You can have up to '.self::MAX_ITEMS.' cards per intake.')
+                                                ->warning()
+                                                ->send();
+                                            return;
+                                        }
+
+                                        for ($i = 0; $i < $toAdd; $i++) {
+                                            $rows[] = $this->emptyRow();
+                                        }
+
+                                        $this->data['rows'] = $rows;
+                                        $this->form->fill($this->data);
+
+                                        Notification::make()
+                                            ->title($toAdd < $count
+                                                ? "Added {$toAdd} row(s) — capped at ".self::MAX_ITEMS
+                                                : "Added {$toAdd} row(s)")
+                                            ->success()
+                                            ->send();
+                                    }),
+                            ]),
+                        ]),
+
                         Repeater::make('rows')
                             ->label('')
                             ->addActionLabel('+ Add another card')
