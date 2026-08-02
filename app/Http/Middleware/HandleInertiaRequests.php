@@ -49,6 +49,9 @@ class HandleInertiaRequests extends Middleware
                 'error'   => fn() => $request->session()->get('error'),
                 'status'  => fn() => $request->session()->get('status'),
             ],
+            // Absolute URL fallback for og:image/twitter:image on pages that don't have
+            // a more specific image (a store logo, a card image, etc) to point to.
+            'defaultOgImage' => asset('images/pack.png'),
         ];
     }
 }

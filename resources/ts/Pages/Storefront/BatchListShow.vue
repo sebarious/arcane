@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3'
+import { Head, Link, usePage } from '@inertiajs/vue3'
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
@@ -57,6 +57,21 @@ Object.entries(bands.value).forEach(([band, info]) => {
 const totalOdds = computed( () =>
   ( Object.values( odds ) as number[] ).reduce( ( sum, x ) => sum + x, 0 )
 )
+
+const ogTitle = `${props.store.name} — ${props.batch.type ?? 'Batch'} Card List | Arcane`
+
+const ogDescription = `${props.batch.pack_count} packs live at ${props.store.name} — `
+  + `${odds.mythic ?? 0} mythic, ${odds.legendary ?? 0} legendary hits still in the pool. `
+  + 'See the full card list and pull odds before you buy.'
+
+// Lead with whatever's rarest and still in stock — the best hook for a shared link.
+const ogImage = computed( () => {
+  for ( const band of [ 'mythic', 'legendary', 'super', 'rare', 'common' ] as Rarity[] ) {
+    const withImage = bands.value[ band ]?.cards.find( ( c ) => c.image )
+    if ( withImage?.image ) return withImage.image
+  }
+  return usePage().props.defaultOgImage as string
+} )
 
 const bandOrder: { key: Rarity; label: string, colors: Record<string, string> }[] = [
   {
@@ -140,6 +155,18 @@ const generalMotion = {
 </script>
 
 <template>
+  <Head>
+    <title>{{ ogTitle }}</title>
+    <meta property="og:title" :content="ogTitle" />
+    <meta property="og:description" :content="ogDescription" />
+    <meta property="og:image" :content="ogImage" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" :content="ogTitle" />
+    <meta name="twitter:description" :content="ogDescription" />
+    <meta name="twitter:image" :content="ogImage" />
+  </Head>
+
   <main class="bg-[#0d0b14] overflow-x-hidden">
     <div class="relative shrink-0">
       <div

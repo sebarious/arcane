@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import Nav from '@/Components/Layout/Nav.vue';
 import imgBanner from "@/Assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2.png";
 import Discord from '@/Components/Icons/Logos/Discord.vue';
@@ -66,6 +66,11 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const ogTitle = props.store?.name ? `${props.store.name} Store — Arcane` : 'Store — Arcane';
+const ogDescription = props.store?.description
+  || `${props.store?.total_packs_remaining ?? 0} packs live at ${props.store?.name ?? 'this store'} — see the full card list and pull odds before you buy.`;
+const ogImage = props.store?.logo || (usePage().props.defaultOgImage as string);
+
 const generalMotion = {
   initial: { opacity: 0, y: 18 },
   enter: {
@@ -77,7 +82,17 @@ const generalMotion = {
 </script>
 
 <template>
-  <Head :title="store?.name ? `${store.name} Store` : 'Store'" />
+  <Head>
+    <title>{{ ogTitle }}</title>
+    <meta property="og:title" :content="ogTitle" />
+    <meta property="og:description" :content="ogDescription" />
+    <meta property="og:image" :content="ogImage" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" :content="ogTitle" />
+    <meta name="twitter:description" :content="ogDescription" />
+    <meta name="twitter:image" :content="ogImage" />
+  </Head>
 
   <main class="bg-[#06060b] overflow-x-hidden">
     <div class="relative shrink-0">
