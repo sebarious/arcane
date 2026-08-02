@@ -39,10 +39,13 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
-    'scrydex' => [
-        'url'     => env('SCRYDEX_API_URL', '[api.scrydex.com](https://api.scrydex.com)'),
-        'key'     => env('SCRYDEX_API_KEY'),
-        'team_id' => env('SCRYDEX_TEAM_ID'),
+    'pulseapi' => [
+        'url'               => env('PULSEAPI_URL', 'https://q.pulseapi.dev'),
+        'key'               => env('POKEPULSE_API_KEY'),
+        'price_ttl_days'    => env('PULSEAPI_PRICE_TTL_DAYS', 5),
+        // Default intake cost as a fraction of market value, used to auto-fill "Cost (£)"
+        // on Rapid Intake when it's left blank at fetch time.
+        'default_cost_ratio' => (float) env('PULSEAPI_DEFAULT_COST_RATIO', 0.9),
     ],
 
 ];

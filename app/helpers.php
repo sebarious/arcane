@@ -19,15 +19,10 @@ if (! function_exists('whats_in_the_pool')) {
       ->whereHas('batch', function ($query) {
         $query->whereIn('status', ['committed', 'dispatched']);
       })
-      ->whereHas('card')
-      ->whereHas('card.card.inventory', function ($q) {
+      ->whereHas('card', function ($q) {
         $q->whereNotIn('rarity_band', ['common', 'rare']);
       })
-      ->with([
-        'batch.store',
-        'card.card',
-        'card.card.inventory',
-      ])
+      ->with(['batch.store', 'card'])
       ->get()
       ->sortByDesc(
         fn($pack) =>
@@ -36,8 +31,7 @@ if (! function_exists('whats_in_the_pool')) {
       )
       ->take(10)
       ->map(function ($pack) {
-        $inv  = $pack->card;
-        $card = $inv?->card;
+        $inv = $pack->card;
 
         return [
           'id'       => $pack->id,
@@ -53,12 +47,12 @@ if (! function_exists('whats_in_the_pool')) {
             'reference' => $pack->batch?->reference,
           ],
 
-          'card' => $card ? [
-            'name'   => $card->name,
-            'set'    => $card->set_name,
-            'number' => $card->card_number,
-            'image'  => $card->image_front,
-            'band'   => $inv?->rarity_band,
+          'card' => $inv ? [
+            'name'   => $inv->card_name,
+            'set'    => $inv->set_name,
+            'number' => $inv->card_number,
+            'image'  => $inv->image_url,
+            'band'   => $inv->rarity_band,
           ] : null,
         ];
       })

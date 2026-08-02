@@ -33,15 +33,14 @@ class StoreShowController extends Controller
         // Recent pulls (sold cards)
         $recentPulls = $store->batches()
             ->whereIn('status', ['committed', 'dispatched', 'completed'])
-            ->with(['packs.card.card'])
+            ->with(['packs.card'])
             ->get()
             ->flatMap(fn($batch) => $batch->packs)
             ->filter(fn($pack) => $pack->status === 'sold' && $pack->card)
             ->sortByDesc(fn($pack) => $pack->sold_at ?? $pack->card->delisted_at ?? $pack->updated_at)
             ->take(20)
             ->map(function ($pack) {
-                $inv  = $pack->card;
-                $card = $inv?->card;
+                $inv = $pack->card;
                 return [
                     'id'       => $pack->id,
                     'sequence' => $pack->sequence_no,
@@ -50,12 +49,12 @@ class StoreShowController extends Controller
                         'id'        => $pack->batch_id,
                         'reference' => $pack->batch?->reference,
                     ],
-                    'card' => $card ? [
-                        'name'   => $card->name,
-                        'set'    => $card->set_name,
-                        'number' => $card->card_number,
-                        'image'  => $card->image_front,
-                        'band'   => $inv?->rarity_band,
+                    'card' => $inv ? [
+                        'name'   => $inv->card_name,
+                        'set'    => $inv->set_name,
+                        'number' => $inv->card_number,
+                        'image'  => $inv->image_url,
+                        'band'   => $inv->rarity_band,
                     ] : null,
                 ];
             })

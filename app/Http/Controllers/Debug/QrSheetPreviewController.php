@@ -18,19 +18,18 @@ class QrSheetPreviewController extends Controller
             abort(403);
         }
 
-        $batch->load(['store', 'packs.card.card']);
+        $batch->load(['store', 'packs.card']);
 
         $qrSize = (int) $request->integer('qr_size', 56);
         $nameLimit = (int) $request->integer('name_limit', 14);
         $perPage = (int) $request->integer('per_page', 65);
 
         $rows = $batch->packs()
-            ->with('card.card')
+            ->with('card')
             ->orderBy('sequence_no')
             ->get()
             ->map(function ($pack) use ($qrSize, $nameLimit) {
                 $inv = $pack->card;
-                $card = $inv?->card;
                 $token = $inv?->qr_token;
 
                 $qrPng = null;
@@ -49,10 +48,10 @@ class QrSheetPreviewController extends Controller
 
                 return [
                     'sequence' => $pack->sequence_no,
-                    'name'     => $card?->name ?? 'Unknown',
-                    'name_short' => \Illuminate\Support\Str::limit($card?->name ?? 'Unknown', $nameLimit, ''),
-                    'set'      => $card?->set_name ?? '',
-                    'number'   => $card?->card_number ?? '',
+                    'name'     => $inv?->card_name ?? 'Unknown',
+                    'name_short' => \Illuminate\Support\Str::limit($inv?->card_name ?? 'Unknown', $nameLimit, ''),
+                    'set'      => $inv?->set_name ?? '',
+                    'number'   => $inv?->card_number ?? '',
                     'band'     => $inv?->rarity_band ?? '',
                     'qr_png'   => $qrPng,
                 ];

@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Card;
+use App\Enums\Game;
 use App\Models\CardInventory;
-use App\Models\MarketPriceSnapshot;
 use App\Services\Banding\RarityBander;
 use Illuminate\Database\Seeder;
 
@@ -64,14 +63,9 @@ class CardInventorySeeder extends Seeder
         $bander = new RarityBander();
         $today  = now()->toDateString();
 
-        // We need cards in the library to attach inventory to.
-        // Group library cards however you like; here we just pick at random.
-        $libraryCards = Card::query()->get();
-
-        if ($libraryCards->isEmpty()) {
-            $this->command?->error('No cards in library. Run CardLibrarySeeder first.');
-            return;
-        }
+        // Pick from the same curated catalogue as CardLibrarySeeder to name these units.
+        $catalogue = (new CardLibrarySeeder())->catalogue;
+        $imageUrl  = asset('seed-cards/placeholder.svg');
 
         $createdTotal = 0;
 
@@ -80,8 +74,7 @@ class CardInventorySeeder extends Seeder
             $this->command?->info("Seeding {$count} {$band} cards…");
 
             for ($i = 0; $i < $count; $i++) {
-                // Pick a random library card
-                $card = $libraryCards->random();
+                [$name, $set, $number, $rarity, $variant] = $catalogue[array_rand($catalogue)];
 
                 // Determine market value
                 if ($band === 'mythic' && (mt_rand() / mt_getrandmax()) < $cfg['chase_chance']) {
@@ -92,27 +85,19 @@ class CardInventorySeeder extends Seeder
 
                 $costPence = (int) round($marketPence * $cfg['cost_ratio']);
 
-                // Update / create a snapshot so the card has a market price
-                MarketPriceSnapshot::updateOrCreate(
-                    ['card_id' => $card->id, 'source' => 'seed'],
-                    [
-                        'condition'    => 'NM',
-                        'currency'     => 'GBP',
-                        'median_pence' => $marketPence,
-                        'low_pence'    => (int) round($marketPence * 0.85),
-                        'high_pence'   => (int) round($marketPence * 1.15),
-                        'sample_size'  => 25,
-                        'raw_payload'  => ['source' => 'seed'],
-                        'fetched_at'   => now(),
-                    ],
-                );
-
                 // Confirm the band the bander would assign
                 $computedBand = $bander->bandFor($marketPence);
 
                 CardInventory::create([
-                    'card_id'                  => $card->id,
-                    'game'                     => $card->game?->value ?? 'pokemon',
+                    'product_id'               => "seed:{$set}-{$number}-{$variant}",
+                    'card_name'                => $name,
+                    'card_number'              => $number,
+                    'set_id'                   => $set,
+                    'set_name'                 => 'Scarlet & Violet 151 (Seed)',
+                    'rarity'                   => $rarity,
+                    'language'                 => 'English',
+                    'image_url'                => $imageUrl,
+                    'game'                     => Game::Pokemon->value,
                     'condition'                => 'NM',
                     'cost_pence'               => $costPence,
                     'acquired_at'              => $today,
@@ -121,6 +106,7 @@ class CardInventorySeeder extends Seeder
                     'market_value_pence'       => $marketPence,
                     'market_value_updated_at'  => now(),
                     'rarity_band'              => $computedBand ?? $band,
+                    'synced_at'                => now(),
                     'status'                   => 'in_stock',
                 ]);
 

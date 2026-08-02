@@ -28,10 +28,7 @@ class HomeController extends Controller
                     $query->whereIn('status', ['committed', 'dispatched', 'completed']);
                 })
                 ->whereHas('card')
-                ->with([
-                    'batch.store',
-                    'card.card',
-                ])
+                ->with(['batch.store', 'card'])
                 ->get()
                 ->sortByDesc(
                     fn($pack) =>
@@ -41,8 +38,7 @@ class HomeController extends Controller
                 )
                 ->take(10)
                 ->map(function ($pack) {
-                    $inv  = $pack->card;
-                    $card = $inv?->card;
+                    $inv = $pack->card;
 
                     return [
                         'id'       => $pack->id,
@@ -60,12 +56,12 @@ class HomeController extends Controller
                             'reference' => $pack->batch?->reference,
                         ],
 
-                        'card' => $card ? [
-                            'name'   => $card->name,
-                            'set'    => $card->set_name,
-                            'number' => $card->card_number,
-                            'image'  => $card->image_front,
-                            'band'   => $inv?->rarity_band,
+                        'card' => $inv ? [
+                            'name'   => $inv->card_name,
+                            'set'    => $inv->set_name,
+                            'number' => $inv->card_number,
+                            'image'  => $inv->image_url,
+                            'band'   => $inv->rarity_band,
                         ] : null,
                     ];
                 })

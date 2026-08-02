@@ -2,9 +2,9 @@
 
 namespace App\Services\Pricing;
 
-use App\Models\Card;
+use App\Models\CardInventory;
 
 interface PriceProvider
 {
-  public function refreshPrice(Card $card, string $condition = 'NM'): void;
+  public function refreshPrice(CardInventory $item, string $condition = 'NM'): void;
 }

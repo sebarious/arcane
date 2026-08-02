@@ -23,15 +23,14 @@ class GenerateBatchQrSheetJob implements ShouldQueue
 
     public function handle(): void
     {
-        $batch = Batch::with(['store', 'packs.card.card'])->findOrFail($this->batchId);
+        $batch = Batch::with(['store', 'packs.card'])->findOrFail($this->batchId);
 
         $rows = $batch->packs()
-            ->with('card.card')
+            ->with('card')
             ->orderBy('sequence_no')
             ->get()
             ->map(function ($pack) {
                 $inv   = $pack->card;
-                $card  = $inv?->card;
                 $token = $inv?->qr_token;
 
                 $qrPng = null;
@@ -43,9 +42,9 @@ class GenerateBatchQrSheetJob implements ShouldQueue
 
                 return [
                     'sequence' => $pack->sequence_no,
-                    'name'     => $card?->name ?? 'Unknown',
-                    'set'      => $card?->set_name ?? '',
-                    'number'   => $card?->card_number ?? '',
+                    'name'     => $inv?->card_name ?? 'Unknown',
+                    'set'      => $inv?->set_name ?? '',
+                    'number'   => $inv?->card_number ?? '',
                     'band'     => $inv?->rarity_band ?? '',
                     'qr_png'   => $qrPng,
                 ];

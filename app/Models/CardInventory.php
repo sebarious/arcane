@@ -11,21 +11,27 @@ class CardInventory extends Model
     protected $table = 'card_inventory';
 
     protected $fillable = [
-        'card_id', 'condition', 'cost_pence', 'acquired_at', 'acquired_from',
+        'condition', 'cost_pence', 'acquired_at', 'acquired_from',
         'acquisition_lot', 'market_value_pence', 'market_value_updated_at',
         'rarity_band', 'pack_id', 'qr_token', 'status',
         'allocated_sale_price_pence', 'margin_pence',
-        'delisted_at', 'delisted_by_user_id', 'game'
+        'delisted_at', 'delisted_by_user_id', 'game',
+        // PulseAPI card data
+        'product_id', 'card_name', 'card_number', 'set_id', 'set_name', 'series',
+        'release_date', 'material', 'promo_info', 'graded_by', 'grade',
+        'rarity', 'rarity_rank', 'language', 'illustrator', 'pokedex_number',
+        'image_url', 'slug', 'synced_at',
     ];
 
     protected $casts = [
         'acquired_at'             => 'date',
         'market_value_updated_at' => 'datetime',
         'delisted_at'             => 'datetime',
+        'release_date'            => 'date',
+        'synced_at'               => 'datetime',
         'game'                    => Game::class,
     ];
 
-    public function card()        { return $this->belongsTo(Card::class); }
     public function pack()        { return $this->belongsTo(Pack::class); }
     public function delistedBy()  { return $this->belongsTo(User::class, 'delisted_by_user_id'); }
 

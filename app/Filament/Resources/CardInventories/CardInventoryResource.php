@@ -3,15 +3,18 @@
 namespace App\Filament\Resources\CardInventories;
 
 use App\Filament\Resources\CardInventories\Pages;
-use App\Models\Card;
 use App\Models\CardInventory;
-use App\Services\Banding\RarityBander;
+use App\Services\PulseApi\PulseApiCardMapper;
+use App\Services\Pricing\PulseApiPriceProvider;
 use App\Support\Money;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -48,14 +51,11 @@ class CardInventoryResource extends Resource
                         ))
                         ->default(Game::Pokemon->value)
                         ->required(),
-                    Forms\Components\Select::make('card_id')
+                    Forms\Components\Select::make('product_id')
                         ->label('Card')
-                        ->relationship('card', 'name')
-                        ->getOptionLabelFromRecordUsing(fn (Card $c) =>
-                            "{$c->name} · {$c->set_name} · {$c->card_number}".
-                            ($c->variant && $c->variant !== 'standard' ? " ({$c->variant})" : ''))
-                        ->searchable(['name', 'set_name', 'card_number'])
-                        ->preload()
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search) => PulseApiCardMapper::searchOptions($search))
+                        ->getOptionLabelUsing(fn ($value) => PulseApiCardMapper::labelForProductId($value))
                         ->required(),
                 ]),
 
@@ -68,7 +68,6 @@ class CardInventoryResource extends Resource
                         ->step(0.01)
                         ->prefix('£')
                         ->required()
-                        ->dehydrated(false)
                         ->afterStateHydrated(fn ($component, $record) =>
                             $record && $component->state($record->cost_pence / 100)),
 
@@ -95,10 +94,19 @@ class CardInventoryResource extends Resource
                         ->numeric()
                         ->step(0.01)
                         ->prefix('£')
-                        ->dehydrated(false)
+                        ->helperText('Leave as-is to keep the current value, or type a new one to override it.')
                         ->afterStateHydrated(fn ($component, $record) =>
                             $record?->market_value_pence !== null
                                 && $component->state($record->market_value_pence / 100)),
+
+                    TextEntry::make('synced_at')
+                        ->label('Price last synced')
+                        ->state(fn (?CardInventory $record) => self::timestampDisplay($record?->synced_at)),
+
+                    TextEntry::make('market_value_updated_at')
+                        ->label('PulseAPI price as of')
+                        ->helperText('When PulseAPI itself last calculated this price — not the same as when we synced it.')
+                        ->state(fn (?CardInventory $record) => self::timestampDisplay($record?->market_value_updated_at)),
 
                     Forms\Components\Select::make('rarity_band')
                         ->options([
@@ -128,7 +136,7 @@ class CardInventoryResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('card.image_front')
+                Tables\Columns\ImageColumn::make('image_url')
                     ->label('')
                     ->height(50)
                     ->extraImgAttributes(['class' => 'rounded']),
@@ -147,12 +155,12 @@ class CardInventoryResource extends Resource
                     })
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('card.name')
+                Tables\Columns\TextColumn::make('card_name')
                     ->label('Card')
                     ->searchable()
                     ->sortable()
                     ->description(fn (CardInventory $r) =>
-                        "{$r->card?->set_name} · {$r->card?->card_number}"),
+                        "{$r->set_name} · {$r->card_number}"),
 
                 Tables\Columns\TextColumn::make('cost_pence')
                     ->label('Cost')
@@ -165,6 +173,22 @@ class CardInventoryResource extends Resource
                     ->formatStateUsing(fn ($state) => Money::format($state))
                     ->sortable()
                     ->alignEnd(),
+
+                Tables\Columns\TextColumn::make('synced_at')
+                    ->label('Price synced')
+                    ->since()
+                    ->dateTimeTooltip()
+                    ->placeholder('Never')
+                    ->sortable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('market_value_updated_at')
+                    ->label('PulseAPI price as of')
+                    ->since()
+                    ->dateTimeTooltip()
+                    ->placeholder('—')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('rarity_band')
                     ->label('Rarity')
@@ -244,18 +268,21 @@ class CardInventoryResource extends Resource
                         ->all()),
             ])
             ->recordActions([
-                EditAction::make()
-                    ->mutateFormDataUsing(function (array $data): array {
-                        if (isset($data['cost_pounds'])) {
-                            $data['cost_pence'] = Money::toPence($data['cost_pounds']);
-                            unset($data['cost_pounds']);
-                        }
-                        if (isset($data['market_value_pounds'])) {
-                            $data['market_value_pence'] = Money::toPence($data['market_value_pounds']);
-                            unset($data['market_value_pounds']);
-                        }
-                        return $data;
+                Action::make('resyncPrice')
+                    ->label('Resync price')
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->color('gray')
+                    ->visible(fn (CardInventory $record) => filled($record->product_id))
+                    ->action(function (CardInventory $record) {
+                        app(PulseApiPriceProvider::class)->refreshPrice($record);
+
+                        Notification::make()
+                            ->title('Price resynced')
+                            ->body('New market value: '.Money::format($record->market_value_pence))
+                            ->success()
+                            ->send();
                     }),
+                EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -263,6 +290,13 @@ class CardInventoryResource extends Resource
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    public static function timestampDisplay(?\Illuminate\Support\Carbon $timestamp): string
+    {
+        return $timestamp
+            ? $timestamp->diffForHumans().' ('.$timestamp->format('d M Y, H:i').')'
+            : 'Never';
     }
 
     public static function getPages(): array

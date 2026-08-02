@@ -2,21 +2,30 @@
 
 namespace App\Filament\Resources\CardInventories\Pages;
 
+use App\Enums\Game;
 use App\Filament\Resources\CardInventories\CardInventoryResource;
-use App\Models\Card;
+use App\Models\CardInventory;
+use App\Services\Banding\RarityBander;
+use App\Services\PulseApi\PulseApiCardMapper;
+use App\Services\PulseApi\PulseApiClient;
 use App\Support\Money;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class RapidIntake extends Page implements HasForms
 {
@@ -26,6 +35,9 @@ class RapidIntake extends Page implements HasForms
 
     protected string $view = 'filament.resources.card-inventories.pages.rapid-intake';
 
+    // Matches PulseAPI's batch endpoint limit (POST /cards/batch accepts up to 50 product_ids).
+    public const MAX_ITEMS = 50;
+
     public ?array $data = [];
 
     public function mount(): void
@@ -33,9 +45,22 @@ class RapidIntake extends Page implements HasForms
         $this->form->fill([
             'acquired_at'     => now()->toDateString(),
             'acquired_from'   => '',
-            'acquisition_lot' => 'LOT-'.now()->format('Y-md').'-'.strtoupper(\Illuminate\Support\Str::random(4)),
-            'rows'            => [['card_id' => null, 'cost_pounds' => null, 'quantity' => 1]],
+            'acquisition_lot' => 'LOT-'.now()->format('Y-md').'-'.strtoupper(Str::random(4)),
+            'rows'            => [$this->emptyRow()],
         ]);
+    }
+
+    protected function emptyRow(): array
+    {
+        return [
+            'product_id'          => null,
+            'card_name'           => null,
+            'search_number'       => null,
+            'resolved'            => null,
+            'market_value_pounds' => null,
+            'cost_pounds'         => null,
+            'quantity'            => 1,
+        ];
     }
 
     public function form(Schema $schema): Schema
@@ -56,82 +81,358 @@ class RapidIntake extends Page implements HasForms
                     ]),
 
                 Section::make('Cards')
+                    ->description(
+                        'Up to '.self::MAX_ITEMS.' cards per intake. Type each card\'s name '.
+                        '(and number, if you have it) below, then click "Fetch card data" to '.
+                        'look them all up on PulseAPI at once — review or override the market '.
+                        'price before saving.'
+                    )
                     ->schema([
                         Repeater::make('rows')
                             ->label('')
                             ->addActionLabel('+ Add another card')
                             ->defaultItems(1)
+                            ->maxItems(self::MAX_ITEMS)
                             ->columns(12)
+                            ->extraItemActions([$this->manualEntryAction()])
                             ->schema([
-                                Select::make('card_id')
-                                    ->label('Card')
-                                    ->columnSpan(7)
-                                    ->searchable(['name', 'set_name', 'card_number'])
-                                    ->getSearchResultsUsing(fn (string $search) =>
-                                        Card::query()
-                                            ->where(function ($q) use ($search) {
-                                                $q->where('name', 'ilike', "%{$search}%")
-                                                  ->orWhere('card_number', 'ilike', "%{$search}%");
-                                            })
-                                            ->limit(20)
-                                            ->get()
-                                            ->mapWithKeys(fn ($c) => [
-                                                $c->id => "{$c->name} · {$c->set_name} · {$c->card_number}"
-                                                    .($c->variant && $c->variant !== 'standard' ? " ({$c->variant})" : '')
-                                                    .' — '.Money::format($c->current_market_pence ?? 0),
-                                            ]))
-                                    ->getOptionLabelUsing(fn ($value) => Card::find($value)?->name)
-                                    ->required(),
+                                TextInput::make('search_number')
+                                    ->label('Number')
+                                    ->columnSpan(2)
+                                    ->placeholder('e.g. 199/165'),
 
-                                TextInput::make('cost_pounds')
-                                    ->label('Cost (£)')
-                                    ->columnSpan(3)
+                                TextInput::make('card_name')
+                                    ->label('Card name')
+                                    ->columnSpan(5)
+                                    ->placeholder('e.g. Charizard ex')
+                                    // Not required — if the fetch can't find a match, leave this
+                                    // and use the row's "Fill in manually" (✎) action instead.
+                                    ->helperText('Looked up when you click "Fetch card data" above.'),
+
+                                TextInput::make('market_value_pounds')
+                                    ->label('Market (£)')
+                                    ->columnSpan(2)
                                     ->numeric()
                                     ->step(0.01)
                                     ->prefix('£')
-                                    ->required(),
+                                    ->helperText('Auto-filled by fetch — edit to override.'),
+
+                                TextInput::make('cost_pounds')
+                                    ->label('Cost (£)')
+                                    ->columnSpan(2)
+                                    ->numeric()
+                                    ->step(0.01)
+                                    ->prefix('£')
+                                    ->required()
+                                    ->helperText('Leave blank — auto-filled by fetch.'),
 
                                 TextInput::make('quantity')
                                     ->label('Qty')
-                                    ->columnSpan(2)
+                                    ->columnSpan(1)
                                     ->numeric()
                                     ->minValue(1)
                                     ->default(1)
                                     ->required(),
+
+                                ImageEntry::make('preview_image')
+                                    ->label('')
+                                    ->columnSpan(1)
+                                    ->imageSize(48)
+                                    ->extraImgAttributes(['class' => 'rounded object-cover cursor-zoom-in'])
+                                    ->state(fn (callable $get) => self::resolvedImageUrl($get))
+                                    ->url(fn (callable $get) => self::resolvedImageUrl($get))
+                                    ->openUrlInNewTab()
+                                    ->visible(fn (callable $get) => filled(self::resolvedImageUrl($get))),
+
+                                TextEntry::make('preview')
+                                    ->label('')
+                                    ->columnSpan(11)
+                                    ->state(function (callable $get) {
+                                        $resolved = self::decodeResolved($get('resolved'));
+
+                                        if (! $resolved) {
+                                            return 'Not fetched yet — click "Fetch card data" above.';
+                                        }
+
+                                        return sprintf(
+                                            '%s · %s · %s · %s',
+                                            $resolved['card_name'] ?? '?',
+                                            $resolved['set_name'] ?? '?',
+                                            $resolved['card_number'] ?? '?',
+                                            $resolved['rarity'] ?? '?',
+                                        );
+                                    }),
+
+                                // Carries the fetched card data (name/set/image/rarity/etc.) through
+                                // to save() — JSON-encoded, since a plain hidden <input> can only
+                                // round-trip a string via wire:model, not a raw PHP array.
+                                Hidden::make('resolved'),
                             ])
-                            ->itemLabel(fn (array $state) =>
-                                $state['card_id']
-                                    ? Card::find($state['card_id'])?->name
-                                    : null),
+                            ->itemLabel(function (array $state) {
+                                $resolved = self::decodeResolved($state['resolved'] ?? null);
+                                if ($resolved) {
+                                    return $resolved['card_name'] ?? null;
+                                }
+
+                                return trim(($state['card_name'] ?? '').' '.($state['search_number'] ?? '')) ?: null;
+                            }),
                     ]),
             ])
             ->statePath('data');
     }
 
+    public function fetchCardData(): void
+    {
+        // getRawState(), not getState() — Cost (£) is required for Save, but Fetch should
+        // work before it's filled in (we auto-fill it from the resolved price below), so
+        // this deliberately skips form validation rather than blocking on it.
+        $rows = $this->form->getRawState()['rows'] ?? [];
+
+        if (collect($rows)->every(fn ($row) => blank($row['card_name'] ?? null) && blank($row['search_number'] ?? null))) {
+            Notification::make()->title('Nothing to fetch')->body('Type a card name or number first.')->warning()->send();
+            return;
+        }
+
+        // Rows that already resolved once (e.g. re-clicking Fetch) go through the
+        // cache-first + batch path. Everything else needs an individual search —
+        // PulseAPI's batch endpoint takes known product_ids, not free-text queries,
+        // so there's no way to combine N different name/number searches into one call.
+        $knownIds = collect($rows)->pluck('product_id')->filter()->unique()->values();
+        $resolvedById = $knownIds->isNotEmpty() ? $this->resolveProductIds($knownIds)[0] : [];
+
+        $resolvedCount = 0;
+        $missingCount  = 0;
+
+        foreach ($rows as $i => $row) {
+            $productId  = $row['product_id'] ?? null;
+            $attributes = $productId ? ($resolvedById[$productId] ?? null) : null;
+
+            if (! $attributes) {
+                $attributes = PulseApiCardMapper::searchBestMatch(
+                    (string) ($row['card_name'] ?? ''),
+                    (string) ($row['search_number'] ?? ''),
+                );
+            }
+
+            if (! $attributes) {
+                if (filled($row['card_name'] ?? null) || filled($row['search_number'] ?? null)) {
+                    $missingCount++;
+                }
+                continue;
+            }
+
+            $rows[$i]['product_id'] = $attributes['product_id'];
+            $rows[$i]['resolved']   = json_encode($attributes);
+            $rows[$i]['market_value_pounds'] = $attributes['market_value_pence'] !== null
+                ? round($attributes['market_value_pence'] / 100, 2)
+                : null;
+
+            // Auto-fill Cost (£) when left blank, as a percentage of market value —
+            // still freely editable before saving.
+            if (blank($row['cost_pounds'] ?? null) && $attributes['market_value_pence'] !== null) {
+                $costRatio = (float) config('services.pulseapi.default_cost_ratio', 0.9);
+                $rows[$i]['cost_pounds'] = round(($attributes['market_value_pence'] * $costRatio) / 100, 2);
+            }
+
+            $resolvedCount++;
+        }
+
+        $this->data['rows'] = $rows;
+        $this->form->fill($this->data);
+
+        Notification::make()
+            ->title('Card data fetched')
+            ->body($missingCount > 0
+                ? "{$resolvedCount} card(s) resolved. {$missingCount} couldn't be found — use the ✎ button on those rows."
+                : 'All cards resolved — review the prices below, then save.')
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Cache-first resolution: reuse recent card_inventory data per product_id
+     * (see PulseApiCardMapper::cachedAttributes) and only batch-fetch what's missing/stale.
+     *
+     * @param  Collection<int, string>  $productIds
+     * @return array{0: array<string, array<string, mixed>>, 1: int} [resolved map, missing count]
+     */
+    protected function resolveProductIds(Collection $productIds): array
+    {
+        $resolved   = [];
+        $needsFetch = [];
+
+        foreach ($productIds as $productId) {
+            $cached = PulseApiCardMapper::cachedAttributes($productId);
+            if ($cached) {
+                $resolved[$productId] = $cached;
+            } else {
+                $needsFetch[] = $productId;
+            }
+        }
+
+        if (! empty($needsFetch)) {
+            $fetched = app(PulseApiClient::class)->batchGetCards($needsFetch);
+            foreach ($fetched as $productId => $card) {
+                if ($card) {
+                    $resolved[$productId] = PulseApiCardMapper::toInventoryAttributes($card);
+                }
+            }
+        }
+
+        $missingCount = $productIds->reject(fn ($id) => isset($resolved[$id]))->count();
+
+        return [$resolved, $missingCount];
+    }
+
+    protected static function decodeResolved(mixed $resolved): ?array
+    {
+        if (is_array($resolved)) return $resolved;
+        if (is_string($resolved) && $resolved !== '') return json_decode($resolved, true);
+        return null;
+    }
+
+    protected static function resolvedImageUrl(callable $get): ?string
+    {
+        $resolved = self::decodeResolved($get('resolved')) ?? [];
+
+        return $resolved['image_url'] ?? null;
+    }
+
+    // Per-row fallback for when PulseAPI can't resolve a card (outage, indexing gap,
+    // not in their catalogue, etc.) — only shown while that row is still unresolved.
+    protected function manualEntryAction(): Action
+    {
+        return Action::make('manualEntry')
+            ->label('Fill in manually')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->tooltip('PulseAPI lookup failed for this card — enter the details by hand.')
+            ->visible(function (array $arguments) {
+                $row = $this->data['rows'][$arguments['item']] ?? [];
+                return blank(self::decodeResolved($row['resolved'] ?? null));
+            })
+            ->fillForm(function (array $arguments) {
+                $row = $this->data['rows'][$arguments['item']] ?? [];
+                return [
+                    'card_name'           => $row['card_name'] ?? null,
+                    'card_number'         => $row['search_number'] ?? null,
+                    'market_value_pounds' => $row['market_value_pounds'] ?? null,
+                ];
+            })
+            ->schema([
+                TextInput::make('card_name')->label('Card name')->required(),
+                TextInput::make('set_name')->label('Set name'),
+                TextInput::make('card_number')->label('Number')->placeholder('e.g. 199/165'),
+                TextInput::make('rarity')->label('Rarity'),
+                TextInput::make('image_url')->label('Image URL')->url(),
+                TextInput::make('market_value_pounds')
+                    ->label('Market price (£)')
+                    ->numeric()
+                    ->step(0.01)
+                    ->prefix('£'),
+            ])
+            ->modalHeading('Enter card details manually')
+            ->modalDescription('PulseAPI couldn\'t resolve this card — fill in what you can from the physical card, then save as usual.')
+            ->action(function (array $data, array $arguments) {
+                $itemKey = $arguments['item'];
+                $rows = $this->data['rows'];
+                if (! isset($rows[$itemKey])) return;
+
+                $marketPence = filled($data['market_value_pounds'] ?? null)
+                    ? Money::toPence($data['market_value_pounds'])
+                    : null;
+
+                $resolved = [
+                    'product_id'              => $rows[$itemKey]['product_id'] ?? null,
+                    'card_name'               => $data['card_name'],
+                    'set_name'                => $data['set_name'] ?? null,
+                    'card_number'             => $data['card_number'] ?? null,
+                    'rarity'                  => $data['rarity'] ?? null,
+                    'image_url'               => $data['image_url'] ?? null,
+                    'market_value_pence'      => $marketPence,
+                    // Neither field is PulseAPI's — this was hand-typed, never synced from them.
+                    'market_value_updated_at' => null,
+                    'synced_at'               => null,
+                ];
+
+                $rows[$itemKey]['resolved'] = json_encode($resolved);
+                $rows[$itemKey]['market_value_pounds'] = $data['market_value_pounds'] ?? null;
+
+                $this->data['rows'] = $rows;
+                $this->form->fill($this->data);
+
+                Notification::make()->title('Card data filled in manually')->success()->send();
+            });
+    }
+
     public function save(): void
     {
         $state = $this->form->getState();
+        $rows  = $state['rows'] ?? [];
 
         $created = 0;
-        DB::transaction(function () use ($state, &$created) {
-            foreach ($state['rows'] as $row) {
-                $card = Card::find($row['card_id']);
-                if (! $card) continue;
+        $skipped = 0;
 
-                $inventory = $card->addToInventory(
-                    costPence:      Money::toPence($row['cost_pounds']),
-                    acquiredAt:     $state['acquired_at'],
-                    acquiredFrom:   $state['acquired_from'] ?: null,
-                    acquisitionLot: $state['acquisition_lot'] ?: null,
-                    quantity:       (int) ($row['quantity'] ?? 1),
-                );
-                $created += $inventory->count();
+        DB::transaction(function () use ($rows, $state, &$created, &$skipped) {
+            foreach ($rows as $row) {
+                // No product_id requirement here — a manually-entered row (PulseAPI had
+                // no match at all) never gets one, only $resolved from the popup.
+                $resolved = self::decodeResolved($row['resolved'] ?? null);
+                if (! $resolved) {
+                    $skipped++;
+                    continue;
+                }
+
+                $quantity  = (int) ($row['quantity'] ?? 1);
+                $costPence = Money::toPence($row['cost_pounds']);
+
+                // Honor a manual override of the fetched market price, if the user edited it.
+                $override    = $row['market_value_pounds'] ?? null;
+                $marketPence = ($override !== null && $override !== '')
+                    ? Money::toPence($override)
+                    : $resolved['market_value_pence'];
+
+                $attributes = [
+                    ...$resolved,
+                    'market_value_pence' => $marketPence,
+                    'rarity_band'        => (new RarityBander())->bandFor($marketPence),
+                ];
+
+                // If the price actually changed from what was fetched, that's us setting it —
+                // bump our own sync timestamp. PulseAPI's own timestamp is left untouched.
+                if ($marketPence !== $resolved['market_value_pence']) {
+                    $attributes['synced_at'] = now();
+                }
+
+                for ($i = 0; $i < $quantity; $i++) {
+                    CardInventory::create([
+                        ...$attributes,
+                        'condition'       => 'NM',
+                        'cost_pence'      => $costPence,
+                        'acquired_at'     => $state['acquired_at'],
+                        'acquired_from'   => $state['acquired_from'] ?: null,
+                        'acquisition_lot' => $state['acquisition_lot'] ?: null,
+                        'status'          => 'in_stock',
+                        'game'            => Game::Pokemon->value,
+                    ]);
+                    $created++;
+                }
             }
         });
 
+        if ($created === 0) {
+            Notification::make()
+                ->title('Nothing saved')
+                ->body('Click "Fetch card data" first, then save.')
+                ->danger()
+                ->send();
+            return;
+        }
+
         Notification::make()
-            ->title("Intake complete")
-            ->body("{$created} cards added to inventory.")
+            ->title('Intake complete')
+            ->body($skipped > 0
+                ? "{$created} cards added to inventory. {$skipped} row(s) skipped — not fetched or missing."
+                : "{$created} cards added to inventory.")
             ->success()
             ->send();
 
@@ -141,6 +442,10 @@ class RapidIntake extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('fetchCardData')
+                ->label('Fetch card data')
+                ->action('fetchCardData')
+                ->color('gray'),
             Action::make('save')
                 ->label('Save intake')
                 ->action('save')

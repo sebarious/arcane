@@ -42,22 +42,21 @@ class BatchesController extends Controller
             abort(403);
         }
 
-        $batch->load(['store', 'packs.card.card']);
+        $batch->load(['store', 'packs.card']);
 
         $packs = $batch->packs->map(function ($pack) {
-            $inv  = $pack->card;
-            $card = $inv?->card;
+            $inv = $pack->card;
 
             return [
                 'id'       => $pack->id,
                 'sequence' => $pack->sequence_no,
                 'status'   => $pack->status,
-                'card'     => $card ? [
-                    'name'   => $card->name,
-                    'set'    => $card->set_name,
-                    'number' => $card->card_number,
-                    'image'  => $card->image_front,
-                    'band'   => $inv?->rarity_band,
+                'card'     => $inv ? [
+                    'name'   => $inv->card_name,
+                    'set'    => $inv->set_name,
+                    'number' => $inv->card_number,
+                    'image'  => $inv->image_url,
+                    'band'   => $inv->rarity_band,
                 ] : null,
             ];
         });

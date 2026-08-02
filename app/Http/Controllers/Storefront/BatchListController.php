@@ -18,7 +18,7 @@ class BatchListController extends Controller
 
         // Remaining cards in this batch (sealed packs)
         $remaining = $batch->packs()
-            ->with('card.card')
+            ->with('card')
             ->get()
             ->filter(fn($pack) => $pack->status === 'sealed')
             ->map(fn($pack) => $pack->card)
@@ -32,12 +32,11 @@ class BatchListController extends Controller
             $bands[$band] = [
                 'count' => $cards->count(),
                 'cards' => $cards->map(function ($inv) {
-                    $card = $inv->card;
                     return [
-                        'name'   => $card?->name,
-                        'set'    => $card?->set_name,
-                        'number' => $card?->card_number,
-                        'image'  => $card?->image_front,
+                        'name'   => $inv->card_name,
+                        'set'    => $inv->set_name,
+                        'number' => $inv->card_number,
+                        'image'  => $inv->image_url,
                         'band'   => $inv->rarity_band,
                         'market_price' => $inv->market_value_pence ? round($inv->market_value_pence / 100, 2) : null,
                     ];

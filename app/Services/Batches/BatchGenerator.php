@@ -224,7 +224,7 @@ class BatchGenerator
   protected function poolWithDuplicateLimit(\Illuminate\Support\Collection $cards, int $limitPerCard): \Illuminate\Support\Collection
   {
     return $cards
-      ->groupBy('card_id')
+      ->groupBy('product_id')
       ->flatMap(function ($group) use ($limitPerCard) {
         return $group->shuffle()->take($limitPerCard);
       })

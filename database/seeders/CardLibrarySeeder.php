@@ -2,8 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Card;
-use App\Models\MarketPriceSnapshot;
+use App\Enums\Game;
+use App\Models\CardInventory;
+use App\Services\Banding\RarityBander;
 use Illuminate\Database\Seeder;
 
 class CardLibrarySeeder extends Seeder
@@ -11,6 +12,7 @@ class CardLibrarySeeder extends Seeder
     /**
      * Each entry: [name, set, number, printed_rarity, variant, market_value_pence].
      * Spread across our value bands so batch generation has something to chew on.
+     * Public so CardInventorySeeder can reuse the same catalogue for its bulk stock.
      *
      *   common:    £1 – £3
      *   rare:      £3 – £10
@@ -18,7 +20,7 @@ class CardLibrarySeeder extends Seeder
      *   legendary: £30 – £100
      *   mythic:    £100+
      */
-    protected array $catalogue = [
+    public array $catalogue = [
         // ── Commons (~£1-3) — bulk fodder ──────────────────────────────────
         ['Pikachu',            'sv3pt5', '025/165', 'Common',    'standard', 150],
         ['Bulbasaur',          'sv3pt5', '001/165', 'Common',    'standard', 120],
@@ -102,42 +104,31 @@ class CardLibrarySeeder extends Seeder
 
     public function run(): void
     {
-        $imagePath = asset('seed-cards/placeholder.svg');
+        $imageUrl = asset('seed-cards/placeholder.svg');
+        $bander   = new RarityBander();
 
-        foreach ($this->catalogue as $i => [$name, $set, $number, $rarity, $variant, $marketPence]) {
-            $card = Card::updateOrCreate(
+        foreach ($this->catalogue as [$name, $set, $number, $rarity, $variant, $marketPence]) {
+            CardInventory::updateOrCreate(
+                ['product_id' => "seed:{$set}-{$number}-{$variant}"],
                 [
-                    'set_code'    => $set,
-                    'card_number' => $number,
-                    'variant'     => $variant,
-                    'language'    => 'en',
-                ],
-                [
-                    'scrydex_id'     => "seed-{$set}-{$number}-{$variant}",
-                    'name'           => $name,
-                    'set_name'       => 'Scarlet & Violet 151 (Seed)',
-                    'language_code'  => 'EN',
-                    'printed_rarity' => $rarity,
-                    'image_front'    => $imagePath,
-                    'external_ids'   => ['seed' => true],
-                ],
-            );
-
-            // Snapshot a synthetic GBP market price so banding works.
-            MarketPriceSnapshot::updateOrCreate(
-                [
-                    'card_id' => $card->id,
-                    'source'  => 'seed',
-                ],
-                [
-                    'condition'    => 'NM',
-                    'currency'     => 'GBP',
-                    'median_pence' => $marketPence,
-                    'low_pence'    => (int) round($marketPence * 0.85),
-                    'high_pence'   => (int) round($marketPence * 1.15),
-                    'sample_size'  => 25,
-                    'raw_payload'  => ['source' => 'seed', 'note' => 'Synthetic dev data'],
-                    'fetched_at'   => now(),
+                    'card_name'                => $name,
+                    'card_number'              => $number,
+                    'set_id'                   => $set,
+                    'set_name'                 => 'Scarlet & Violet 151 (Seed)',
+                    'rarity'                   => $rarity,
+                    'language'                 => 'English',
+                    'image_url'                => $imageUrl,
+                    'game'                     => Game::Pokemon->value,
+                    'condition'                => 'NM',
+                    'cost_pence'               => (int) round($marketPence * 0.7),
+                    'acquired_at'              => now()->toDateString(),
+                    'acquired_from'            => 'Dev seed',
+                    'acquisition_lot'          => 'SEED-LIBRARY',
+                    'market_value_pence'       => $marketPence,
+                    'market_value_updated_at'  => now(),
+                    'rarity_band'              => $bander->bandFor($marketPence),
+                    'synced_at'                => now(),
+                    'status'                   => 'in_stock',
                 ],
             );
         }
