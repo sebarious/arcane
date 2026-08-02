@@ -30,13 +30,14 @@ return [
     ],
 
     // Game::Magic->value, etc. can be customised later
+  ],
 
-    'duplicate_limits' => [
-      'common'    => 4,
-      'rare'      => 2,
-      'super'     => 1,
-      'legendary' => 1,
-      'mythic'    => 1,
-    ],
+  // Max copies of the same product_id allowed in a single generated batch, per band.
+  'duplicate_limits' => [
+    'common'    => 4,
+    'rare'      => 2,
+    'super'     => 1,
+    'legendary' => 1,
+    'mythic'    => 1,
   ],
 ];
