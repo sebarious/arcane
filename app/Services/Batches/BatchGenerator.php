@@ -65,11 +65,26 @@ class BatchGenerator
         ->get();
 
       $bucketed = $pool->groupBy('rarity_band');
+      $duplicateLimits = config('banding.duplicate_limits', []);
 
       foreach ($bandDistribution as $band => $needed) {
-        $available = ($bucketed[$band] ?? collect())->count();
+        $bandPool  = $bucketed[$band] ?? collect();
+        $available = $bandPool->count();
         if ($available < $needed) {
           throw new \RuntimeException("Not enough {$band} stock: need {$needed}, have {$available}.");
+        }
+
+        // Raw count alone isn't enough — duplicate copies of the same card are capped
+        // per band (config('banding.duplicate_limits')), so also check what's actually
+        // reachable once that cap is applied, to fail fast with a clear reason instead
+        // of burning all 150 selection attempts on a band that can never be satisfied.
+        $limitPerCard = (int) ($duplicateLimits[$band] ?? 1);
+        $capped       = $this->maxAvailableWithDuplicateLimit($bandPool, $limitPerCard);
+        if ($capped < $needed) {
+          throw new \RuntimeException(
+            "Not enough distinct {$band} stock: need {$needed}, but the duplicate limit ".
+            "({$limitPerCard} per card) caps available stock at {$capped} (from {$available} raw)."
+          );
         }
       }
 
@@ -231,6 +246,19 @@ class BatchGenerator
       })
       ->shuffle()
       ->values();
+  }
+
+  /**
+   * How many cards from this pool are actually reachable once the per-product-id
+   * duplicate cap is applied — i.e. sum(min(copies, $limitPerCard)) across distinct
+   * cards, rather than the pool's raw count. Same shape as poolWithDuplicateLimit()
+   * but just the count, so callers can check feasibility without building the pool.
+   */
+  protected function maxAvailableWithDuplicateLimit(\Illuminate\Support\Collection $cards, int $limitPerCard): int
+  {
+    return $cards
+      ->groupBy('product_id')
+      ->sum(fn ($group) => min($group->count(), $limitPerCard));
   }
 
   /**
