@@ -16,6 +16,7 @@ use App\Http\Controllers\Storefront\BatchListController;
 use App\Http\Controllers\Sell\SubmissionCreateController;
 use App\Http\Controllers\Sell\SubmissionStoreController;
 use App\Http\Controllers\Sell\SubmissionThankYouController;
+use App\Http\Controllers\Sell\SellCardSearchController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Seller\BatchRequestController;
 use App\Http\Controllers\ImageController;
@@ -57,6 +58,9 @@ Route::get('/apply/thanks', SellerApplicationThankYouController::class)->name('a
 Route::get('/sell', SubmissionCreateController::class)->name('sell.create');
 Route::post('/sell', SubmissionStoreController::class)->name('sell.store');
 Route::get('/sell/thanks/{reference}', SubmissionThankYouController::class)->name('sell.thankyou');
+Route::get('/sell/search-cards', SellCardSearchController::class)
+    ->middleware('throttle:20,1')
+    ->name('sell.search-cards');
 
 Route::get('/image/{path}', [ImageController::class, 'show'])
   ->where('path', '.*')

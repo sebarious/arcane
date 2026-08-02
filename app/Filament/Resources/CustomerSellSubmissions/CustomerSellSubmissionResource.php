@@ -6,7 +6,9 @@ use App\Filament\Resources\CustomerSellSubmissions\Pages\EditCustomerSellSubmiss
 use App\Filament\Resources\CustomerSellSubmissions\Pages\ListCustomerSellSubmissions;
 use App\Filament\Resources\CustomerSellSubmissions\Tables\CustomerSellSubmissionsTable;
 use App\Models\CustomerSellSubmission;
+use App\Support\Money;
 use BackedEnum;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -40,12 +42,46 @@ class CustomerSellSubmissionResource extends Resource
                     Forms\Components\TextInput::make('customer_phone')->disabled(),
                     Forms\Components\TextInput::make('customer_postcode')->disabled(),
                 ]),
-            Section::make('Submission')
+            Section::make('Cards submitted')
                 ->columnSpanFull()
                 ->schema([
+                    TextEntry::make('estimated_value_display')
+                        ->label('Indicative total offer')
+                        ->state(fn (?CustomerSellSubmission $record) => Money::format($record?->estimated_value_pence)),
+                    Forms\Components\Repeater::make('items')
+                        ->relationship()
+                        ->label('')
+                        ->schema([
+                            Forms\Components\TextInput::make('card_name')->label('Card')->disabled(),
+                            Forms\Components\TextInput::make('set_name')->label('Set')->disabled(),
+                            Forms\Components\TextInput::make('card_number')->label('Number')->disabled(),
+                            Forms\Components\TextInput::make('quantity')->label('Qty')->disabled(),
+                            Forms\Components\TextInput::make('band')->label('Band')->disabled(),
+                            Forms\Components\TextInput::make('total_offer_pence')
+                                ->label('Offer')
+                                ->disabled()
+                                ->formatStateUsing(fn ($state) => Money::format($state)),
+                        ])
+                        ->columns(6)
+                        ->disabled()
+                        ->addable(false)
+                        ->deletable(false)
+                        ->reorderable(false)
+                        ->columnSpanFull(),
+                ]),
+            Section::make('Additional notes')
+                ->columnSpanFull()
+                ->visible(fn (?CustomerSellSubmission $record) => filled($record?->description))
+                ->schema([
                     Forms\Components\Textarea::make('description')
+                        ->label('')
                         ->rows(4)
                         ->disabled(),
+                ]),
+            Section::make('Photos')
+                ->columnSpanFull()
+                ->visible(fn (?CustomerSellSubmission $record) => filled($record?->images))
+                ->schema([
                     Forms\Components\ViewField::make('images')
                         ->label('Images')
                         ->view('filament.forms.components.sell-images')
@@ -66,6 +102,25 @@ class CustomerSellSubmissionResource extends Resource
                         ])
                         ->required(),
                 ]),
+            Section::make('Notes history')
+                ->columnSpanFull()
+                ->description('How this submission has been handled over time. Use "Add note" above to log an update.')
+                ->schema([
+                    Forms\Components\Repeater::make('notes')
+                        ->relationship()
+                        ->label('')
+                        ->schema([
+                            Forms\Components\TextInput::make('author_name')->label('By')->disabled(),
+                            Forms\Components\TextInput::make('created_at')->label('When')->disabled(),
+                            Forms\Components\Textarea::make('note')->label('Note')->disabled()->rows(2)->columnSpanFull(),
+                        ])
+                        ->columns(2)
+                        ->disabled()
+                        ->addable(false)
+                        ->deletable(false)
+                        ->reorderable(false)
+                        ->columnSpanFull(),
+                ]),
         ]);
     }
 
@@ -83,6 +138,14 @@ class CustomerSellSubmissionResource extends Resource
                 Tables\Columns\TextColumn::make('customer_email')
                     ->label('Email')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('items_count')
+                    ->label('Cards')
+                    ->getStateUsing(fn (CustomerSellSubmission $record) => $record->items()->count())
+                    ->alignEnd(),
+                Tables\Columns\TextColumn::make('estimated_value_pence')
+                    ->label('Indicative offer')
+                    ->formatStateUsing(fn ($state) => Money::format($state))
+                    ->alignEnd(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()

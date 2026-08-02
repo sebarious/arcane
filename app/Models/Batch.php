@@ -17,6 +17,7 @@ class Batch extends Model
         'type', 'game',
         'failure_reason',
         'failed_at',
+        'merged_into_batch_id', 'merged_at',
 
     ];
 
@@ -24,6 +25,7 @@ class Batch extends Model
         'committed_at'  => 'datetime',
         'dispatched_at' => 'datetime',
         'failed_at'     => 'datetime',
+        'merged_at'     => 'datetime',
         'type'          => BatchType::class,
         'game'          => Game::class,
     ];
@@ -31,6 +33,17 @@ class Batch extends Model
     public function store()    { return $this->belongsTo(Store::class); }
     public function packs()    { return $this->hasMany(Pack::class); }
     public function invoice()  { return $this->belongsTo(Invoice::class); }
+
+    // The batch this one was merged into, if any.
+    public function mergedInto() { return $this->belongsTo(Batch::class, 'merged_into_batch_id'); }
+
+    // Other batches that were merged into this one.
+    public function mergedFrom() { return $this->hasMany(Batch::class, 'merged_into_batch_id'); }
+
+    public function isMerged(): bool
+    {
+        return ! is_null($this->merged_into_batch_id);
+    }
 
     public function cards()
     {

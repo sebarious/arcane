@@ -24,6 +24,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Schemas\Components\Section;
 use App\Enums\Game;
 use App\Services\Batches\BatchDeleter;
+use App\Services\Batches\BatchMerger;
 use Filament\Notifications\Notification;
 
 
@@ -264,6 +265,14 @@ class BatchResource extends Resource
                         'cancelled'  => 'danger',
                         default      => 'gray',
                     }),
+                Tables\Columns\TextColumn::make('merged_into_batch_id')
+                    ->label('Merged')
+                    ->badge()
+                    ->color(fn ($state) => $state ? 'gray' : 'success')
+                    ->formatStateUsing(fn ($state, Batch $record) => $state
+                        ? 'Merged → '.$record->mergedInto?->reference
+                        : 'Active')
+                    ->toggleable(),
             Tables\Columns\TextColumn::make('failed_at')
                 ->label('Failed')
                 ->dateTime('d M Y H:i')
@@ -310,6 +319,49 @@ class BatchResource extends Resource
                         \App\Jobs\GenerateBatchJob::dispatch($record->id);
                         \Filament\Notifications\Notification::make()
                             ->title('Batch retry queued')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('mergeInto')
+                    ->label('Merge into…')
+                    ->icon(Heroicon::OutlinedArrowsPointingIn)
+                    ->color('warning')
+                    ->visible(fn (Batch $record) =>
+                        ! $record->isMerged()
+                        && in_array($record->status, ['committed', 'dispatched'], true)
+                        && $record->packs()->where('status', 'sealed')->exists())
+                    ->requiresConfirmation()
+                    ->modalHeading('Merge batch')
+                    ->modalDescription('Moves this batch\'s remaining sealed packs into another batch\'s pool. Already-sold packs and this batch\'s invoice are untouched — this only reorganizes what\'s left to sell.')
+                    ->schema(fn (Batch $record) => [
+                        Forms\Components\Select::make('target_batch_id')
+                            ->label('Merge into')
+                            ->options(fn () => Batch::query()
+                                ->where('store_id', $record->store_id)
+                                ->where('id', '!=', $record->id)
+                                ->whereIn('status', ['committed', 'dispatched'])
+                                ->whereNull('merged_into_batch_id')
+                                ->orderByDesc('created_at')
+                                ->pluck('reference', 'id'))
+                            ->searchable()
+                            ->required()
+                            ->helperText('Only other live batches at the same store are shown.'),
+                    ])
+                    ->action(function (Batch $record, array $data, BatchMerger $merger) {
+                        try {
+                            $merger->merge($record, Batch::findOrFail($data['target_batch_id']));
+                        } catch (\RuntimeException $e) {
+                            Notification::make()
+                                ->title('Merge failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Batch merged')
+                            ->body("Remaining sealed packs moved. {$record->reference} is now flagged as merged.")
                             ->success()
                             ->send();
                     }),

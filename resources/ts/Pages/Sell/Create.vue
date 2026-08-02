@@ -1,7 +1,114 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue';
+import axios from 'axios';
 import { Head, useForm } from '@inertiajs/vue3';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
+
+interface SearchResult {
+  product_id: string;
+  card_name: string;
+  card_number: string | null;
+  set_name: string | null;
+  rarity: string | null;
+  image_url: string | null;
+  market_value_pence: number | null;
+  band: string | null;
+  unit_offer_pence: number | null;
+}
+
+interface SelectedCard extends SearchResult {
+  quantity: number;
+}
+
+const MAX_ITEMS = 100;
+
+const checklist = [
+  'Prices are using our Live Market Pricing aggregation through PulseTCG.',
+  'Cards must be in a near-mint condition or better.',
+  'Cards must be sent, checked and price confirmed by a member of our team.',
+  'Fast, secure payment on confirmation of the price agreed with you.',
+  'No fees — you just box up and send your cards to us, we do the rest.',
+  'Maximum of 100 cards per submission.',
+];
+
+const nameQuery = ref( '' );
+const numberQuery = ref( '' );
+const results = ref<SearchResult[]>( [] );
+const searching = ref( false );
+const searchError = ref( '' );
+const hasSearched = ref( false );
+
+const selected = ref<SelectedCard[]>( [] );
+
+let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+function scheduleSearch() {
+  if ( debounceTimer ) clearTimeout( debounceTimer );
+  debounceTimer = setTimeout( runSearch, 400 );
+}
+
+async function runSearch() {
+  const q = nameQuery.value.trim();
+  const number = numberQuery.value.trim();
+
+  if ( q.length < 2 && number.length === 0 ) {
+    results.value = [];
+    hasSearched.value = false;
+    return;
+  }
+
+  searching.value = true;
+  searchError.value = '';
+  hasSearched.value = true;
+
+  try {
+    const { data } = await axios.get( '/sell/search-cards', { params: { q, number } } );
+    results.value = data.data ?? [];
+  } catch ( e ) {
+    searchError.value = 'Search failed — please try again.';
+    results.value = [];
+  } finally {
+    searching.value = false;
+  }
+}
+
+const totalItemCount = computed( () =>
+  selected.value.reduce( ( sum, c ) => sum + c.quantity, 0 )
+);
+
+function addCard( card: SearchResult ) {
+  if ( totalItemCount.value >= MAX_ITEMS ) return;
+
+  const existing = selected.value.find( ( c ) => c.product_id === card.product_id );
+  if ( existing ) {
+    existing.quantity += 1;
+  } else {
+    selected.value.push( { ...card, quantity: 1 } );
+  }
+
+  nameQuery.value = '';
+  numberQuery.value = '';
+  results.value = [];
+  hasSearched.value = false;
+}
+
+function removeCard( productId: string ) {
+  selected.value = selected.value.filter( ( c ) => c.product_id !== productId );
+}
+
+function formatPence( pence: number | null ): string {
+  if ( pence === null ) return '—';
+  return '£' + ( pence / 100 ).toFixed( 2 );
+}
+
+function lineOfferPence( card: SelectedCard ): number {
+  return ( card.unit_offer_pence ?? 0 ) * card.quantity;
+}
+
+const totalOfferPence = computed( () =>
+  selected.value.reduce( ( sum, c ) => sum + lineOfferPence( c ), 0 )
+);
 
 const form = useForm( {
   customer_name: '',
@@ -9,29 +116,17 @@ const form = useForm( {
   customer_phone: '',
   customer_postcode: '',
   description: '',
-  images: [] as File[],
+  items: [] as { product_id: string; quantity: number }[],
 } );
 
-const onFilesChange = ( e: Event ) => {
-  const target = e.target as HTMLInputElement;
-  if ( !target.files ) return;
-  form.images = Array.from( target.files );
-};
-
 const submit = () => {
-  form.post( '/sell', {
-    forceFormData: true,
-  } );
+  form.items = selected.value.map( ( c ) => ( { product_id: c.product_id, quantity: c.quantity } ) );
+  form.post( '/sell' );
 };
 
-const generalMotion = {
-  initial: { opacity: 0, y: 18 },
-  enter: {
-    opacity: 1,
-    y: 0,
-    transition: { delay: 350, duration: 900 },
-  },
-};
+function itemError( index: number ): string | undefined {
+  return ( form.errors as Record<string, string> )[ `items.${ index }.product_id` ];
+}
 </script>
 
 <template>
@@ -49,45 +144,154 @@ const generalMotion = {
 
     <div class="relative shrink-0 w-full">
       <div
-        class="content-stretch flex flex-col gap-[56px] items-start pb-[120px] pt-[80px] px-8 lg:px-[64px] relative size-full">
+        class="content-stretch flex flex-col gap-[40px] items-start pb-[120px] pt-[80px] px-8 lg:px-[64px] relative size-full">
         <div
-          class="[word-break:break-word] content-stretch flex flex-col gap-[12px] items-start relative shrink-0 whitespace-nowrap">
+          class="[word-break:break-word] content-stretch flex flex-col gap-[12px] items-start relative shrink-0">
           <p class="font-['Cinzel',sans-serif] font-bold leading-[0] relative shrink-0 text-[48px] text-white">
             <span class="leading-[normal]">Sell</span>
             <span class="leading-[normal] text-[#c9a84c]"> to us</span>
           </p>
-          <p class="font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[18px]">
-            Upload photos of the cards or sealed product you want to sell and tell us
-            what’s in the lot. We’ll review and email you an offer.</p>
+          <p class="font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[18px] max-w-2xl">
+            Search for your cards below, add a quantity, and see our offer instantly —
+            based on live market pricing.</p>
         </div>
-        <div class="-translate-y-1/2 absolute right-[-220px] size-[720px] top-[calc(50%-0.5px)]">
-          <div class="absolute inset-[-22.22%]">
-            <svg class="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 1040 1040">
-              <g filter="url(#filter0_f_145_2261)" id="Ellipse" opacity="0.18">
-                <circle cx="520" cy="520" fill="url(#paint0_radial_145_2261)" r="360" />
-              </g>
-              <defs>
-                <filter colorInterpolationFilters="sRGB" filterUnits="userSpaceOnUse" height="1040"
-                  id="filter0_f_145_2261" width="1040" x="0" y="0">
-                  <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                  <feBlend in="SourceGraphic" in2="BackgroundImageFix" mode="normal" result="shape" />
-                  <feGaussianBlur result="effect1_foregroundBlur_145_2261" stdDeviation="80" />
-                </filter>
-                <radialGradient cx="0" cy="0" gradientTransform="translate(520 520) rotate(-90) scale(509.112)"
-                  gradientUnits="userSpaceOnUse" id="paint0_radial_145_2261" r="1">
-                  <stop stopColor="#7C3AED" />
-                  <stop offset="1" stopOpacity="0" />
-                </radialGradient>
-              </defs>
+
+        <!-- Eligibility banner -->
+        <div
+          class="bg-[#2a1a1a] border border-[rgba(220,80,80,0.4)] rounded-[12px] p-[24px] relative shrink-0 w-full">
+          <p class="font-['Jost',sans-serif] font-semibold leading-[normal] text-[15px] text-white">
+            We only currently buy <span class="text-[#e8a0a0]">Full Art, Illustration Rare, or higher tier</span> cards.
+          </p>
+          <p class="font-['Jost',sans-serif] font-normal leading-[normal] text-[14px] text-[#c9a3a3] mt-[6px]">
+            Please ensure all cards submitted meet this criteria. Any cards sent to us that do not meet this
+            criteria will need you to arrange collection to be returned to you.
+          </p>
+        </div>
+
+        <!-- Checklist -->
+        <div class="grid sm:grid-cols-2 gap-[16px] w-full">
+          <div v-for=" point in checklist " :key=" point "
+            class="content-stretch flex items-start gap-[12px] bg-[#13101e] border border-[rgba(124,58,237,0.25)] rounded-[10px] p-[16px]">
+            <svg class="shrink-0 mt-[2px]" width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="10" fill="#c9a84c" opacity="0.2" />
+              <path d="M6 10.5L8.5 13L14 7" stroke="#c9a84c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
+            <p class="font-['Jost',sans-serif] font-normal leading-[normal] text-[14px] text-[#d8d3e0]">
+              {{ point }}
+            </p>
           </div>
         </div>
-        <div
-          class="content-stretch space-y-8 lg:space-y-0 lg:flex lg:gap-[32px] lg:items-start relative lg:shrink-0 w-full">
+
+        <div class="content-stretch space-y-8 lg:space-y-0 lg:flex lg:gap-[32px] lg:items-start relative lg:shrink-0 w-full">
           <div
-            class="bg-[#13101e] content-stretch drop-shadow-[0px_0px_9px_rgba(124,58,237,0.2)] flex flex-col gap-[24px] items-start p-[40px] relative rounded-[16px] shrink-0 flex-1">
+            class="bg-[#13101e] drop-shadow-[0px_0px_9px_rgba(124,58,237,0.2)] flex flex-col gap-[24px] items-start p-[40px] relative rounded-[16px] shrink-0 flex-1">
             <div aria-hidden
               class="absolute border border-[rgba(124,58,237,0.4)] border-solid inset-0 pointer-events-none rounded-[16px]" />
+
+            <!-- Card search -->
+            <div class="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
+              <label
+                class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
+                Find your cards</label>
+
+              <div class="flex gap-[12px] w-full">
+                <div class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] flex-[3]">
+                  <div aria-hidden="true" class="absolute border border-[#3d2f6e] border-solid inset-0 pointer-events-none rounded-[6px]" />
+                  <div class="flex flex-row items-center size-full">
+                    <div class="content-stretch flex items-center p-[14px] relative size-full">
+                      <input type="text" v-model=" nameQuery " @input=" scheduleSearch "
+                        placeholder="Card name, e.g. Charizard ex"
+                        class="w-full bg-transparent border-none outline-none text-[15px] text-white font-['Jost',sans-serif] font-normal leading-[normal] placeholder:opacity-40 placeholder:text-white focus:ring-0 focus:outline-none" />
+                    </div>
+                  </div>
+                </div>
+                <div class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] flex-[1]">
+                  <div aria-hidden="true" class="absolute border border-[#3d2f6e] border-solid inset-0 pointer-events-none rounded-[6px]" />
+                  <div class="flex flex-row items-center size-full">
+                    <div class="content-stretch flex items-center p-[14px] relative size-full">
+                      <input type="text" v-model=" numberQuery " @input=" scheduleSearch "
+                        placeholder="Number, e.g. 199/165"
+                        class="w-full bg-transparent border-none outline-none text-[15px] text-white font-['Jost',sans-serif] font-normal leading-[normal] placeholder:opacity-40 placeholder:text-white focus:ring-0 focus:outline-none" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Results -->
+              <div v-if=" searching " class="text-[13px] text-[#a3a3a3] font-['Jost',sans-serif] mt-[4px]">
+                Searching…
+              </div>
+              <div v-else-if=" searchError " class="text-[13px] text-red-400 font-['Jost',sans-serif] mt-[4px]">
+                {{ searchError }}
+              </div>
+              <div v-else-if=" hasSearched && results.length === 0 " class="text-[13px] text-[#a3a3a3] font-['Jost',sans-serif] mt-[4px]">
+                No matches found.
+              </div>
+
+              <div v-if=" results.length " class="flex flex-col gap-[8px] w-full max-h-[360px] overflow-y-auto mt-[4px]">
+                <button v-for=" card in results " :key=" card.product_id " type="button"
+                  @click=" addCard( card ) "
+                  class="flex items-center gap-[12px] p-[10px] rounded-[8px] border text-left transition-colors border-[#3d2f6e] hover:border-[#c9a84c] bg-[#1a1628] cursor-pointer">
+                  <img v-if=" card.image_url " :src=" card.image_url " class="w-[36px] h-[50px] object-cover rounded-[4px]" />
+                  <div class="flex-1 min-w-0">
+                    <p class="font-['Jost',sans-serif] text-[14px] text-white truncate">{{ card.card_name }}</p>
+                    <p class="font-['Jost',sans-serif] text-[12px] text-[#a3a3a3] truncate">
+                      {{ card.set_name }} · {{ card.card_number }} · {{ card.rarity }}
+                    </p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-['Jost',sans-serif] text-[13px] text-[#c9a84c]">
+                      Offer {{ formatPence( card.unit_offer_pence ) }}
+                    </p>
+                    <p class="font-['Jost',sans-serif] text-[11px] text-[#71717a]">
+                      Market {{ formatPence( card.market_value_pence ) }}
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Selected cards -->
+            <div v-if=" selected.length " class="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
+              <label
+                class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
+                Your cards ({{ totalItemCount }}/{{ MAX_ITEMS }})</label>
+
+              <div class="flex flex-col gap-[8px] w-full">
+                <div v-for=" ( card, index ) in selected " :key=" card.product_id "
+                  class="flex items-center gap-[12px] p-[12px] rounded-[8px] border border-[#3d2f6e] bg-[#1a1628]">
+                  <img v-if=" card.image_url " :src=" card.image_url " class="w-[36px] h-[50px] object-cover rounded-[4px]" />
+                  <div class="flex-1 min-w-0">
+                    <p class="font-['Jost',sans-serif] text-[14px] text-white truncate">{{ card.card_name }}</p>
+                    <p class="font-['Jost',sans-serif] text-[12px] text-[#a3a3a3] truncate">
+                      {{ card.set_name }} · {{ card.card_number }}
+                    </p>
+                    <p v-if=" itemError( index ) " class="text-[11px] text-red-400 mt-[2px]">{{ itemError( index ) }}</p>
+                  </div>
+                  <input type="number" min="1" max="999" v-model.number=" card.quantity "
+                    class="w-[56px] bg-[#0d0b14] border border-[#3d2f6e] rounded-[4px] text-center text-white text-[14px] py-[6px] font-['Jost',sans-serif]" />
+                  <p class="font-['Jost',sans-serif] text-[14px] text-[#c9a84c] w-[80px] text-right shrink-0">
+                    {{ formatPence( lineOfferPence( card ) ) }}
+                  </p>
+                  <button type="button" @click=" removeCard( card.product_id ) "
+                    class="text-[#a3a3a3] hover:text-red-400 shrink-0 text-[18px] leading-none px-[4px]">
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between w-full pt-[8px] border-t border-[#3d2f6e]">
+                <p class="font-['Jost',sans-serif] text-[15px] text-white">Total offer</p>
+                <p class="font-['Jost',sans-serif] font-bold text-[20px] text-[#c9a84c]">
+                  {{ formatPence( totalOfferPence ) }}
+                </p>
+              </div>
+              <div v-if=" form.errors.items " class="text-[11px] text-red-400">{{ form.errors.items }}</div>
+            </div>
+
+            <div class="w-full h-px bg-[rgba(124,58,237,0.2)] shrink-0" />
+
+            <!-- Customer details -->
             <div class="content-stretch flex gap-[24px] items-start relative shrink-0 w-full">
               <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
                 <div class="content-stretch flex items-center relative shrink-0">
@@ -186,7 +390,7 @@ const generalMotion = {
               <div class="content-stretch flex items-center relative shrink-0">
                 <label for="description"
                   class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
-                  What are you selling?</label>
+                  Anything else we should know? <small>(optional)</small></label>
               </div>
 
               <div
@@ -196,9 +400,9 @@ const generalMotion = {
                 </div>
                 <div class="flex flex-row items-center size-full">
                   <div class="content-stretch flex items-center p-[14px] relative size-full">
-                    <textarea id="description" v-model="form.description" rows="4"
+                    <textarea id="description" v-model="form.description" rows="3"
                       class="w-full bg-transparent border-none outline-none text-[15px] text-white font-['Jost',sans-serif] font-normal leading-[normal] placeholder:opacity-40 placeholder:text-white focus:ring-0 focus:outline-none"
-                      placeholder="De.g. 3 binders of Pokémon EX-era cards, 2 sealed ETBs, mixed bulk…"></textarea>
+                      placeholder="Any condition notes or other details…"></textarea>
                   </div>
                 </div>
                 <div v-if=" form.errors.description " class="text-[11px] text-red-400 mt-1">
@@ -207,39 +411,22 @@ const generalMotion = {
               </div>
             </div>
 
-            <div
-              class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] relative rounded-[6px] shrink-0 w-full p-4">
-              <div aria-hidden="true"
-                class="absolute border border-[#3d2f6e] border-solid inset-0 pointer-events-none rounded-[6px]">
-              </div>
-              <div class="flex flex-row items-center gap-5 size-full">
-                <label class="block text-xs font-medium mb-1 whitespace-nowrap">Photos (up to 8)</label>
-                <input type="file" accept="image/*" multiple @change="onFilesChange"
-                  class="block w-full text-sm text-arcane-muted" required />
-                <div v-if=" form.errors.images " class="text-[11px] text-red-400 mt-1">
-                  {{ form.errors.images }}
-                </div>
-                <div v-if=" form.errors['images.0'] " class="text-[11px] text-red-400 mt-1">
-                  {{ form.errors['images.0'] }}
-                </div>
-              </div>
-            </div>
-
-              <div class="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
-                <button type="submit" @click="submit" :disabled="form.processing"
-                  class="content-stretch drop-shadow-[0px_0px_9px_rgba(201,168,76,0.25)] flex h-[56px] items-start justify-center py-[16px] relative rounded-[4px] shrink-0 w-full"
-                  style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);"
-                  data-name="Frame">
-                  <p
-                    class="[word-break:break-word] font-['Jost',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#0d0b14] text-[16px] uppercase whitespace-nowrap">
-                    <span v-if=" form.processing ">Submitting…</span>
-                    <span v-else>Submit</span>
-                  </p>
-                </button>
-              </div>
+            <div class="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
+              <button type="submit" @click="submit" :disabled="form.processing || selected.length === 0"
+                class="content-stretch drop-shadow-[0px_0px_9px_rgba(201,168,76,0.25)] flex h-[56px] items-start justify-center py-[16px] relative rounded-[4px] shrink-0 w-full disabled:opacity-50"
+                style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);"
+                data-name="Frame">
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#0d0b14] text-[16px] uppercase whitespace-nowrap">
+                  <span v-if=" form.processing ">Submitting…</span>
+                  <span v-else-if=" selected.length === 0 ">Add a card to continue</span>
+                  <span v-else>Submit ({{ formatPence( totalOfferPence ) }})</span>
+                </p>
+              </button>
             </div>
           </div>
         </div>
+      </div>
     </div>
   </main>
 

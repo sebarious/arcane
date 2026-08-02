@@ -16,9 +16,11 @@ class StoreShowController extends Controller
             abort(404);
         }
 
-        // Batches for this store that are live
+        // Batches for this store that are live — merged batches are excluded, since
+        // their remaining stock has moved into another batch's pool.
         $batches = $store->batches()
             ->whereIn('status', ['committed', 'dispatched'])
+            ->whereNull('merged_into_batch_id')
             ->orderByDesc('created_at')
             ->get(['id', 'reference', 'type', 'game', 'pack_count', 'created_at']);
 

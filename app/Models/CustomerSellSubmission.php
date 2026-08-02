@@ -34,6 +34,16 @@ class CustomerSellSubmission extends Model
         'responded_at'     => 'datetime',
     ];
 
+    public function items()
+    {
+        return $this->hasMany(CustomerSellSubmissionItem::class);
+    }
+
+    public function notes()
+    {
+        return $this->hasMany(CustomerSellSubmissionNote::class)->latest();
+    }
+
     public static function nextReference(): string
     {
         $year = now()->format('Y');

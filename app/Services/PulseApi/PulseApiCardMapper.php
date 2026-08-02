@@ -17,6 +17,34 @@ class PulseApiCardMapper
         'rarity_band', 'synced_at',
     ];
 
+    // PulseAPI's Card object has no explicit game/TCG field — the only signal is the
+    // set_id, which for non-Pokémon games carries a namespaced prefix (Lorcana "lor-",
+    // One Piece "op-"); plain Pokémon set codes (sv3pt5, gym2, swshp, ...) have none.
+    protected const NON_POKEMON_SET_PREFIXES = ['lor-', 'op-'];
+
+    public static function isNonPokemon(?string $setId): bool
+    {
+        $setId = strtolower((string) $setId);
+
+        foreach (self::NON_POKEMON_SET_PREFIXES as $prefix) {
+            if (str_starts_with($setId, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a card's language is one we currently buy — see config('selling.allowed_languages').
+     */
+    public static function isAllowedLanguage(?string $language): bool
+    {
+        $allowed = config('selling.allowed_languages', ['English']);
+
+        return in_array($language, $allowed, true);
+    }
+
     /**
      * Map a PulseAPI Card payload to card_inventory attributes.
      *
@@ -116,7 +144,7 @@ class PulseApiCardMapper
      * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    protected static function withDefaultFilters(array $filters): array
+    public static function withDefaultFilters(array $filters): array
     {
         return [
             'exclude_graded'      => 'true',
