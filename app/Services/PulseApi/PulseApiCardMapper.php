@@ -112,27 +112,32 @@ class PulseApiCardMapper
     }
 
     /**
-     * Auto-resolve a single best-match card from free-text name + optional number —
-     * used by Rapid Intake's "Fetch card data" so rows can be plain text fields
-     * instead of requiring the user to pick from a live dropdown.
+     * Resolve every plausible match for a free-text name + optional number — used by
+     * Rapid Intake's "Fetch card data" so rows can be plain text fields instead of
+     * requiring the user to pick from a live dropdown while still searching. A name +
+     * number can genuinely match several distinct prints (Pokémon Center exclusives,
+     * stamped/staff variants, etc.) — the caller decides what to do when there's more
+     * than one (auto-resolve on an unambiguous single match, otherwise let the user
+     * choose rather than silently guessing).
      *
-     * @return array<string, mixed>|null
+     * @return array<int, array<string, mixed>>
      */
-    public static function searchBestMatch(string $name, string $number = ''): ?array
+    public static function searchCandidates(string $name, string $number = '', int $limit = 8): array
     {
         $name   = trim($name);
         $number = trim($number);
 
         if ($name === '' && $number === '') {
-            return null;
+            return [];
         }
 
         $filters = $number !== '' ? ['card_number' => $number] : [];
-        $results = app(PulseApiClient::class)->search($name, self::withDefaultFilters($filters), limit: 1);
+        $results = app(PulseApiClient::class)->search($name, self::withDefaultFilters($filters), limit: $limit);
 
-        $card = $results['data'][0] ?? null;
-
-        return $card ? self::toInventoryAttributes($card) : null;
+        return collect($results['data'] ?? [])
+            ->map(fn (array $card) => self::toInventoryAttributes($card))
+            ->values()
+            ->all();
     }
 
     /**
@@ -164,6 +169,31 @@ class PulseApiCardMapper
             $card['set_name'] ?? '',
             $card['card_number'] ?? '',
             Money::format($priceMarketPounds !== null ? Money::toPence($priceMarketPounds) : null),
+        );
+    }
+
+    /**
+     * Display label for one candidate in a disambiguation list (see searchCandidates) —
+     * leads with whatever distinguishes it from the others (finish, promo, grading),
+     * since the name/number/set are typically shared across all candidates already.
+     *
+     * @param  array<string, mixed>  $attributes  Already mapped via toInventoryAttributes().
+     */
+    public static function candidateLabel(array $attributes): string
+    {
+        $descriptors = array_filter([
+            $attributes['material'] ?? null,
+            $attributes['promo_info'] ?? null,
+            ($attributes['graded_by'] ?? null) && ($attributes['grade'] ?? null)
+                ? "{$attributes['graded_by']} {$attributes['grade']}"
+                : null,
+        ]);
+
+        return sprintf(
+            '%s%s — %s',
+            $attributes['set_name'] ?? 'Unknown set',
+            $descriptors ? ' · '.implode(' · ', $descriptors) : ' · Standard',
+            Money::format($attributes['market_value_pence'] ?? null),
         );
     }
 

@@ -12,6 +12,7 @@ use App\Support\Money;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -61,6 +62,10 @@ class RapidIntake extends Page implements HasForms
             'card_name'           => null,
             'search_number'       => null,
             'resolved'            => null,
+            // Set when a search matches more than one plausible print (Pokémon Center
+            // exclusives, stamped/staff variants, etc.) — JSON-encoded candidate list
+            // for the "Choose variant" action, same reasoning as `resolved` below.
+            'candidates'          => null,
             'market_value_pounds' => null,
             'cost_pounds'         => null,
             'quantity'            => 1,
@@ -150,7 +155,7 @@ class RapidIntake extends Page implements HasForms
                             ->defaultItems(1)
                             ->maxItems(self::MAX_ITEMS)
                             ->columns(12)
-                            ->extraItemActions([$this->retryFetchAction(), $this->manualEntryAction()])
+                            ->extraItemActions([$this->chooseVariantAction(), $this->retryFetchAction(), $this->manualEntryAction()])
                             ->schema([
                                 TextInput::make('search_number')
                                     ->label('Number')
@@ -207,6 +212,11 @@ class RapidIntake extends Page implements HasForms
                                         $resolved = self::decodeResolved($get('resolved'));
 
                                         if (! $resolved) {
+                                            $candidates = self::decodeResolved($get('candidates'));
+                                            if ($candidates) {
+                                                return count($candidates).' matches found — use the list icon above to choose the right one.';
+                                            }
+
                                             return 'Not fetched yet — click "Fetch card data" above.';
                                         }
 
@@ -223,6 +233,7 @@ class RapidIntake extends Page implements HasForms
                                 // to save() — JSON-encoded, since a plain hidden <input> can only
                                 // round-trip a string via wire:model, not a raw PHP array.
                                 Hidden::make('resolved'),
+                                Hidden::make('candidates'),
                             ])
                             ->itemLabel(function (array $state) {
                                 $resolved = self::decodeResolved($state['resolved'] ?? null);
@@ -256,53 +267,102 @@ class RapidIntake extends Page implements HasForms
         $knownIds = collect($rows)->pluck('product_id')->filter()->unique()->values();
         $resolvedById = $knownIds->isNotEmpty() ? $this->resolveProductIds($knownIds)[0] : [];
 
-        $resolvedCount = 0;
-        $missingCount  = 0;
+        $resolvedCount   = 0;
+        $ambiguousCount  = 0;
+        $missingCount    = 0;
 
         foreach ($rows as $i => $row) {
             $productId  = $row['product_id'] ?? null;
             $attributes = $productId ? ($resolvedById[$productId] ?? null) : null;
 
-            if (! $attributes) {
-                $attributes = PulseApiCardMapper::searchBestMatch(
-                    (string) ($row['card_name'] ?? ''),
-                    (string) ($row['search_number'] ?? ''),
-                );
-            }
-
-            if (! $attributes) {
-                if (filled($row['card_name'] ?? null) || filled($row['search_number'] ?? null)) {
-                    $missingCount++;
-                }
+            if ($attributes) {
+                $this->applyResolvedAttributes($rows, $i, $attributes);
+                $resolvedCount++;
                 continue;
             }
 
-            $rows[$i]['product_id'] = $attributes['product_id'];
-            $rows[$i]['resolved']   = json_encode($attributes);
-            $rows[$i]['market_value_pounds'] = $attributes['market_value_pence'] !== null
-                ? round($attributes['market_value_pence'] / 100, 2)
-                : null;
-
-            // Auto-fill Cost (£) when left blank, as a percentage of market value —
-            // still freely editable before saving.
-            if (blank($row['cost_pounds'] ?? null) && $attributes['market_value_pence'] !== null) {
-                $costRatio = (float) config('services.pulseapi.default_cost_ratio', 0.9);
-                $rows[$i]['cost_pounds'] = round(($attributes['market_value_pence'] * $costRatio) / 100, 2);
+            if (blank($row['card_name'] ?? null) && blank($row['search_number'] ?? null)) {
+                continue;
             }
 
-            $resolvedCount++;
+            match ($this->applySearchResolution($rows, $i)) {
+                'resolved'  => $resolvedCount++,
+                'ambiguous' => $ambiguousCount++,
+                'not_found' => $missingCount++,
+            };
         }
 
         $this->data['rows'] = $rows;
         $this->form->fill($this->data);
 
+        $notes = [];
+        if ($ambiguousCount > 0) $notes[] = "{$ambiguousCount} row(s) have multiple matches — use the list icon to choose";
+        if ($missingCount > 0)   $notes[] = "{$missingCount} row(s) couldn't be found — use the ✎ button";
+
         Notification::make()
             ->title('Card data fetched')
-            ->body($missingCount > 0
-                ? "{$resolvedCount} card(s) resolved. {$missingCount} couldn't be found — use the ✎ button on those rows."
+            ->body($notes
+                ? "{$resolvedCount} card(s) resolved. ".implode('. ', $notes).'.'
                 : 'All cards resolved — review the prices below, then save.')
             ->success()
             ->send();
+    }
+
+    /**
+     * Apply a single, unambiguous PulseAPI match to a row: sets product_id/resolved,
+     * pre-fills the market price, and auto-fills Cost (£) when it's still blank.
+     * Clears any pending disambiguation candidates.
+     */
+    protected function applyResolvedAttributes(array &$rows, int|string $key, array $attributes): void
+    {
+        $costPounds = $rows[$key]['cost_pounds'] ?? null;
+
+        $rows[$key]['product_id'] = $attributes['product_id'];
+        $rows[$key]['resolved']   = json_encode($attributes);
+        $rows[$key]['candidates'] = null;
+        $rows[$key]['market_value_pounds'] = $attributes['market_value_pence'] !== null
+            ? round($attributes['market_value_pence'] / 100, 2)
+            : null;
+
+        // Auto-fill Cost (£) when left blank, as a percentage of market value —
+        // still freely editable before saving.
+        if (blank($costPounds) && $attributes['market_value_pence'] !== null) {
+            $costRatio = (float) config('services.pulseapi.default_cost_ratio', 0.9);
+            $rows[$key]['cost_pounds'] = round(($attributes['market_value_pence'] * $costRatio) / 100, 2);
+        }
+    }
+
+    /**
+     * Search a row's name/number and apply the result: a single match auto-resolves
+     * (via applyResolvedAttributes), several matches are stashed as candidates for the
+     * "Choose variant" action rather than silently guessing which print the row means
+     * (Pokémon Center exclusives, stamped/staff variants, etc. can share a name+number),
+     * and no matches leaves the row untouched for "Fill in manually".
+     *
+     * @return 'resolved'|'ambiguous'|'not_found'
+     */
+    protected function applySearchResolution(array &$rows, int|string $key): string
+    {
+        $row = $rows[$key];
+
+        $candidates = PulseApiCardMapper::searchCandidates(
+            (string) ($row['card_name'] ?? ''),
+            (string) ($row['search_number'] ?? ''),
+        );
+
+        if (empty($candidates)) {
+            return 'not_found';
+        }
+
+        if (count($candidates) === 1) {
+            $this->applyResolvedAttributes($rows, $key, $candidates[0]);
+            return 'resolved';
+        }
+
+        $rows[$key]['candidates'] = json_encode($candidates);
+        $rows[$key]['resolved']   = null;
+
+        return 'ambiguous';
     }
 
     /**
@@ -372,61 +432,90 @@ class RapidIntake extends Page implements HasForms
                 $rows    = $this->data['rows'];
                 if (! isset($rows[$itemKey])) return;
 
-                $row        = $rows[$itemKey];
-                $attributes = $this->resolveSingleRow($row);
+                $row       = $rows[$itemKey];
+                $productId = $row['product_id'] ?? null;
 
-                if (! $attributes) {
-                    Notification::make()
+                if ($productId) {
+                    $attributes = PulseApiCardMapper::cachedAttributes($productId);
+                    if (! $attributes) {
+                        $card = app(PulseApiClient::class)->getCard($productId);
+                        $attributes = $card ? PulseApiCardMapper::toInventoryAttributes($card) : null;
+                    }
+                    if ($attributes) {
+                        $this->applyResolvedAttributes($rows, $itemKey, $attributes);
+                        $this->data['rows'] = $rows;
+                        $this->form->fill($this->data);
+                        Notification::make()->title('Card resolved')->success()->send();
+                        return;
+                    }
+                }
+
+                $outcome = $this->applySearchResolution($rows, $itemKey);
+                $this->data['rows'] = $rows;
+                $this->form->fill($this->data);
+
+                match ($outcome) {
+                    'resolved'  => Notification::make()->title('Card resolved')->success()->send(),
+                    'ambiguous' => Notification::make()
+                        ->title('Multiple matches found')
+                        ->body('Use the list icon on this row to choose the right one.')
+                        ->warning()
+                        ->send(),
+                    'not_found' => Notification::make()
                         ->title('Still not found')
                         ->body('No match for this card — try adjusting the name/number, or use the ✎ button to enter it manually.')
                         ->warning()
-                        ->send();
-                    return;
-                }
+                        ->send(),
+                };
+            });
+    }
 
-                $rows[$itemKey]['product_id'] = $attributes['product_id'];
-                $rows[$itemKey]['resolved']   = json_encode($attributes);
-                $rows[$itemKey]['market_value_pounds'] = $attributes['market_value_pence'] !== null
-                    ? round($attributes['market_value_pence'] / 100, 2)
-                    : null;
+    // Per-row disambiguation — shown when a name/number search matched several
+    // plausible prints (Pokémon Center exclusives, stamped/staff variants, etc. can
+    // share a name+number) rather than silently guessing which one the row means.
+    protected function chooseVariantAction(): Action
+    {
+        return Action::make('chooseVariant')
+            ->label('Choose variant')
+            ->icon(Heroicon::OutlinedQueueList)
+            ->color('warning')
+            ->tooltip('Multiple matches found — pick the right one.')
+            ->visible(function (array $arguments) {
+                $row = $this->data['rows'][$arguments['item']] ?? [];
+                return blank(self::decodeResolved($row['resolved'] ?? null))
+                    && filled(self::decodeResolved($row['candidates'] ?? null));
+            })
+            ->schema(function (array $arguments) {
+                $row        = $this->data['rows'][$arguments['item']] ?? [];
+                $candidates = self::decodeResolved($row['candidates'] ?? null) ?? [];
 
-                if (blank($row['cost_pounds'] ?? null) && $attributes['market_value_pence'] !== null) {
-                    $costRatio = (float) config('services.pulseapi.default_cost_ratio', 0.9);
-                    $rows[$itemKey]['cost_pounds'] = round(($attributes['market_value_pence'] * $costRatio) / 100, 2);
-                }
+                return [
+                    Radio::make('product_id')
+                        ->label('Which one do you have?')
+                        ->options(collect($candidates)->mapWithKeys(fn (array $c) => [
+                            $c['product_id'] => PulseApiCardMapper::candidateLabel($c),
+                        ]))
+                        ->required(),
+                ];
+            })
+            ->modalHeading('Choose the matching card')
+            ->modalDescription('This name/number matched more than one print — pick the one you actually have.')
+            ->action(function (array $data, array $arguments) {
+                $itemKey = $arguments['item'];
+                $rows    = $this->data['rows'];
+                if (! isset($rows[$itemKey])) return;
+
+                $candidates = self::decodeResolved($rows[$itemKey]['candidates'] ?? null) ?? [];
+                $chosen     = collect($candidates)->firstWhere('product_id', $data['product_id']);
+                if (! $chosen) return;
+
+                $this->applyResolvedAttributes($rows, $itemKey, $chosen);
 
                 $this->data['rows'] = $rows;
                 $this->form->fill($this->data);
 
-                Notification::make()->title('Card resolved')->success()->send();
+                Notification::make()->title('Variant selected')->success()->send();
             });
-    }
-
-    /**
-     * Resolve a single row's card data for the retry action — a known product_id is
-     * checked cache-first then live; otherwise falls back to a name/number search.
-     * (The bulk "Fetch card data" flow has its own batched version of this for
-     * efficiency across many rows — this is deliberately the single-row path.)
-     *
-     * @return array<string, mixed>|null
-     */
-    protected function resolveSingleRow(array $row): ?array
-    {
-        $productId = $row['product_id'] ?? null;
-
-        if ($productId) {
-            $attributes = PulseApiCardMapper::cachedAttributes($productId);
-            if (! $attributes) {
-                $card = app(PulseApiClient::class)->getCard($productId);
-                $attributes = $card ? PulseApiCardMapper::toInventoryAttributes($card) : null;
-            }
-            if ($attributes) return $attributes;
-        }
-
-        return PulseApiCardMapper::searchBestMatch(
-            (string) ($row['card_name'] ?? ''),
-            (string) ($row['search_number'] ?? ''),
-        );
     }
 
     // Per-row fallback for when PulseAPI can't resolve a card (outage, indexing gap,
