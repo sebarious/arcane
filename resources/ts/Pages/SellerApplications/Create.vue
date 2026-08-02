@@ -85,8 +85,8 @@ const generalMotion = {
             class="bg-[#13101e] content-stretch drop-shadow-[0px_0px_9px_rgba(124,58,237,0.2)] flex flex-col gap-[24px] items-start p-[40px] relative rounded-[16px] shrink-0 flex-1">
             <div aria-hidden
               class="absolute border border-[rgba(124,58,237,0.4)] border-solid inset-0 pointer-events-none rounded-[16px]" />
-            <div class="content-stretch flex gap-[24px] items-start relative shrink-0 w-full">
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+            <div class="content-stretch flex flex-col sm:flex-row gap-[24px] items-start relative shrink-0 w-full">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="business_name"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -108,7 +108,7 @@ const generalMotion = {
                   </div>
                 </div>
               </div>
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="contact_name"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -132,8 +132,8 @@ const generalMotion = {
               </div>
             </div>
 
-            <div class="content-stretch flex gap-[24px] items-start relative shrink-0 w-full">
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+            <div class="content-stretch flex flex-col sm:flex-row gap-[24px] items-start relative shrink-0 w-full">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="contact_email"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -155,7 +155,7 @@ const generalMotion = {
                   </div>
                 </div>
               </div>
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="phone"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -179,8 +179,8 @@ const generalMotion = {
               </div>
             </div>
 
-            <div class="content-stretch flex gap-[24px] items-start relative shrink-0 w-full">
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+            <div class="content-stretch flex flex-col sm:flex-row gap-[24px] items-start relative shrink-0 w-full">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="address_line_1"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -202,7 +202,7 @@ const generalMotion = {
                   </div>
                 </div>
               </div>
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="address_line_2"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -226,8 +226,8 @@ const generalMotion = {
               </div>
             </div>
 
-            <div class="content-stretch flex gap-[24px] items-start relative shrink-0 w-full">
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+            <div class="content-stretch flex flex-col sm:flex-row gap-[24px] items-start relative shrink-0 w-full">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="city"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -249,7 +249,7 @@ const generalMotion = {
                   </div>
                 </div>
               </div>
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="postcode"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">

@@ -194,8 +194,8 @@ function itemError( index: number ): string | undefined {
                 class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
                 Find your cards</label>
 
-              <div class="flex gap-[12px] w-full">
-                <div class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] flex-[3]">
+              <div class="flex flex-col sm:flex-row gap-[12px] w-full">
+                <div class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] flex-[3] w-full">
                   <div aria-hidden="true" class="absolute border border-[#3d2f6e] border-solid inset-0 pointer-events-none rounded-[6px]" />
                   <div class="flex flex-row items-center size-full">
                     <div class="content-stretch flex items-center p-[14px] relative size-full">
@@ -205,7 +205,14 @@ function itemError( index: number ): string | undefined {
                     </div>
                   </div>
                 </div>
-                <div class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] flex-[1]">
+
+                <div class="flex sm:hidden items-center gap-[10px] w-full">
+                  <div class="flex-1 h-px bg-[#3d2f6e]" />
+                  <span class="font-['Jost',sans-serif] font-semibold text-[11px] text-[rgba(255,255,255,0.35)] uppercase">Or</span>
+                  <div class="flex-1 h-px bg-[#3d2f6e]" />
+                </div>
+
+                <div class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] flex-[1] w-full">
                   <div aria-hidden="true" class="absolute border border-[#3d2f6e] border-solid inset-0 pointer-events-none rounded-[6px]" />
                   <div class="flex flex-row items-center size-full">
                     <div class="content-stretch flex items-center p-[14px] relative size-full">
@@ -292,8 +299,8 @@ function itemError( index: number ): string | undefined {
             <div class="w-full h-px bg-[rgba(124,58,237,0.2)] shrink-0" />
 
             <!-- Customer details -->
-            <div class="content-stretch flex gap-[24px] items-start relative shrink-0 w-full">
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+            <div class="content-stretch flex flex-col sm:flex-row gap-[24px] items-start relative shrink-0 w-full">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="customer_name"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -315,7 +322,7 @@ function itemError( index: number ): string | undefined {
                   </div>
                 </div>
               </div>
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="customer_email"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -339,8 +346,8 @@ function itemError( index: number ): string | undefined {
               </div>
             </div>
 
-            <div class="content-stretch flex gap-[24px] items-start relative shrink-0 w-full">
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+            <div class="content-stretch flex flex-col sm:flex-row gap-[24px] items-start relative shrink-0 w-full">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="customer_phone"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
@@ -362,7 +369,7 @@ function itemError( index: number ): string | undefined {
                   </div>
                 </div>
               </div>
-              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative">
+              <div class="content-stretch flex flex-[1_0_0] flex-col gap-[8px] items-start min-w-px relative w-full">
                 <div class="content-stretch flex items-center relative shrink-0">
                   <label for="customer_postcode"
                     class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
