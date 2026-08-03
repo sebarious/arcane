@@ -41,6 +41,50 @@ const hasSearched = ref( false );
 
 const selected = ref<SelectedCard[]>( [] );
 
+const affiliateCodeInput = ref( '' );
+const affiliateApplying = ref( false );
+const affiliateValid = ref<boolean | null>( null );
+const affiliateError = ref( '' );
+const affiliateStoreName = ref<string | null>( null );
+const affiliateBonusPercentage = ref( 0 );
+
+const bonusPercentLabel = computed( () => `${ Math.round( affiliateBonusPercentage.value * 100 ) }%` );
+
+async function applyAffiliateCode() {
+  const code = affiliateCodeInput.value.trim();
+  if ( ! code ) return;
+
+  affiliateApplying.value = true;
+  affiliateError.value = '';
+
+  try {
+    const { data } = await axios.get( '/sell/verify-affiliate-code', { params: { code } } );
+    if ( data.valid ) {
+      affiliateValid.value = true;
+      affiliateStoreName.value = data.store_name;
+      affiliateBonusPercentage.value = data.bonus_percentage;
+    } else {
+      affiliateValid.value = false;
+      affiliateStoreName.value = null;
+      affiliateError.value = data.message ?? "That code isn't valid.";
+    }
+  } catch ( e ) {
+    affiliateValid.value = false;
+    affiliateStoreName.value = null;
+    affiliateError.value = 'Could not verify that code — please try again.';
+  } finally {
+    affiliateApplying.value = false;
+  }
+}
+
+function clearAffiliateCode() {
+  affiliateCodeInput.value = '';
+  affiliateValid.value = null;
+  affiliateStoreName.value = null;
+  affiliateError.value = '';
+  affiliateBonusPercentage.value = 0;
+}
+
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 function scheduleSearch() {
@@ -102,9 +146,23 @@ function formatPence( pence: number | null ): string {
   return '£' + ( pence / 100 ).toFixed( 2 );
 }
 
-function lineOfferPence( card: SelectedCard ): number {
+function boostedPence( pence: number | null ): number | null {
+  if ( pence === null || ! affiliateValid.value ) return null;
+  return Math.round( pence * ( 1 + affiliateBonusPercentage.value ) );
+}
+
+function baseLineOfferPence( card: SelectedCard ): number {
   return ( card.unit_offer_pence ?? 0 ) * card.quantity;
 }
+
+function lineOfferPence( card: SelectedCard ): number {
+  const base = baseLineOfferPence( card );
+  return affiliateValid.value ? Math.round( base * ( 1 + affiliateBonusPercentage.value ) ) : base;
+}
+
+const totalBaseOfferPence = computed( () =>
+  selected.value.reduce( ( sum, c ) => sum + baseLineOfferPence( c ), 0 )
+);
 
 const totalOfferPence = computed( () =>
   selected.value.reduce( ( sum, c ) => sum + lineOfferPence( c ), 0 )
@@ -116,11 +174,13 @@ const form = useForm( {
   customer_phone: '',
   customer_postcode: '',
   description: '',
+  affiliate_code: '',
   items: [] as { product_id: string; quantity: number }[],
 } );
 
 const submit = () => {
   form.items = selected.value.map( ( c ) => ( { product_id: c.product_id, quantity: c.quantity } ) );
+  form.affiliate_code = affiliateValid.value ? affiliateCodeInput.value.trim() : '';
   form.post( '/sell' );
 };
 
@@ -188,6 +248,46 @@ function itemError( index: number ): string | undefined {
             <div aria-hidden
               class="absolute border border-[rgba(124,58,237,0.4)] border-solid inset-0 pointer-events-none rounded-[16px]" />
 
+            <!-- Affiliate code -->
+            <div class="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
+              <label
+                class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
+                Affiliate code <small class="normal-case">(optional — get {{ bonusPercentLabel || '5%' }} more)</small></label>
+
+              <div class="flex gap-[12px] w-full max-w-md">
+                <div class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] flex-1">
+                  <div aria-hidden="true" class="absolute border border-[#3d2f6e] border-solid inset-0 pointer-events-none rounded-[6px]" />
+                  <div class="flex flex-row items-center size-full">
+                    <div class="content-stretch flex items-center p-[14px] relative size-full">
+                      <input type="text" v-model=" affiliateCodeInput " @keyup.enter=" applyAffiliateCode "
+                        :disabled=" affiliateValid === true "
+                        placeholder="e.g. ARCANE123"
+                        class="w-full bg-transparent border-none outline-none text-[15px] text-white uppercase font-['Jost',sans-serif] font-normal leading-[normal] placeholder:opacity-40 placeholder:text-white placeholder:normal-case focus:ring-0 focus:outline-none disabled:opacity-60" />
+                    </div>
+                  </div>
+                </div>
+
+                <button v-if=" affiliateValid !== true " type="button" @click=" applyAffiliateCode "
+                  :disabled=" affiliateApplying || ! affiliateCodeInput.trim() "
+                  class="shrink-0 px-5 h-[48px] rounded-[6px] border border-[#3d2f6e] text-white text-sm font-['Jost',sans-serif] font-semibold uppercase tracking-wide hover:border-[#c9a84c] transition-colors disabled:opacity-50">
+                  {{ affiliateApplying ? 'Checking…' : 'Apply' }}
+                </button>
+                <button v-else type="button" @click=" clearAffiliateCode "
+                  class="shrink-0 px-5 h-[48px] rounded-[6px] border border-[#3d2f6e] text-[#a3a3a3] text-sm font-['Jost',sans-serif] font-semibold uppercase tracking-wide hover:border-red-400 hover:text-red-400 transition-colors">
+                  Remove
+                </button>
+              </div>
+
+              <p v-if=" affiliateValid === true " class="text-[13px] text-[#7fd4a0] font-['Jost',sans-serif]">
+                ✓ Applied — {{ affiliateStoreName }}'s code. You'll get {{ bonusPercentLabel }} more on every offer below.
+              </p>
+              <p v-else-if=" affiliateValid === false " class="text-[13px] text-red-400 font-['Jost',sans-serif]">
+                {{ affiliateError }}
+              </p>
+            </div>
+
+            <div class="w-full h-px bg-[rgba(124,58,237,0.2)] shrink-0" />
+
             <!-- Card search -->
             <div class="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
               <label
@@ -247,8 +347,12 @@ function itemError( index: number ): string | undefined {
                     </p>
                   </div>
                   <div class="text-right shrink-0">
-                    <p class="font-['Jost',sans-serif] text-[13px] text-[#c9a84c]">
+                    <p v-if=" affiliateValid " class="font-['Jost',sans-serif] text-[11px] text-[#71717a] line-through">
                       Offer {{ formatPence( card.unit_offer_pence ) }}
+                    </p>
+                    <p class="font-['Jost',sans-serif] text-[13px] text-[#c9a84c]">
+                      Offer {{ formatPence( affiliateValid ? boostedPence( card.unit_offer_pence ) : card.unit_offer_pence ) }}
+                      <span v-if=" affiliateValid " class="text-[10px] text-[#7fd4a0]">(+{{ bonusPercentLabel }})</span>
                     </p>
                     <p class="font-['Jost',sans-serif] text-[11px] text-[#71717a]">
                       Market {{ formatPence( card.market_value_pence ) }}
@@ -277,9 +381,15 @@ function itemError( index: number ): string | undefined {
                   </div>
                   <input type="number" min="1" max="999" v-model.number=" card.quantity "
                     class="w-[56px] bg-[#0d0b14] border border-[#3d2f6e] rounded-[4px] text-center text-white text-[14px] py-[6px] font-['Jost',sans-serif]" />
-                  <p class="font-['Jost',sans-serif] text-[14px] text-[#c9a84c] w-[80px] text-right shrink-0">
-                    {{ formatPence( lineOfferPence( card ) ) }}
-                  </p>
+                  <div class="w-[92px] text-right shrink-0">
+                    <p v-if=" affiliateValid " class="font-['Jost',sans-serif] text-[11px] text-[#71717a] line-through leading-tight">
+                      {{ formatPence( baseLineOfferPence( card ) ) }}
+                    </p>
+                    <p class="font-['Jost',sans-serif] text-[14px] text-[#c9a84c] leading-tight">
+                      {{ formatPence( lineOfferPence( card ) ) }}
+                      <span v-if=" affiliateValid " class="text-[10px] text-[#7fd4a0]">(+{{ bonusPercentLabel }})</span>
+                    </p>
+                  </div>
                   <button type="button" @click=" removeCard( card.product_id ) "
                     class="text-[#a3a3a3] hover:text-red-400 shrink-0 text-[18px] leading-none px-[4px]">
                     ×
@@ -289,9 +399,15 @@ function itemError( index: number ): string | undefined {
 
               <div class="flex items-center justify-between w-full pt-[8px] border-t border-[#3d2f6e]">
                 <p class="font-['Jost',sans-serif] text-[15px] text-white">Total offer</p>
-                <p class="font-['Jost',sans-serif] font-bold text-[20px] text-[#c9a84c]">
-                  {{ formatPence( totalOfferPence ) }}
-                </p>
+                <div class="text-right">
+                  <p v-if=" affiliateValid " class="font-['Jost',sans-serif] text-[13px] text-[#71717a] line-through">
+                    {{ formatPence( totalBaseOfferPence ) }}
+                  </p>
+                  <p class="font-['Jost',sans-serif] font-bold text-[20px] text-[#c9a84c]">
+                    {{ formatPence( totalOfferPence ) }}
+                    <span v-if=" affiliateValid " class="text-[12px] font-normal text-[#7fd4a0]">(+{{ bonusPercentLabel }})</span>
+                  </p>
+                </div>
               </div>
               <div v-if=" form.errors.items " class="text-[11px] text-red-400">{{ form.errors.items }}</div>
             </div>

@@ -72,8 +72,9 @@ class StoreShowController extends Controller
 
         return Inertia::render('Storefront/StoreShow', [
             'store'   => [
-                'id'          => $store->id,
-                'slug'        => $store->slug,
+                'id'             => $store->id,
+                'slug'           => $store->slug,
+                'affiliate_code' => $store->affiliate_code,
                 'name'        => $store->name,
                 'city'        => $store->city,
                 'postcode'    => $store->postcode,

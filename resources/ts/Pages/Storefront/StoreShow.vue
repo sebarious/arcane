@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import Nav from '@/Components/Layout/Nav.vue';
 import imgBanner from "@/Assets/a4ced2700801f0662d08b119fe0b16c8c188c4e2.png";
@@ -18,6 +19,7 @@ type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic';
 interface Store {
   id: number;
   slug: string;
+  affiliate_code: string | null;
   name: string;
   city: string;
   postcode: string;
@@ -70,6 +72,15 @@ const ogTitle = props.store?.name ? `${props.store.name} Store — Arcane` : 'St
 const ogDescription = props.store?.description
   || `${props.store?.total_packs_remaining ?? 0} packs live at ${props.store?.name ?? 'this store'} — see the full card list and pull odds before you buy.`;
 const ogImage = props.store?.logo || (usePage().props.defaultOgImage as string);
+
+const affiliateCopied = ref( false );
+
+function copyAffiliateCode() {
+  if ( ! props.store?.affiliate_code ) return;
+  navigator.clipboard.writeText( props.store.affiliate_code );
+  affiliateCopied.value = true;
+  setTimeout( () => { affiliateCopied.value = false; }, 2000 );
+}
 
 const generalMotion = {
   initial: { opacity: 0, y: 18 },
@@ -198,6 +209,26 @@ const generalMotion = {
                   Verified Seller</p>
               </div>
             </div>
+
+            <div v-if="store?.affiliate_code"
+              class="bg-[#13101e] border border-[rgba(124,58,237,0.35)] rounded-[10px] p-[16px] flex items-center gap-[16px] w-full max-w-md">
+              <div class="flex-1 min-w-0">
+                <p class="font-['Jost',sans-serif] font-semibold text-[11px] text-[rgba(255,255,255,0.35)] uppercase tracking-wide">
+                  Affiliate code
+                </p>
+                <p class="font-['Cinzel',sans-serif] font-bold text-[20px] text-[#c9a84c] tracking-wide">
+                  {{ store.affiliate_code }}
+                </p>
+              </div>
+              <button type="button" @click="copyAffiliateCode"
+                class="shrink-0 text-xs font-['Jost',sans-serif] font-semibold uppercase tracking-wide px-4 py-2 rounded-[4px] border border-[#3d2f6e] text-white hover:border-[#c9a84c] transition-colors">
+                {{ affiliateCopied ? 'Copied!' : 'Copy' }}
+              </button>
+            </div>
+            <p v-if="store?.affiliate_code" class="font-['Jost',sans-serif] text-[12px] text-[#71717a] -mt-[8px]">
+              Quote this on <Link href="/sell" class="text-[#c9a84c] hover:underline">Sell to Us</Link> for a better offer —
+              see the <Link href="/affiliate-program" class="text-[#c9a84c] hover:underline">affiliate program</Link>.
+            </p>
           </div>
           <div
             class="bg-[#13101e] content-stretch flex flex-col gap-[24px] items-start p-[24px] relative rounded-[12px] w-full">

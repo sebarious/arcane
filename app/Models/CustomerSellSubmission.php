@@ -14,6 +14,9 @@ class CustomerSellSubmission extends Model
         'customer_postcode',
         'images',
         'description',
+        'affiliate_code',
+        'affiliate_store_id',
+        'affiliate_bonus_pence',
         'status',
         'estimated_value_pence',
         'offered_value_pence',
@@ -42,6 +45,11 @@ class CustomerSellSubmission extends Model
     public function notes()
     {
         return $this->hasMany(CustomerSellSubmissionNote::class)->latest();
+    }
+
+    public function affiliateStore()
+    {
+        return $this->belongsTo(Store::class, 'affiliate_store_id');
     }
 
     public static function nextReference(): string

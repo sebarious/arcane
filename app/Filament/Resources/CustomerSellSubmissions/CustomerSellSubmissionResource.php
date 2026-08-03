@@ -48,6 +48,15 @@ class CustomerSellSubmissionResource extends Resource
                     TextEntry::make('estimated_value_display')
                         ->label('Indicative total offer')
                         ->state(fn (?CustomerSellSubmission $record) => Money::format($record?->estimated_value_pence)),
+                    TextEntry::make('affiliate_display')
+                        ->label('Affiliate code used')
+                        ->visible(fn (?CustomerSellSubmission $record) => filled($record?->affiliate_code))
+                        ->state(fn (?CustomerSellSubmission $record) => sprintf(
+                            '%s (%s) — +%s bonus applied',
+                            $record?->affiliate_code,
+                            $record?->affiliateStore?->name ?? 'store not found',
+                            Money::format($record?->affiliate_bonus_pence),
+                        )),
                     Forms\Components\Repeater::make('items')
                         ->relationship()
                         ->label('')
@@ -146,6 +155,11 @@ class CustomerSellSubmissionResource extends Resource
                     ->label('Indicative offer')
                     ->formatStateUsing(fn ($state) => Money::format($state))
                     ->alignEnd(),
+                Tables\Columns\TextColumn::make('affiliate_code')
+                    ->label('Affiliate')
+                    ->placeholder('—')
+                    ->toggleable()
+                    ->color('gray'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()

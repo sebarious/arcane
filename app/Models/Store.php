@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Store extends Model
 {
     protected $fillable = [
         'user_id',
         'slug',
+        'affiliate_code',
         'name',
         'description',
         'platforms',
@@ -45,4 +47,30 @@ class Store extends Model
     }
 
     public function getRouteKeyName(): string { return 'slug'; }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Store $store) {
+            if (blank($store->affiliate_code)) {
+                $store->affiliate_code = static::generateAffiliateCode($store->name ?: $store->slug ?: 'STORE');
+            }
+        });
+    }
+
+    /**
+     * A short, shareable code customers quote on /sell to get the affiliate bonus
+     * (see config('selling.affiliate_bonus_percentage')) — derived from the store's
+     * name so it's recognisable, with a random suffix to keep it unique.
+     */
+    public static function generateAffiliateCode(string $seed): string
+    {
+        $base = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $seed));
+        $base = substr($base, 0, 8) ?: 'STORE';
+
+        do {
+            $code = $base.random_int(100, 999);
+        } while (static::where('affiliate_code', $code)->exists());
+
+        return $code;
+    }
 }

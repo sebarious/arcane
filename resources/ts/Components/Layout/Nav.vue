@@ -69,8 +69,9 @@ import { Link, usePage } from '@inertiajs/vue3';
 const page = usePage();
 
 const NAV_LINKS: [string, string, boolean][] = [
-  ['Stores', '/stores', !!(page?.props?.route as any)?.name?.startsWith('stores')],
   ['Sell to Us', '/sell', !!(page?.props?.route as any)?.name?.startsWith('sell')],
+  ['Stores', '/stores', !!(page?.props?.route as any)?.name?.startsWith('stores')],
+  ['Affiliate', '/affiliate-program', !!(page?.props?.route as any)?.name?.startsWith('affiliate-program')],
   ['Log In', '/login', !!(page?.props?.route as any)?.name?.startsWith('login')],
 ];
 

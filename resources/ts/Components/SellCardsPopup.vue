@@ -40,7 +40,8 @@ function dismiss() {
       </p>
       <p class="font-['Jost',sans-serif] font-normal text-[13px] text-[#a3a3a3] mt-[8px] leading-relaxed">
         Get an instant offer of up to <span class="text-[#c9a84c] font-semibold">80% of market value</span>
-        — fast, secure payment, no fees.
+        — or <span class="text-[#c9a84c] font-semibold">85% with an affiliate code</span> —
+        fast, secure payment, no fees.
       </p>
 
       <Link href="/sell"

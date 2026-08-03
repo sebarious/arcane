@@ -18,6 +18,10 @@ return [
 
     'max_items_per_submission' => 100,
 
+    // Extra uplift applied to the offer when a valid store affiliate code is quoted
+    // on a submission — e.g. 0.05 means the customer's offer is 5% higher.
+    'affiliate_bonus_percentage' => (float) env('SELL_AFFILIATE_BONUS_PERCENTAGE', 0.05),
+
     // Card languages we currently buy — English only for now, extend this array
     // (e.g. add 'Japanese') once we're ready to expand.
     'allowed_languages' => ['English'],

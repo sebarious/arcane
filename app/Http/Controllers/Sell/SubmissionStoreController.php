@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Mail\CustomerSellSubmissionAdminAlertMail;
 use App\Mail\CustomerSellSubmissionReceivedMail;
 use App\Models\CustomerSellSubmission;
+use App\Models\Store;
 use App\Models\User;
 use App\Services\PulseApi\PulseApiCardMapper;
 use App\Services\PulseApi\PulseApiClient;
 use App\Services\Selling\SellOfferCalculator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -28,13 +30,26 @@ class SubmissionStoreController extends Controller
             'customer_phone'     => ['nullable', 'string', 'max:50'],
             'customer_postcode'  => ['nullable', 'string', 'max:20'],
             'description'        => ['nullable', 'string', 'max:4000'],
+            'affiliate_code'     => ['nullable', 'string', 'max:30'],
             'items'              => ['required', 'array', 'min:1', "max:{$maxItems}"],
             'items.*.product_id' => ['required', 'string', 'max:255'],
             'items.*.quantity'   => ['required', 'integer', 'min:1', 'max:999'],
         ]);
 
-        // Never trust client-submitted prices — re-resolve every card and recompute
-        // the offer server-side, cache-first exactly like Rapid Intake.
+        // Never trust client-submitted prices (or the client's "this code is valid"
+        // flag) — re-resolve every card and recompute the offer server-side, and
+        // re-verify the affiliate code from scratch, exactly like Rapid Intake.
+        $affiliateStore = null;
+        if (filled($validated['affiliate_code'] ?? null)) {
+            $affiliateStore = Store::query()
+                ->where('affiliate_code', strtoupper(trim($validated['affiliate_code'])))
+                ->where('status', 'active')
+                ->first();
+        }
+        $affiliateBonusPercentage = $affiliateStore
+            ? (float) config('selling.affiliate_bonus_percentage', 0.05)
+            : 0.0;
+
         $itemRows = [];
         $errors   = [];
 
@@ -72,6 +87,14 @@ class SubmissionStoreController extends Controller
                 continue;
             }
 
+            $unitOfferPence  = $quote['unit_offer_pence'];
+            $totalOfferPence = $quote['total_offer_pence'];
+
+            if ($affiliateBonusPercentage > 0) {
+                $unitOfferPence  = (int) round($unitOfferPence * (1 + $affiliateBonusPercentage));
+                $totalOfferPence = (int) round($totalOfferPence * (1 + $affiliateBonusPercentage));
+            }
+
             $itemRows[] = [
                 'product_id'         => $attributes['product_id'],
                 'card_name'          => $attributes['card_name'],
@@ -83,8 +106,11 @@ class SubmissionStoreController extends Controller
                 'quantity'           => $quantity,
                 'band'               => $quote['band'],
                 'offer_percentage'   => $quote['percentage'],
-                'unit_offer_pence'   => $quote['unit_offer_pence'],
-                'total_offer_pence'  => $quote['total_offer_pence'],
+                'unit_offer_pence'   => $unitOfferPence,
+                'total_offer_pence'  => $totalOfferPence,
+                // What the offer would've been without the affiliate bonus, purely
+                // so the base amount is still there if the bonus is ever disputed.
+                'base_total_offer_pence' => $quote['total_offer_pence'],
             ];
         }
 
@@ -92,7 +118,10 @@ class SubmissionStoreController extends Controller
             throw ValidationException::withMessages($errors);
         }
 
-        $submission = DB::transaction(function () use ($validated, $itemRows) {
+        $submission = DB::transaction(function () use ($validated, $itemRows, $affiliateStore) {
+            $totalOfferPence = collect($itemRows)->sum('total_offer_pence');
+            $baseOfferPence  = collect($itemRows)->sum('base_total_offer_pence');
+
             $submission = CustomerSellSubmission::create([
                 'reference'             => CustomerSellSubmission::nextReference(),
                 'customer_name'         => $validated['customer_name'],
@@ -101,10 +130,15 @@ class SubmissionStoreController extends Controller
                 'customer_postcode'     => $validated['customer_postcode'] ?? null,
                 'description'           => $validated['description'] ?? null,
                 'status'                => 'submitted',
-                'estimated_value_pence' => collect($itemRows)->sum('total_offer_pence'),
+                'estimated_value_pence' => $totalOfferPence,
+                'affiliate_code'        => $affiliateStore?->affiliate_code,
+                'affiliate_store_id'    => $affiliateStore?->id,
+                'affiliate_bonus_pence' => $affiliateStore ? $totalOfferPence - $baseOfferPence : null,
             ]);
 
-            $submission->items()->createMany($itemRows);
+            $submission->items()->createMany(
+                collect($itemRows)->map(fn ($row) => Arr::except($row, 'base_total_offer_pence'))->all()
+            );
 
             return $submission;
         });

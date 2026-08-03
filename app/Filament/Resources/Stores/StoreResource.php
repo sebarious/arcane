@@ -105,6 +105,14 @@ class StoreResource extends Resource
             Section::make('Public profile')
                 ->columnSpanFull()
                 ->schema([
+                    Forms\Components\TextInput::make('affiliate_code')
+                        ->label('Affiliate code')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->copyable()
+                        ->helperText('Auto-generated when the store is created. Shown on the store\'s public profile page — quoted on Sell to Us for a bonus offer.')
+                        ->visibleOn('edit'),
+
                     Forms\Components\TextInput::make('location')
                         ->label('Public location')
                         ->placeholder('e.g. Leeds, Bristol, Online only')
@@ -209,6 +217,11 @@ class StoreResource extends Resource
                 Tables\Columns\TextColumn::make('slug')
                     ->prefix('/')
                     ->copyable()
+                    ->color('gray'),
+                Tables\Columns\TextColumn::make('affiliate_code')
+                    ->label('Affiliate code')
+                    ->copyable()
+                    ->toggleable()
                     ->color('gray'),
                 Tables\Columns\TextColumn::make('city')->sortable(),
                 Tables\Columns\TextColumn::make('user.email')
