@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import SellerHeader from '@/Components/Layout/SellerHeader.vue';
+import SellerLayout from '@/Layouts/SellerLayout.vue';
 
 interface Store {
   id: number;
@@ -17,116 +17,152 @@ interface Product {
   price_pounds: number;
 }
 
+interface MergeableBatch {
+  id: number;
+  reference: string;
+  store_id: number;
+  type: string;
+  pack_count: number;
+}
+
 interface Props {
   stores: Store[];
   products: Product[];
+  mergeableBatches: MergeableBatch[];
 }
 
 const props = defineProps<Props>();
 
-const form = useForm( {
+const form = useForm({
   store_id: props.stores[0]?.id ?? null,
   game: 'pokemon',
   type: 'ruby',
   notes: '',
-} );
+  wants_merge: false,
+  merge_request_batch_id: null as number | null,
+});
 
-const games = computed( () => {
+const games = computed(() => {
   const seen = new Set<string>();
   return props.products
-    .filter( p => {
-      // TODO: remove as supported.
+    .filter(p => {
       const banned = ['mtg', 'lorcana', 'onepiece'];
-      if ( banned.includes( p.game ) ) return false;
-
-      if ( seen.has( p.game ) ) return false;
-      seen.add( p.game );
+      if (banned.includes(p.game)) return false;
+      if (seen.has(p.game)) return false;
+      seen.add(p.game);
       return true;
-    } )
-    .map( p => ( { value: p.game, label: p.game_label } ) );
-} );
+    })
+    .map(p => ({ value: p.game, label: p.game_label }));
+});
 
-const typesForGame = computed( () =>
-  props.products.filter( p => p.game === form.game )
+const typesForGame = computed(() =>
+  props.products.filter(p => p.game === form.game)
 );
 
-const selectedProduct = computed( () =>
-  props.products.find( p => p.game === form.game && p.type === form.type )
+const selectedProduct = computed(() =>
+  props.products.find(p => p.game === form.game && p.type === form.type)
+);
+
+const mergeableForStore = computed(() =>
+  props.mergeableBatches.filter(b => b.store_id === form.store_id)
 );
 
 const submit = () => {
-  form.post( '/seller/request-batch' );
+  form.transform((data) => ({
+    ...data,
+    merge_request_batch_id: data.wants_merge ? data.merge_request_batch_id : null,
+  })).post('/seller/request-batch');
 };
 </script>
 
 <template>
-  <div class="min-h-screen bg-arcane-bg text-arcane-text">
-    <SellerHeader />
+  <Head title="Request a batch" />
 
-    <main class="max-w-3xl mx-auto px-6 py-8">
-      <div class="card-panel p-6">
-        <h1 class="font-display text-2xl mb-2">Request a new batch</h1>
-        <p class="text-arcane-muted text-sm mb-6">
-          Choose your store, game, and product. We'll review and dispatch.
-        </p>
+  <SellerLayout title="Request a batch" subtitle="Choose your store, game, and product — we'll review and generate it shortly.">
+    <div class="max-w-2xl bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[12px] p-8">
+      <form @submit.prevent="submit" class="flex flex-col gap-5">
+        <div v-if="stores.length > 1">
+          <label class="block font-['Jost',sans-serif] font-semibold text-xs uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">Store</label>
+          <select v-model="form.store_id"
+            class="w-full bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3 text-sm text-white font-['Jost',sans-serif] focus:outline-none focus:border-[#c9a84c]"
+            required>
+            <option v-for="store in stores" :key="store.id" :value="store.id">{{ store.name }}</option>
+          </select>
+        </div>
 
-        <form @submit.prevent="submit" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium mb-1">Store</label>
-            <select v-model="form.store_id"
-              class="w-full rounded border border-arcane-border bg-arcane-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white"
+            <label class="block font-['Jost',sans-serif] font-semibold text-xs uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">Game</label>
+            <select v-model="form.game"
+              class="w-full bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3 text-sm text-white font-['Jost',sans-serif] focus:outline-none focus:border-[#c9a84c]"
               required>
-              <option v-for=" store in stores " :key="store.id" :value="store.id">
-                {{ store.name }}
+              <option v-for="g in games" :key="g.value" :value="g.value">{{ g.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-['Jost',sans-serif] font-semibold text-xs uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">Product</label>
+            <select v-model="form.type"
+              class="w-full bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3 text-sm text-white font-['Jost',sans-serif] focus:outline-none focus:border-[#c9a84c]"
+              required>
+              <option v-for="p in typesForGame" :key="p.type" :value="p.type">
+                {{ p.type_label }} — {{ p.packs }} packs, £{{ p.price_pounds.toFixed(2) }}
               </option>
             </select>
           </div>
+        </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium mb-1">Game</label>
-              <select v-model="form.game"
-                class="w-full rounded border border-arcane-border bg-arcane-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white"
-                required>
-                <option v-for=" g in games " :key="g.value" :value="g.value">
-                  {{ g.label }}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-medium mb-1">Product</label>
-              <select v-model="form.type"
-                class="w-full rounded border border-arcane-border bg-arcane-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white"
-                required>
-                <option v-for=" p in typesForGame " :key="p.type" :value="p.type">
-                  {{ p.type_label }} — {{ p.packs }} packs, £{{ p.price_pounds.toFixed( 2 ) }}
-                </option>
-              </select>
-            </div>
-          </div>
+        <div v-if="selectedProduct" class="bg-[#1a1628] border border-[rgba(124,58,237,0.25)] rounded-[8px] p-4 text-xs text-[#a3a3a3] font-['Jost',sans-serif]">
+          <strong class="text-white">{{ selectedProduct.type_label }}</strong>
+          — {{ selectedProduct.packs }} sealed mystery packs,
+          invoiced at <strong class="text-[#c9a84c]">£{{ selectedProduct.price_pounds.toFixed(2) }}</strong> ex VAT,
+          due 48 hours after generation.
+        </div>
 
-          <div v-if=" selectedProduct " class="card-panel p-3 bg-arcane-elevated text-xs text-arcane-muted">
-            <strong class="text-arcane-text">{{ selectedProduct.type_label }}</strong>
-            — {{ selectedProduct.packs }} sealed mystery packs,
-            invoiced at <strong class="text-arcane-text">£{{ selectedProduct.price_pounds.toFixed( 2 ) }}</strong> ex
-            VAT.
-          </div>
+        <!-- Merge option -->
+        <div class="border border-[#3d2f6e] rounded-[8px] p-4">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" v-model="form.wants_merge" class="mt-1 accent-[#c9a84c]" />
+            <span class="font-['Jost',sans-serif] text-sm text-white">
+              Merge one of my existing batches into this new one
+              <span class="block text-xs text-[#71717a] mt-0.5 font-normal">
+                If one of your batches is running low, we can move its remaining packs into this
+                fresh one once it's generated — restores balanced pull odds instead of running two thin pools.
+              </span>
+            </span>
+          </label>
 
-          <div>
-            <label class="block text-xs font-medium mb-1">Notes (optional)</label>
-            <textarea v-model="form.notes" rows="3"
-              class="w-full rounded border border-arcane-border bg-arcane-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white"
-              placeholder="Anything we should know about delivery, timing, etc." />
+          <div v-if="form.wants_merge" class="mt-4">
+            <label class="block font-['Jost',sans-serif] font-semibold text-xs uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">
+              Batch to merge in
+            </label>
+            <select v-model="form.merge_request_batch_id"
+              class="w-full bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3 text-sm text-white font-['Jost',sans-serif] focus:outline-none focus:border-[#c9a84c]">
+              <option :value="null">Select a batch…</option>
+              <option v-for="b in mergeableForStore" :key="b.id" :value="b.id">
+                {{ b.reference }} — {{ (b.type ?? '').toUpperCase() }}, {{ b.pack_count }} packs
+              </option>
+            </select>
+            <p v-if="mergeableForStore.length === 0" class="text-xs text-[#71717a] mt-2">
+              No eligible batches for this store yet.
+            </p>
           </div>
+        </div>
 
-          <div class="outline-root w-full">
-            <button type="submit" class="btn-primary w-full justify-center outline-inner" :disabled="form.processing">
-              <span v-if=" form.processing ">Submitting…</span>
-              <span v-else>Submit</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </main>
-  </div>
+        <div>
+          <label class="block font-['Jost',sans-serif] font-semibold text-xs uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">
+            Notes <span class="normal-case font-normal text-[#71717a]">(optional)</span>
+          </label>
+          <textarea v-model="form.notes" rows="3"
+            placeholder="Anything we should know about delivery, timing, etc."
+            class="w-full bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3 text-sm text-white font-['Jost',sans-serif] focus:outline-none focus:border-[#c9a84c]" />
+        </div>
+
+        <button type="submit" :disabled="form.processing"
+          class="w-full px-6 py-3.5 rounded-[4px] text-sm font-['Jost',sans-serif] font-bold uppercase tracking-wide text-[#0d0b14] disabled:opacity-50"
+          style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
+          {{ form.processing ? 'Submitting…' : 'Submit request' }}
+        </button>
+      </form>
+    </div>
+  </SellerLayout>
 </template>

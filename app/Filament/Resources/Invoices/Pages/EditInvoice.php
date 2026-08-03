@@ -13,6 +13,7 @@ class EditInvoice extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            InvoiceResource::resendEmailAction(),
             DeleteAction::make(),
         ];
     }

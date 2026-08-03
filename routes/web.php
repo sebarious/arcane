@@ -87,6 +87,9 @@ Route::middleware(['web', 'auth', 'role:seller'])
     Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
     Route::get('/request-batch', [BatchRequestController::class, 'create'])->name('batches.request');
     Route::post('/request-batch', [BatchRequestController::class, 'store'])->name('batches.request.store');
+    Route::get('/wallet', \App\Http\Controllers\Seller\WalletController::class)->name('wallet');
+    Route::get('/profile', [\App\Http\Controllers\Seller\ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile/{store}', [\App\Http\Controllers\Seller\ProfileController::class, 'update'])->name('profile.update');
   });
 
 Route::middleware(['web', 'auth'])->group(function () {

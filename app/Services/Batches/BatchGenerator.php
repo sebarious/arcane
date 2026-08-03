@@ -7,6 +7,8 @@ use App\Models\Batch;
 use App\Models\CardInventory;
 use App\Models\Pack;
 use App\Services\Banding\RarityBander;
+use App\Services\PulseApi\CardPriceSyncer;
+use App\Services\Stores\StoreCreditService;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +17,11 @@ use App\Enums\Game;
 
 class BatchGenerator
 {
+  public function __construct(
+    protected StoreCreditService $creditService,
+    protected CardPriceSyncer $priceSyncer,
+  ) {}
+
   /**
    * Generate cards & packs for a batch.
    *
@@ -55,6 +62,16 @@ class BatchGenerator
       if (empty($bandDistribution)) {
         throw new \RuntimeException("No band distribution configured for {$game->value}/{$type->value}.");
       }
+
+      // Refresh any stale prices in this pool before selecting from it — a card
+      // priced weeks ago could since have moved bands entirely, so this needs to
+      // happen before we group by rarity_band below, not after.
+      $this->priceSyncer->syncStale(
+        CardInventory::query()
+          ->inStock()
+          ->where('game', $game->value)
+          ->whereNull('pack_id')
+      );
 
       // Pool for this game
       $pool = CardInventory::query()
@@ -228,12 +245,18 @@ class BatchGenerator
           'internal_margin_vat_pence' => $vatOnMargin,
           'status'                    => 'sent',
           'issued_on'                 => now()->toDateString(),
-          'due_on'                    => now()->addDays(14)->toDateString(),
+          'due_on'                    => now()->addHours(48)->toDateString(),
         ]);
 
         $batch->update(['invoice_id' => $invoice->id]);
 
+        // Auto-offset the invoice with any credit this store already has in its
+        // wallet (e.g. from appraised affiliate sell submissions), up to the
+        // invoice's value — leftover credit, if any, carries forward untouched.
+        $this->creditService->deductForInvoice($batch->store, $invoice);
+
         \App\Jobs\GenerateBatchQrSheetJob::dispatch($batch->id)->afterCommit();
+        \App\Jobs\SendInvoiceEmailJob::dispatch($invoice->id)->afterCommit();
       });
     }
 

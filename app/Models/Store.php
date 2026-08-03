@@ -11,6 +11,7 @@ class Store extends Model
         'user_id',
         'slug',
         'affiliate_code',
+        'credit_balance_pence',
         'name',
         'description',
         'platforms',
@@ -40,6 +41,8 @@ class Store extends Model
     public function batches()   { return $this->hasMany(Batch::class); }
 
     public function invoices()  { return $this->hasMany(Invoice::class); }
+
+    public function creditTransactions() { return $this->hasMany(StoreCreditTransaction::class); }
 
     public function getLogoAttribute(): ?string
     {

@@ -1,20 +1,16 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import SellerHeader from '@/Components/Layout/SellerHeader.vue';
+import { Link, Head } from '@inertiajs/vue3';
+import SellerLayout from '@/Layouts/SellerLayout.vue';
 
-interface CardInfo {
-  name: string | null;
+type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic';
+
+interface BandCard {
+  sequence: number;
+  status: string;
+  name: string;
   set: string | null;
   number: string | null;
   image: string | null;
-  band: string | null;
-}
-
-interface Pack {
-  id: number;
-  sequence: number;
-  status: string;
-  card: CardInfo | null;
 }
 
 interface Batch {
@@ -22,110 +18,103 @@ interface Batch {
   reference: string;
   type: string | null;
   pack_count: number;
-  sale_price_pence: number | null;
-  total_cost_pence: number | null;
-  total_market_value_pence: number | null;
-  margin_pence: number | null;
   status: string;
-  store: { id: number; name: string; };
+  created_at: string | null;
+  sold: number;
+  store: { id: number; name: string };
+  invoice: { id: number; number: string } | null;
+  merged_into: { id: number; reference: string } | null;
+  merge_request_batch: { id: number; reference: string } | null;
 }
 
 interface Props {
   batch: Batch;
-  packs: Pack[];
+  bands: Record<Rarity, BandCard[]>;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
-const formatMoney = ( pence: number | null | undefined ): string => {
-  if ( !pence ) return '£0.00';
-  return '£' + ( pence / 100 ).toFixed( 2 );
-};
-
-const statusLabel = ( status: string ): string => {
-  switch ( status ) {
-    case 'draft': return 'Draft';
-    case 'committed': return 'Live';
-    case 'dispatched': return 'Dispatched';
-    case 'completed': return 'Completed';
-    case 'cancelled': return 'Cancelled';
-    default: return status;
+const statusMeta = (status: string): { label: string; color: string } => {
+  switch (status) {
+    case 'draft': return { label: 'Requested', color: 'text-[#a3a3a3] bg-[rgba(163,163,163,0.1)]' };
+    case 'committed': return { label: 'Live', color: 'text-[#2dd4bf] bg-[rgba(45,212,191,0.1)]' };
+    case 'dispatched': return { label: 'Dispatched', color: 'text-[#3b82f6] bg-[rgba(59,130,246,0.1)]' };
+    case 'completed': return { label: 'Completed', color: 'text-[#c9a84c] bg-[rgba(201,168,76,0.1)]' };
+    case 'cancelled': return { label: 'Cancelled', color: 'text-red-400 bg-red-400/10' };
+    default: return { label: status, color: 'text-[#a3a3a3] bg-[rgba(163,163,163,0.1)]' };
   }
 };
 
-const bandLabel = ( band: string | null ): string => {
-  switch ( band ) {
-    case 'common': return 'Common';
-    case 'rare': return 'Rare';
-    case 'super': return 'Super';
-    case 'legendary': return 'Legendary';
-    case 'mythic': return 'Mythic';
-    default: return band ?? '—';
-  }
-};
+const bandOrder: { key: Rarity; label: string; text: string }[] = [
+  { key: 'mythic', label: 'Mythic', text: '#c9a84c' },
+  { key: 'legendary', label: 'Legendary', text: '#7b4fe9' },
+  { key: 'super', label: 'Super', text: '#2dd4bf' },
+  { key: 'rare', label: 'Rare', text: '#3b82f6' },
+  { key: 'common', label: 'Common', text: '#a3a3a3' },
+];
 </script>
 
 <template>
-  <div class="min-h-screen bg-arcane-bg text-arcane-text">
-    <SellerHeader />
+  <Head :title="batch.reference" />
 
-    <main class="max-w-6xl mx-auto px-6 py-8 space-y-6">
-      <section class="card-panel p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 class="font-display text-2xl mb-1">
-            {{ batch.reference }}
-          </h1>
-          <p class="text-arcane-muted text-sm">
-            {{ batch.store.name }} · {{ ( batch.type ?? '' ).toUpperCase() }} · {{ batch.pack_count }} packs
-          </p>
-          <p class="text-arcane-muted text-xs mt-1">
-            Status: {{ statusLabel( batch.status ) }}
-          </p>
+  <SellerLayout :title="batch.reference" :subtitle="`${batch.store.name} · ${(batch.type ?? '').toUpperCase()} · ${batch.pack_count} packs`">
+    <div class="flex items-center gap-3 mb-6">
+      <span :class="['text-xs font-[\'Jost\',sans-serif] font-semibold uppercase px-3 py-1.5 rounded-[4px]', statusMeta(batch.status).color]">
+        {{ statusMeta(batch.status).label }}
+      </span>
+      <a v-if="batch.invoice" :href="`/admin/invoices/${batch.invoice.id}/pdf`" target="_blank"
+        class="text-xs font-['Jost',sans-serif] text-[#c9a84c] hover:underline">
+        Invoice {{ batch.invoice.number }}
+      </a>
+    </div>
+
+    <div v-if="batch.merged_into || batch.merge_request_batch"
+      class="mb-6 bg-[rgba(124,58,237,0.08)] border border-[rgba(124,58,237,0.3)] rounded-[10px] p-4 text-sm font-['Jost',sans-serif] text-[#d8d3e0]">
+      <p v-if="batch.merged_into">
+        This batch's remaining packs were merged into
+        <Link :href="`/seller/batches/${batch.merged_into.id}`" class="text-[#c9a84c] hover:underline">{{ batch.merged_into.reference }}</Link>.
+      </p>
+      <p v-if="batch.merge_request_batch">
+        You requested batch {{ batch.merge_request_batch.reference }} be merged into this one once generated.
+      </p>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 gap-4 mb-8 max-w-xl">
+      <div class="bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[12px] p-5">
+        <p class="font-['Jost',sans-serif] text-[11px] uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">Packs sold</p>
+        <p class="font-['Cinzel',sans-serif] font-bold text-2xl text-white">{{ batch.sold }} / {{ batch.pack_count }}</p>
+      </div>
+      <div class="bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[12px] p-5">
+        <p class="font-['Jost',sans-serif] text-[11px] uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">Created</p>
+        <p class="font-['Cinzel',sans-serif] font-bold text-2xl text-white">{{ batch.created_at ?? '—' }}</p>
+      </div>
+    </div>
+
+    <!-- Card pool by band -->
+    <div class="flex flex-col gap-10">
+      <div v-for="band in bandOrder" :key="band.key">
+        <div class="flex items-center gap-3 mb-4">
+          <h2 class="font-['Cinzel',sans-serif] font-bold text-lg" :style="{ color: band.text }">{{ band.label }}</h2>
+          <span class="font-['Jost',sans-serif] text-xs text-[#71717a]">{{ (bands[band.key] ?? []).length }} cards</span>
         </div>
-      </section>
 
-      <section class="card-panel p-4 overflow-x-auto">
-        <h2 class="text-lg font-semibold mb-3">Packs</h2>
-        <table class="min-w-full text-sm">
-          <thead class="text-arcane-muted border-b border-arcane-border/60">
-            <tr class="text-left">
-              <th class="py-2 pr-4">#</th>
-              <th class="py-2 pr-4">Card</th>
-              <th class="py-2 pr-4">Set</th>
-              <th class="py-2 pr-4">Band</th>
-              <th class="py-2 pr-4">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if=" packs.length === 0 ">
-              <td colspan="5" class="py-4 text-arcane-muted text-sm">
-                No packs found for this batch.
-              </td>
-            </tr>
-            <tr v-for=" pack in packs " :key="pack.id" class="border-b border-arcane-border/40">
-              <td class="py-2 pr-4">
-                #{{ pack.sequence }}
-              </td>
-              <td class="py-2 pr-4">
-                {{ pack.card?.name ?? '—' }}
-              </td>
-              <td class="py-2 pr-4 text-arcane-muted text-xs">
-                {{ pack.card?.set ?? '' }} <span v-if=" pack.card?.number ">· {{ pack.card.number }}</span>
-              </td>
-              <td class="py-2 pr-4 text-xs">
-                <span class="rarity-pill bg-arcane-border/40 text-arcane-muted">
-                  {{ bandLabel( pack.card?.band ?? null ) }}
-                </span>
-              </td>
-              <td class="py-2 pr-4 text-xs">
-                <span class="rarity-pill bg-arcane-border/40 text-arcane-muted">
-                  {{ statusLabel( pack.status ) }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-    </main>
-  </div>
+        <div v-if="(bands[band.key] ?? []).length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div v-for="card in bands[band.key]" :key="card.sequence"
+            class="bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[8px] p-3 relative"
+            :class="{ 'opacity-40': card.status === 'sold' }">
+            <div class="aspect-[2.5/3.5] rounded-[6px] overflow-hidden bg-[#0d0b14] mb-2">
+              <img v-if="card.image" :src="card.image" :alt="card.name" class="w-full h-full object-cover" loading="lazy" />
+            </div>
+            <p class="font-['Jost',sans-serif] text-xs text-white truncate">{{ card.name }}</p>
+            <p class="font-['Jost',sans-serif] text-[10px] text-[#71717a] truncate">{{ card.set }} · #{{ card.number }}</p>
+            <span v-if="card.status === 'sold'"
+              class="absolute top-2 right-2 text-[9px] font-['Jost',sans-serif] font-semibold uppercase bg-[#0d0b14]/90 text-[#71717a] px-1.5 py-0.5 rounded">
+              Sold
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </SellerLayout>
 </template>

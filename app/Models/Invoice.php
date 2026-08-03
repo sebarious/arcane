@@ -12,6 +12,7 @@ class Invoice extends Model
         'store_id',
         'batch_id',
         'total_pence',
+        'credit_applied_pence',
         'internal_cost_pence',
         'internal_margin_pence',
         'internal_margin_vat_pence',
@@ -19,14 +20,16 @@ class Invoice extends Model
         'issued_on',
         'due_on',
         'paid_at',
+        'last_emailed_at',
         'stripe_invoice_id',
         'pdf_path',
     ];
 
     protected $casts = [
-        'issued_on' => 'date',
-        'due_on'    => 'date',
-        'paid_at'   => 'datetime',
+        'issued_on'       => 'date',
+        'due_on'          => 'date',
+        'paid_at'         => 'datetime',
+        'last_emailed_at' => 'datetime',
     ];
 
     public function store(): BelongsTo
@@ -37,6 +40,17 @@ class Invoice extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
+    }
+
+    public function creditTransactions()
+    {
+        return $this->hasMany(StoreCreditTransaction::class);
+    }
+
+    /** total_pence stays the true invoice value — this is what's actually still owed. */
+    public function getAmountDuePenceAttribute(): int
+    {
+        return $this->total_pence - $this->credit_applied_pence;
     }
 
     public static function nextNumber(): string

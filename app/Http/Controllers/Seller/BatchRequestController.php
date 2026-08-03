@@ -39,9 +39,20 @@ class BatchRequestController extends Controller
             }
         }
 
+        // Eligible merge targets — this seller's own already-generated batches that
+        // haven't themselves been merged away yet, so staff have something to merge
+        // the new batch's leftovers into (or vice versa) once it's generated.
+        $mergeableBatches = Batch::query()
+            ->whereIn('store_id', $stores->pluck('id'))
+            ->whereIn('status', ['committed', 'dispatched'])
+            ->whereNull('merged_into_batch_id')
+            ->orderByDesc('created_at')
+            ->get(['id', 'reference', 'store_id', 'type', 'pack_count']);
+
         return Inertia::render('Seller/BatchRequest', [
-            'stores'   => $stores,
-            'products' => $products,
+            'stores'           => $stores,
+            'products'         => $products,
+            'mergeableBatches' => $mergeableBatches,
         ]);
     }
 
@@ -51,10 +62,11 @@ class BatchRequestController extends Controller
         if (! $user->hasRole('seller')) abort(403);
 
         $data = $request->validate([
-            'store_id' => ['required', 'integer'],
-            'game'     => ['required', 'string'],
-            'type'     => ['required', 'string'],
-            'notes'    => ['nullable', 'string', 'max:1000'],
+            'store_id'                => ['required', 'integer'],
+            'game'                    => ['required', 'string'],
+            'type'                    => ['required', 'string'],
+            'notes'                   => ['nullable', 'string', 'max:1000'],
+            'merge_request_batch_id'  => ['nullable', 'integer'],
         ]);
 
         // Verify seller owns this store
@@ -62,8 +74,28 @@ class BatchRequestController extends Controller
             abort(403);
         }
 
+        // If a merge target was picked, make sure it's actually one of this seller's
+        // own eligible batches for that same store — never trust the client here.
+        $mergeRequestBatchId = null;
+        if (! empty($data['merge_request_batch_id'])) {
+            $mergeRequestBatchId = Batch::query()
+                ->where('id', $data['merge_request_batch_id'])
+                ->where('store_id', $data['store_id'])
+                ->whereIn('status', ['committed', 'dispatched'])
+                ->whereNull('merged_into_batch_id')
+                ->value('id');
+        }
+
         $game = Game::from($data['game']);
         $type = BatchType::from($data['type']);
+
+        $notes = collect([
+            "Requested by seller {$user->email}",
+            $data['notes'] ?? null,
+            $mergeRequestBatchId
+                ? 'Seller asked for batch #'.$mergeRequestBatchId.' to be merged into this one once generated.'
+                : null,
+        ])->filter()->implode(' — ');
 
         $batch = Batch::create([
             'reference'                => Batch::nextReference(),
@@ -77,9 +109,8 @@ class BatchRequestController extends Controller
             'total_market_value_pence' => 0,
             'margin_pence'             => 0,
             'margin_scheme_vat_pence'  => 0,
-            'admin_notes'              => $data['notes']
-                ? "Requested by seller {$user->email}: {$data['notes']}"
-                : "Requested by seller {$user->email}",
+            'admin_notes'              => $notes,
+            'merge_request_batch_id'   => $mergeRequestBatchId,
         ]);
 
 

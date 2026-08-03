@@ -44,6 +44,21 @@ class InvoiceResource extends Resource
                         ->relationship('batch', 'reference')
                         ->disabled()
                         ->dehydrated(false),
+                    Forms\Components\TextInput::make('total_pence')
+                        ->label('Invoice total')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->formatStateUsing(fn ($state) => Money::format($state)),
+                    Forms\Components\TextInput::make('credit_applied_pence')
+                        ->label('Store credit applied')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->formatStateUsing(fn ($state) => Money::format($state)),
+                    Forms\Components\TextInput::make('amount_due_pence')
+                        ->label('Amount due')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->formatStateUsing(fn ($state, ?Invoice $record) => Money::format($record?->amount_due_pence)),
                     Forms\Components\Select::make('status')
                         ->options([
                             'draft'     => 'Draft',
@@ -61,8 +76,33 @@ class InvoiceResource extends Resource
                     Forms\Components\DateTimePicker::make('paid_at')
                         ->label('Paid at')
                         ->seconds(false),
+                    Forms\Components\DateTimePicker::make('last_emailed_at')
+                        ->label('Last emailed')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->seconds(false),
                 ]),
         ]);
+    }
+
+    /** Sends (or resends) the invoice email — synchronous, so the admin gets immediate confirmation. */
+    public static function resendEmailAction(): Action
+    {
+        return Action::make('resendEmail')
+            ->label('Resend email')
+            ->icon(Heroicon::OutlinedEnvelope)
+            ->color('gray')
+            ->requiresConfirmation()
+            ->modalDescription(fn (Invoice $record) => "Email this invoice to {$record->store->contact_email}?")
+            ->action(function (Invoice $record) {
+                app(\App\Services\Invoicing\InvoiceMailSender::class)->send($record);
+
+                \Filament\Notifications\Notification::make()
+                    ->title('Invoice emailed')
+                    ->body("Sent to {$record->store->contact_email}.")
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function table(Table $table): Table
@@ -82,6 +122,16 @@ class InvoiceResource extends Resource
                 Tables\Columns\TextColumn::make('total_pence')
                     ->label('Total')
                     ->formatStateUsing(fn($state) => Money::format($state))
+                    ->alignEnd(),
+                Tables\Columns\TextColumn::make('credit_applied_pence')
+                    ->label('Credit applied')
+                    ->formatStateUsing(fn($state) => $state > 0 ? Money::format($state) : '—')
+                    ->color(fn($state) => $state > 0 ? 'success' : 'gray')
+                    ->toggleable()
+                    ->alignEnd(),
+                Tables\Columns\TextColumn::make('amount_due_pence')
+                    ->label('Amount due')
+                    ->formatStateUsing(fn($state, Invoice $record) => Money::format($record->amount_due_pence))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
@@ -110,9 +160,16 @@ class InvoiceResource extends Resource
                     ->date()
                     ->sortable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('last_emailed_at')
+                    ->label('Last emailed')
+                    ->dateTime('d M Y H:i')
+                    ->placeholder('Never')
+                    ->toggleable()
+                    ->sortable(),
             ])
             ->recordActions([
                 EditAction::make()->label('Status'),
+                static::resendEmailAction(),
                 Action::make('pdf')
                     ->label('Download PDF')
                     ->icon(\Filament\Support\Icons\Heroicon::OutlinedArrowDownTray)

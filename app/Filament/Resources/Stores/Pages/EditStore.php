@@ -40,6 +40,8 @@ class EditStore extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            StoreResource::viewLiveAction(),
+            StoreResource::addCreditAction(),
             DeleteAction::make(),
         ];
     }

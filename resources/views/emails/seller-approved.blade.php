@@ -37,6 +37,26 @@
       <a href="{{ $resetUrl }}">{{ $resetUrl }}</a>
     </p>
 
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 28px 0;">
+
+    <h2 style="font-size: 18px; margin-bottom: 8px;">One more thing — complete your storefront onboarding</h2>
+
+    <p>
+      Attached to this email is your <strong>Arcane Seller Onboarding</strong> form. Please fill it out
+      (you can type directly into the PDF using Adobe Acrobat Reader or Preview) and email it back to us at
+      <a href="mailto:{{ config('mail.from.address') }}">{{ config('mail.from.address') }}</a> along with your logo.
+    </p>
+
+    <p>Your logo should be:</p>
+    <ul>
+      <li>600 &times; 600 pixels</li>
+      <li>PNG format</li>
+    </ul>
+
+    <p>
+      Once we've received both, we'll set up your public storefront and let you know as soon as it's live.
+    </p>
+
     <p>
       Best regards,<br>
       The Arcane Team

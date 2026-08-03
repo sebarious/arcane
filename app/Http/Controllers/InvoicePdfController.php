@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Invoicing\InvoicePdfBuilder;
 use Illuminate\Http\Request;
 
 class InvoicePdfController extends Controller
 {
-    public function __invoke(Request $request, Invoice $invoice)
+    public function __invoke(Request $request, Invoice $invoice, InvoicePdfBuilder $pdfBuilder)
     {
         $user = $request->user();
         if (! $user) abort(403);
@@ -20,14 +20,6 @@ class InvoicePdfController extends Controller
             }
         }
 
-        $invoice->load(['store', 'batch']);
-
-        $pdf = Pdf::loadView('pdf.invoice', [
-            'invoice' => $invoice,
-        ])->setPaper('a4', 'portrait');
-
-        $filename = "{$invoice->number}.pdf";
-
-        return $pdf->download($filename);
+        return $pdfBuilder->build($invoice)->download("{$invoice->number}.pdf");
     }
 }

@@ -21,6 +21,10 @@ class SellerApprovedMail extends Mailable
     public function build(): static
     {
         return $this->subject('Your Arcane seller account has been approved')
-            ->view('emails.seller-approved');
+            ->view('emails.seller-approved')
+            ->attach(resource_path('documents/arcane-seller-onboarding.pdf'), [
+                'as'   => 'Arcane Seller Onboarding.pdf',
+                'mime' => 'application/pdf',
+            ]);
     }
 }

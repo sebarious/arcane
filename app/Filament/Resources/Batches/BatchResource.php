@@ -117,8 +117,26 @@ class BatchResource extends Resource
                             $set('sale_price_pounds', BatchDesign::targetSalePrice($game, $type) / 100);
                         }),
                 ]),
+            Section::make('Failure')
+                ->visible(fn (?Batch $record) => $record?->status === 'cancelled')
+                ->schema([
+                    Forms\Components\Placeholder::make('failed_at_display')
+                        ->label('Failed at')
+                        ->content(fn (?Batch $record) => $record?->failed_at?->format('d M Y H:i') ?? '—'),
+                    Forms\Components\Textarea::make('failure_reason')
+                        ->label('Reason')
+                        ->disabled()
+                        ->rows(6)
+                        ->columnSpanFull(),
+                ]),
             Section::make('Internal notes')
                 ->schema([
+                    \Filament\Infolists\Components\TextEntry::make('merge_request_notice')
+                        ->label('')
+                        ->visible(fn (?Batch $record) => filled($record?->merge_request_batch_id))
+                        ->state(fn (?Batch $record) => 'Seller asked for batch #'.$record?->mergeRequestBatch?->reference.' to be merged into this one once generated — use the "Merge into" action on that batch after this one is committed.')
+                        ->color('warning')
+                        ->columnSpanFull(),
                     Forms\Components\Textarea::make('admin_notes')
                         ->columnSpanFull()
                         ->rows(3)
@@ -144,17 +162,15 @@ class BatchResource extends Resource
                         }),
                 ])
                 ->visibleOn('edit'),
-            Section::make('Failure')
-                ->visible(fn(?Batch $record) => $record?->status === 'cancelled')
+            Section::make('Cards in this batch')
+                ->columnSpanFull()
+                ->visibleOn('edit')
+                ->visible(fn (?Batch $record) => $record?->packs()->exists())
                 ->schema([
-                    Forms\Components\Placeholder::make('failed_at_display')
-                        ->label('Failed at')
-                        ->content(fn(?Batch $record) => $record?->failed_at?->format('d M Y H:i') ?? '—'),
-                    Forms\Components\Textarea::make('failure_reason')
-                        ->label('Reason')
-                        ->disabled()
-                        ->rows(6)
-                        ->columnSpanFull(),
+                    Forms\Components\ViewField::make('cards')
+                        ->label('')
+                        ->view('filament.forms.components.batch-cards')
+                        ->dehydrated(false),
                 ]),
         ]);
     }
@@ -286,122 +302,154 @@ class BatchResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
-                Action::make('generate')
-                    ->label('Generate cards')
-                    ->icon(\Filament\Support\Icons\Heroicon::OutlinedSparkles)
-                    ->visible(fn(\App\Models\Batch $record) => $record->status === 'draft')
-                    ->requiresConfirmation()
-                    ->action(function (\App\Models\Batch $record) {
-                        \App\Jobs\GenerateBatchJob::dispatch($record->id);
-                        \Filament\Notifications\Notification::make()
-                            ->title('Batch generation started')
-                            ->body('Cards will be assigned shortly.')
-                            ->success()
-                            ->send();
-                    }),
-                Action::make('qrSheet')
-                    ->label('QR sheet')
-                    ->icon(\Filament\Support\Icons\Heroicon::OutlinedQrCode)
-                    ->url(fn(\App\Models\Batch $record) => route('batches.qr-sheet', $record))
-                    ->openUrlInNewTab()
-                    ->visible(fn(\App\Models\Batch $record) => $record->status === 'committed'),
-                Action::make('retry')
-                    ->label('Retry')
-                    ->icon(Heroicon::OutlinedArrowPath)
-                    ->visible(fn(Batch $record) => $record->status === 'cancelled')
-                    ->requiresConfirmation()
-                    ->action(function (Batch $record) {
-                        $record->update([
-                            'status'         => 'draft',
-                            'failure_reason' => null,
-                            'failed_at'      => null,
-                        ]);
-                        \App\Jobs\GenerateBatchJob::dispatch($record->id);
-                        \Filament\Notifications\Notification::make()
-                            ->title('Batch retry queued')
-                            ->success()
-                            ->send();
-                    }),
-                Action::make('mergeInto')
-                    ->label('Merge into…')
-                    ->icon(Heroicon::OutlinedArrowsPointingIn)
-                    ->color('warning')
-                    ->visible(fn (Batch $record) =>
-                        ! $record->isMerged()
-                        && in_array($record->status, ['committed', 'dispatched'], true)
-                        && $record->packs()->where('status', 'sealed')->exists())
-                    ->requiresConfirmation()
-                    ->modalHeading('Merge batch')
-                    ->modalDescription('Moves this batch\'s remaining sealed packs into another batch\'s pool. Already-sold packs and this batch\'s invoice are untouched — this only reorganizes what\'s left to sell.')
-                    ->schema(fn (Batch $record) => [
-                        Forms\Components\Select::make('target_batch_id')
-                            ->label('Merge into')
-                            ->options(fn () => Batch::query()
-                                ->where('store_id', $record->store_id)
-                                ->where('id', '!=', $record->id)
-                                ->whereIn('status', ['committed', 'dispatched'])
-                                ->whereNull('merged_into_batch_id')
-                                ->orderByDesc('created_at')
-                                ->pluck('reference', 'id'))
-                            ->searchable()
-                            ->required()
-                            ->helperText('Only other live batches at the same store are shown.'),
-                    ])
-                    ->action(function (Batch $record, array $data, BatchMerger $merger) {
-                        try {
-                            $merger->merge($record, Batch::findOrFail($data['target_batch_id']));
-                        } catch (\RuntimeException $e) {
-                            Notification::make()
-                                ->title('Merge failed')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        Notification::make()
-                            ->title('Batch merged')
-                            ->body("Remaining sealed packs moved. {$record->reference} is now flagged as merged.")
-                            ->success()
-                            ->send();
-                    }),
-                Action::make('deleteBatch')
-                    ->label('Delete batch')
-                    ->icon(\Filament\Support\Icons\Heroicon::OutlinedTrash)
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('Delete batch')
-                    ->modalDescription('Choose how to handle the cards in this batch when deleting.')
-                    ->schema([
-                        Forms\Components\Toggle::make('reallocate_inventory')
-                            ->label('Return cards to stock')
-                            ->helperText('On = cards become "In stock" again. Off = cards are permanently deleted.')
-                            ->default(true),
-                        Forms\Components\Toggle::make('delete_invoice')
-                            ->label('Also delete the linked invoice')
-                            ->default(false),
-                    ])
-                    ->action(function (\App\Models\Batch $record, array $data, BatchDeleter $deleter) {
-                        $deleter->delete(
-                            $record,
-                            reallocateInventory: (bool) $data['reallocate_inventory'],
-                            deleteInvoice: (bool) $data['delete_invoice'],
-                        );
-                        Notification::make()
-                            ->title('Batch deleted')
-                            ->body($data['reallocate_inventory']
-                                ? 'Cards have been returned to stock.'
-                                : 'Cards have been permanently deleted.')
-                            ->success()
-                            ->send();
-                    }),
+                static::retryAction(),
+                static::deleteBatchAction(),
             ])
+            ->checkIfRecordIsSelectableUsing(
+                fn (Batch $record) => ! $record->packs()->where('status', 'sold')->exists(),
+            )
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    public static function generateAction(): Action
+    {
+        return Action::make('generate')
+            ->label('Generate cards')
+            ->icon(Heroicon::OutlinedSparkles)
+            ->visible(fn (Batch $record) => $record->status === 'draft')
+            ->requiresConfirmation()
+            ->action(function (Batch $record) {
+                \App\Jobs\GenerateBatchJob::dispatch($record->id);
+                Notification::make()
+                    ->title('Batch generation started')
+                    ->body('Cards will be assigned shortly.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    public static function qrSheetAction(): Action
+    {
+        return Action::make('qrSheet')
+            ->label('QR sheet')
+            ->icon(Heroicon::OutlinedQrCode)
+            ->url(fn (Batch $record) => route('batches.qr-sheet', $record))
+            ->openUrlInNewTab()
+            ->visible(fn (Batch $record) => $record->status === 'committed');
+    }
+
+    public static function retryAction(): Action
+    {
+        return Action::make('retry')
+            ->label('Retry')
+            ->icon(Heroicon::OutlinedArrowPath)
+            ->visible(fn (Batch $record) => $record->status === 'cancelled')
+            ->requiresConfirmation()
+            ->action(function (Batch $record) {
+                $record->update([
+                    'status'         => 'draft',
+                    'failure_reason' => null,
+                    'failed_at'      => null,
+                ]);
+                \App\Jobs\GenerateBatchJob::dispatch($record->id);
+                Notification::make()
+                    ->title('Batch retry queued')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    public static function mergeIntoAction(): Action
+    {
+        return Action::make('mergeInto')
+            ->label('Merge into…')
+            ->icon(Heroicon::OutlinedArrowsPointingIn)
+            ->color('warning')
+            ->visible(fn (Batch $record) =>
+                ! $record->isMerged()
+                && in_array($record->status, ['committed', 'dispatched'], true)
+                && $record->packs()->where('status', 'sealed')->exists())
+            ->requiresConfirmation()
+            ->modalHeading('Merge batch')
+            ->modalDescription('Moves this batch\'s remaining sealed packs into another batch\'s pool. Already-sold packs and this batch\'s invoice are untouched — this only reorganizes what\'s left to sell.')
+            ->schema(fn (Batch $record) => [
+                Forms\Components\Select::make('target_batch_id')
+                    ->label('Merge into')
+                    ->options(fn () => Batch::query()
+                        ->where('store_id', $record->store_id)
+                        ->where('id', '!=', $record->id)
+                        ->whereIn('status', ['committed', 'dispatched'])
+                        ->whereNull('merged_into_batch_id')
+                        ->orderByDesc('created_at')
+                        ->pluck('reference', 'id'))
+                    ->searchable()
+                    ->required()
+                    ->helperText('Only other live batches at the same store are shown.'),
+            ])
+            ->action(function (Batch $record, array $data, BatchMerger $merger) {
+                try {
+                    $merger->merge($record, Batch::findOrFail($data['target_batch_id']));
+                } catch (\RuntimeException $e) {
+                    Notification::make()
+                        ->title('Merge failed')
+                        ->body($e->getMessage())
+                        ->danger()
+                        ->send();
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Batch merged')
+                    ->body("Remaining sealed packs moved. {$record->reference} is now flagged as merged.")
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * A batch with any sold packs is never deletable — its packs are already out in
+     * the world (QR-scanned, invoiced) so removing the batch record would orphan
+     * that history. Shared between the listing page and the Edit page so both go
+     * through BatchDeleter (proper card/pack/invoice cleanup) with the same guard.
+     */
+    public static function deleteBatchAction(): Action
+    {
+        return Action::make('deleteBatch')
+            ->label('Delete batch')
+            ->icon(\Filament\Support\Icons\Heroicon::OutlinedTrash)
+            ->color('danger')
+            ->visible(fn (Batch $record) => ! $record->packs()->where('status', 'sold')->exists())
+            ->requiresConfirmation()
+            ->modalHeading('Delete batch')
+            ->modalDescription('Choose how to handle the cards in this batch when deleting.')
+            ->schema([
+                Forms\Components\Toggle::make('reallocate_inventory')
+                    ->label('Return cards to stock')
+                    ->helperText('On = cards become "In stock" again. Off = cards are permanently deleted.')
+                    ->default(true),
+                Forms\Components\Toggle::make('delete_invoice')
+                    ->label('Also delete the linked invoice')
+                    ->default(false),
+            ])
+            ->action(function (Batch $record, array $data, BatchDeleter $deleter) {
+                $deleter->delete(
+                    $record,
+                    reallocateInventory: (bool) $data['reallocate_inventory'],
+                    deleteInvoice: (bool) $data['delete_invoice'],
+                );
+                Notification::make()
+                    ->title('Batch deleted')
+                    ->body($data['reallocate_inventory']
+                        ? 'Cards have been returned to stock.'
+                        : 'Cards have been permanently deleted.')
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function getPages(): array

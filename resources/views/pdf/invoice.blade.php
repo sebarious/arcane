@@ -12,42 +12,90 @@
     body {
       font-family: DejaVu Sans, sans-serif;
       font-size: 11px;
-      color: #111827;
+      color: #1c1a26;
+    }
+
+    .brand-bar {
+      background: #13101e;
+      padding: 8mm 10mm;
+      border-radius: 3mm;
+      margin-bottom: 8mm;
+    }
+
+    .brand-bar table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .brand-name {
+      font-size: 20px;
+      font-weight: bold;
+      color: #e8d49a;
+      letter-spacing: 0.05em;
+    }
+
+    .brand-tagline {
+      font-size: 9px;
+      color: #a3a3a3;
+      margin-top: 2px;
+    }
+
+    .invoice-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .invoice-number {
+      font-size: 10px;
+      color: #c9a84c;
+      margin-top: 2px;
     }
 
     .header {
-      margin-bottom: 10mm;
+      margin-bottom: 8mm;
     }
 
-    .row {
-      display: flex;
-      justify-content: space-between;
+    .header table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .header td {
+      vertical-align: top;
     }
 
     .box {
-      width: 48%;
+      width: 50%;
     }
 
-    h1 {
-      font-size: 18px;
-      margin: 0 0 4px 0;
+    .label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #8a8497;
+      margin-bottom: 2px;
     }
 
-    table {
+    table.items {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8mm;
+      margin-top: 4mm;
     }
 
-    th,
-    td {
-      padding: 4px 6px;
-      border-bottom: 0.2mm solid #e5e7eb;
+    table.items th,
+    table.items td {
+      padding: 6px 8px;
+      border-bottom: 0.2mm solid #e5e0ec;
       text-align: left;
     }
 
-    th {
-      background: #f3f4f6;
+    table.items th {
+      background: #f5f2fa;
+      color: #13101e;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     .right {
@@ -55,50 +103,74 @@
     }
 
     .total-row td {
-      border-top: 0.3mm solid #111827;
+      border-top: 0.4mm solid #c9a84c;
+      border-bottom: none;
       font-weight: bold;
+      font-size: 13px;
+      color: #13101e;
+    }
+
+    .credit-row td {
+      color: #1f7a4d;
     }
 
     .note {
-      margin-top: 8mm;
+      margin-top: 10mm;
+      padding-top: 4mm;
+      border-top: 0.2mm solid #e5e0ec;
       font-size: 9px;
-      color: #6b7280;
+      color: #8a8497;
+    }
+
+    .footer-brand {
+      margin-top: 6mm;
+      font-size: 9px;
+      color: #c9a84c;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
   </style>
 </head>
 
 <body>
-  <div class="header">
-    <div class="row">
-      <div class="box">
-        <h1>Invoice {{ $invoice->number }}</h1>
-        <p>
-          <strong>Issue date:</strong> {{ $invoice->issued_on?->format('Y-m-d') ?? '' }}<br>
-          <strong>Due date:</strong> {{ $invoice->due_on?->format('Y-m-d') ?? 'On receipt' }}
-        </p>
-      </div>
-      <div class="box" style="text-align:right">
-        <p>
-          <strong>Arcane</strong><br>
-          <!-- Your business details here -->
-        </p>
-      </div>
-    </div>
+  <div class="brand-bar">
+    <table>
+      <tr>
+        <td>
+          <div class="brand-name">ARCANE</div>
+          <div class="brand-tagline">Authenticated Pokemon mystery packs</div>
+        </td>
+        <td class="right">
+          <div class="invoice-title">INVOICE</div>
+          <div class="invoice-number">{{ $invoice->number }}</div>
+        </td>
+      </tr>
+    </table>
+  </div>
 
-    <div class="row" style="margin-top:8mm;">
-      <div class="box">
-        <p>
-          <strong>Bill to:</strong><br>
-          {{ $invoice->store->name }}<br>
-          {{ $invoice->store->address_line_1 }}<br>
-          @if($invoice->store->address_line_2)
-          {{ $invoice->store->address_line_2 }}<br>
-          @endif
-          {{ $invoice->store->city }} {{ $invoice->store->postcode }}<br>
-          {{ $invoice->store->country }}
-        </p>
-      </div>
-    </div>
+  <div class="header">
+    <table>
+      <tr>
+        <td class="box">
+          <div class="label">Bill to</div>
+          <p>
+            <strong>{{ $invoice->store->name }}</strong><br>
+            {{ $invoice->store->address_line_1 }}<br>
+            @if($invoice->store->address_line_2)
+            {{ $invoice->store->address_line_2 }}<br>
+            @endif
+            {{ $invoice->store->city }} {{ $invoice->store->postcode }}<br>
+            {{ $invoice->store->country }}
+          </p>
+        </td>
+        <td class="box right">
+          <div class="label">Issue date</div>
+          <p>{{ $invoice->issued_on?->format('d M Y') ?? '' }}</p>
+          <div class="label">Due date</div>
+          <p>{{ $invoice->due_on?->format('d M Y') ?? 'On receipt' }}</p>
+        </td>
+      </tr>
+    </table>
   </div>
 
   @php
@@ -106,7 +178,7 @@
   $unitPence = $qty > 0 ? intdiv($invoice->total_pence, $qty) : $invoice->total_pence;
   @endphp
 
-  <table>
+  <table class="items">
     <thead>
       <tr>
         <th>Description</th>
@@ -136,9 +208,19 @@
           £{{ number_format($invoice->total_pence / 100, 2) }}
         </td>
       </tr>
+      <tr>
+        <td colspan="3" class="right">Subtotal</td>
+        <td class="right">£{{ number_format($invoice->total_pence / 100, 2) }}</td>
+      </tr>
+      @if($invoice->credit_applied_pence > 0)
+      <tr class="credit-row">
+        <td colspan="3" class="right">Store credit applied</td>
+        <td class="right">-£{{ number_format($invoice->credit_applied_pence / 100, 2) }}</td>
+      </tr>
+      @endif
       <tr class="total-row">
         <td colspan="3" class="right">Total due</td>
-        <td class="right">£{{ number_format($invoice->total_pence / 100, 2) }}</td>
+        <td class="right">£{{ number_format($invoice->amount_due_pence / 100, 2) }}</td>
       </tr>
     </tbody>
   </table>
@@ -147,6 +229,8 @@
     This invoice is issued under the VAT second-hand margin scheme for goods.
     VAT is accounted for on the margin and cannot be reclaimed.
   </p>
+
+  <p class="footer-brand">Arcane &middot; All cards authenticated &middot; All packs sealed fresh</p>
 </body>
 
 </html>

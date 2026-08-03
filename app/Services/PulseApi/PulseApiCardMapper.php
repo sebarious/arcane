@@ -9,7 +9,7 @@ use Illuminate\Support\Arr;
 
 class PulseApiCardMapper
 {
-    protected const CACHEABLE_FIELDS = [
+    public const CACHEABLE_FIELDS = [
         'product_id', 'card_name', 'card_number', 'set_id', 'set_name', 'series',
         'release_date', 'material', 'promo_info', 'graded_by', 'grade',
         'rarity', 'rarity_rank', 'language', 'illustrator', 'pokedex_number',

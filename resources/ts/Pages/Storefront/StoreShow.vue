@@ -124,7 +124,7 @@ const generalMotion = {
           </div>
         </div>
         <div
-          class="absolute content-stretch lg:flex gap-[24px] items-start left-0 px-[64px] right-0 top-[150px] lg:top-[272px] space-y-6">
+          class="absolute content-stretch lg:flex gap-[24px] items-start left-0 px-8 lg:px-[64px] right-0 top-[150px] lg:top-[272px] space-y-6">
           <div class="relative rounded-[50px] shrink-0 size-[100px] bg-black">
             <img :alt="store.name"
               class="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[50px] size-full"
@@ -187,7 +187,7 @@ const generalMotion = {
 
       <div class="relative w-full">
         <div
-          class="content-stretch space-y-8 lg:space-y-0 lg:flex gap-[32px] items-start px-[64px] py-[40px] relative size-full">
+          class="content-stretch space-y-8 lg:space-y-0 lg:flex gap-[32px] items-start px-8 lg:px-[64px] py-[40px] relative size-full">
           <div class="content-stretch flex flex-col gap-[32px] items-start relative w-full">
             <div
               class="[word-break:break-word] content-stretch flex flex-col gap-[16px] items-start relative shrink-0 max-w-xl">
@@ -284,7 +284,7 @@ const generalMotion = {
       </div>
 
       <div class="relative shrink-0 w-full">
-        <div class="content-stretch flex flex-col gap-[24px] items-start px-[64px] py-[40px] relative size-full">
+        <div class="content-stretch flex flex-col gap-[24px] items-start px-8 lg:px-[64px] py-[40px] relative size-full">
           <div class="content-stretch flex flex-col items-start relative w-full">
             <div class="content-stretch flex items-center relative shrink-0">
               <h2

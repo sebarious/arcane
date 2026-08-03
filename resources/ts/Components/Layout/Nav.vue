@@ -19,10 +19,10 @@
             {{ label }}
           </a>
         </div>
-        <Link href="/apply"
+        <Link :href="isLoggedIn ? '/seller' : '/apply'"
           class="text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-[#DCC175] text-black font-semibold hover:bg-[#e8d49a] transition-all duration-300"
           :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-          Become a Seller
+          {{ isLoggedIn ? 'Seller Dashboard' : 'Become a Seller' }}
         </Link>
       </div>
 
@@ -50,10 +50,10 @@
         </a>
       </nav>
       <div class="px-8 pb-12 pt-8">
-        <Link href="/apply" @click="close"
+        <Link :href="isLoggedIn ? '/seller' : '/apply'" @click="close"
           class="block w-full text-center py-4 bg-[#DCC175] text-black text-sm font-bold tracking-[0.2em] uppercase hover:bg-[#e8d49a] transition-colors"
           :style="{ borderRadius: '4px', fontFamily: 'Jost, sans-serif' }">
-          Become a Seller
+          {{ isLoggedIn ? 'Seller Dashboard' : 'Become a Seller' }}
         </Link>
       </div>
     </div>
@@ -68,12 +68,16 @@ import { Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
 
-const NAV_LINKS: [string, string, boolean][] = [
+const isLoggedIn = computed( () => !!(page?.props?.auth as any)?.user );
+
+const NAV_LINKS = computed( (): [string, string, boolean][] => [
   ['Sell to Us', '/sell', !!(page?.props?.route as any)?.name?.startsWith('sell')],
   ['Stores', '/stores', !!(page?.props?.route as any)?.name?.startsWith('stores')],
   ['Affiliate', '/affiliate-program', !!(page?.props?.route as any)?.name?.startsWith('affiliate-program')],
-  ['Log In', '/login', !!(page?.props?.route as any)?.name?.startsWith('login')],
-];
+  ...( isLoggedIn.value
+    ? []
+    : [['Log In', '/login', !!(page?.props?.route as any)?.name?.startsWith('login')] as [string, string, boolean]] ),
+] );
 
 const scrolled = ref( false );
 const open = ref( false );

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Stores;
 use App\Filament\Resources\Stores\Pages;
 use App\Models\Store;
 use App\Models\User;
+use App\Support\Money;
 use BackedEnum;
 use Filament\Forms;
 use Filament\Schemas\Schema;
@@ -53,7 +54,14 @@ class StoreResource extends Resource
                         ->maxSize(1024)
                         ->directory('store-logos')
                         ->visibility('public')
-                        ->helperText('Recommended size: 300x300px'),
+                        ->helperText('Recommended size: 300x300px')
+                        // Store::getLogoAttribute() rewrites this into a full display URL for
+                        // the rest of the app — FileUpload needs the raw stored disk path (what
+                        // it was actually saved as) to recognise the existing file, otherwise it
+                        // shows empty and wipes the logo on save.
+                        ->afterStateHydrated(function (Forms\Components\FileUpload $component, ?Store $record) {
+                            $component->state($record?->getRawOriginal('logo'));
+                        }),
 
                     Forms\Components\Select::make('user_id')
                         ->label('Seller account')
@@ -201,6 +209,18 @@ class StoreResource extends Resource
                         ->label('Visible on the storefront list')
                         ->default(true),
                 ]),
+
+            Section::make('Wallet')
+                ->columnSpanFull()
+                ->visibleOn('edit')
+                ->schema([
+                    Forms\Components\TextInput::make('credit_balance_pence')
+                        ->label('Credit balance')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->formatStateUsing(fn ($state) => Money::format($state))
+                        ->helperText('Use the "Add credit" button above to top this up — it\'s automatically deducted from this store\'s next invoice(s).'),
+                ]),
         ]);
     }
 
@@ -223,6 +243,12 @@ class StoreResource extends Resource
                     ->copyable()
                     ->toggleable()
                     ->color('gray'),
+                Tables\Columns\TextColumn::make('credit_balance_pence')
+                    ->label('Credit')
+                    ->formatStateUsing(fn ($state) => Money::format($state))
+                    ->color(fn ($state) => $state > 0 ? 'success' : 'gray')
+                    ->alignEnd()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('city')->sortable(),
                 Tables\Columns\TextColumn::make('user.email')
                     ->label('Seller')
@@ -257,6 +283,8 @@ class StoreResource extends Resource
                     ]),
             ])
             ->recordActions([
+                static::viewLiveAction(),
+                static::addCreditAction(),
                 EditAction::make(),
             ])
             ->toolbarActions([
@@ -265,6 +293,68 @@ class StoreResource extends Resource
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    /**
+     * Top up a store's credit balance — e.g. after appraising cards submitted via
+     * their affiliate code. Shared between the table row action and the Edit page
+     * header action. Deduction against invoices is automatic (see BatchGenerator);
+     * this is only ever a manual top-up.
+     */
+    public static function addCreditAction(): Action
+    {
+        return Action::make('addCredit')
+            ->label('Add credit')
+            ->icon(Heroicon::OutlinedBanknotes)
+            ->color('success')
+            ->schema([
+                Forms\Components\TextInput::make('amount')
+                    ->label('Amount (£)')
+                    ->numeric()
+                    ->step(0.01)
+                    ->minValue(0.01)
+                    ->prefix('£')
+                    ->required(),
+                Forms\Components\Textarea::make('reason')
+                    ->label('Reason')
+                    ->required()
+                    ->rows(2)
+                    ->placeholder('e.g. Appraised cards submitted via affiliate code — SELL-2026-0004'),
+            ])
+            ->modalHeading('Add credit')
+            ->modalDescription('This is added to the store\'s wallet immediately and automatically deducted from its next invoice(s).')
+            ->action(function (array $data, Store $record) {
+                app(\App\Services\Stores\StoreCreditService::class)->addCredit(
+                    $record,
+                    \App\Support\Money::toPence($data['amount']),
+                    $data['reason'],
+                    addedBy: auth()->user(),
+                );
+
+                \Filament\Notifications\Notification::make()
+                    ->title('Credit added')
+                    ->body(Money::format($record->fresh()->credit_balance_pence).' now in this store\'s wallet.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /** Opens the store's public profile page (arcanepacks.com/{slug}) in a new tab. */
+    public static function viewLiveAction(): Action
+    {
+        return Action::make('viewLive')
+            ->label('View live page')
+            ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+            ->color('gray')
+            ->url(fn (Store $record) => route('stores.show', $record))
+            ->openUrlInNewTab();
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            \App\Filament\Resources\Stores\RelationManagers\CreditTransactionsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

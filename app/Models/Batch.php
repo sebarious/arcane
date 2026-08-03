@@ -17,7 +17,9 @@ class Batch extends Model
         'type', 'game',
         'failure_reason',
         'failed_at',
+        'admin_notes',
         'merged_into_batch_id', 'merged_at',
+        'merge_request_batch_id',
 
     ];
 
@@ -39,6 +41,9 @@ class Batch extends Model
 
     // Other batches that were merged into this one.
     public function mergedFrom() { return $this->hasMany(Batch::class, 'merged_into_batch_id'); }
+
+    // The existing batch the seller asked to have merged into this one, once generated.
+    public function mergeRequestBatch() { return $this->belongsTo(Batch::class, 'merge_request_batch_id'); }
 
     public function isMerged(): bool
     {

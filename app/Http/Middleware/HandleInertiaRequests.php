@@ -52,6 +52,11 @@ class HandleInertiaRequests extends Middleware
             // Absolute URL fallback for og:image/twitter:image on pages that don't have
             // a more specific image (a store logo, a card image, etc) to point to.
             'defaultOgImage' => asset('images/pack.png'),
+            // Persistent wallet balance for the seller area layout — summed across all
+            // of a seller's stores, so it stays visible no matter which page they're on.
+            'sellerWallet' => fn () => $request->user()?->hasRole('seller')
+                ? (int) $request->user()->stores()->sum('credit_balance_pence')
+                : null,
         ];
     }
 }

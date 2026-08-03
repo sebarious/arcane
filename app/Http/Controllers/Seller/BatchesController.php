@@ -13,8 +13,12 @@ class BatchesController extends Controller
     {
         $user = $request->user();
         $stores = $user->stores()->get(['id', 'name']);
+
+        $status = $request->string('status')->toString();
+
         $batches = Batch::query()
             ->whereIn('store_id', $stores->pluck('id'))
+            ->when($status !== '', fn ($query) => $query->where('status', $status))
             ->orderByDesc('created_at')
             ->paginate(15, [
                 'id',
@@ -22,15 +26,31 @@ class BatchesController extends Controller
                 'store_id',
                 'type',
                 'pack_count',
-                'sale_price_pence',
-                'total_cost_pence',
-                'margin_pence',
                 'status',
+                'merged_into_batch_id',
                 'created_at',
-            ]);
+            ])
+            ->withQueryString()
+            ->through(function (Batch $batch) {
+                $sold = $batch->packs()->where('status', 'sold')->count();
+
+                return [
+                    'id'         => $batch->id,
+                    'reference'  => $batch->reference,
+                    'store_id'   => $batch->store_id,
+                    'type'       => $batch->type?->value,
+                    'pack_count' => $batch->pack_count,
+                    'status'     => $batch->status,
+                    'is_merged'  => ! is_null($batch->merged_into_batch_id),
+                    'created_at' => $batch->created_at?->toDateString(),
+                    'sold'       => $sold,
+                ];
+            });
+
         return Inertia::render('Seller/BatchesIndex', [
             'batches'    => $batches,
             'storesById' => $stores->keyBy('id'),
+            'filters'    => ['status' => $status !== '' ? $status : null],
         ]);
     }
 
@@ -42,24 +62,26 @@ class BatchesController extends Controller
             abort(403);
         }
 
-        $batch->load(['store', 'packs.card']);
+        $batch->load(['store', 'packs.card', 'invoice', 'mergedInto', 'mergeRequestBatch']);
 
-        $packs = $batch->packs->map(function ($pack) {
-            $inv = $pack->card;
+        $bands = [];
+        foreach (['mythic', 'legendary', 'super', 'rare', 'common'] as $band) {
+            $bandPacks = $batch->packs->filter(fn ($pack) => $pack->card?->rarity_band === $band);
 
-            return [
-                'id'       => $pack->id,
-                'sequence' => $pack->sequence_no,
-                'status'   => $pack->status,
-                'card'     => $inv ? [
-                    'name'   => $inv->card_name,
-                    'set'    => $inv->set_name,
-                    'number' => $inv->card_number,
-                    'image'  => $inv->image_url,
-                    'band'   => $inv->rarity_band,
-                ] : null,
-            ];
-        });
+            $bands[$band] = $bandPacks->map(function ($pack) {
+                $inv = $pack->card;
+                return [
+                    'sequence' => $pack->sequence_no,
+                    'status'   => $pack->status,
+                    'name'     => $inv->card_name,
+                    'set'      => $inv->set_name,
+                    'number'   => $inv->card_number,
+                    'image'    => $inv->image_url,
+                ];
+            })->values();
+        }
+
+        $sold = $batch->packs->where('status', 'sold')->count();
 
         return Inertia::render('Seller/BatchShow', [
             'batch' => [
@@ -70,14 +92,24 @@ class BatchesController extends Controller
                     'id'   => $batch->store->id,
                     'name' => $batch->store->name,
                 ],
-                'pack_count'             => $batch->pack_count,
-                'sale_price_pence'       => $batch->sale_price_pence,
-                'total_cost_pence'       => $batch->total_cost_pence,
-                'total_market_value_pence' => $batch->total_market_value_pence,
-                'margin_pence'           => $batch->margin_pence,
-                'status'                 => $batch->status,
+                'pack_count'               => $batch->pack_count,
+                'status'                   => $batch->status,
+                'created_at'               => $batch->created_at?->toDateString(),
+                'sold'                     => $sold,
+                'invoice'                  => $batch->invoice ? [
+                    'id'     => $batch->invoice->id,
+                    'number' => $batch->invoice->number,
+                ] : null,
+                'merged_into' => $batch->mergedInto ? [
+                    'id'        => $batch->mergedInto->id,
+                    'reference' => $batch->mergedInto->reference,
+                ] : null,
+                'merge_request_batch' => $batch->mergeRequestBatch ? [
+                    'id'        => $batch->mergeRequestBatch->id,
+                    'reference' => $batch->mergeRequestBatch->reference,
+                ] : null,
             ],
-            'packs' => $packs,
+            'bands' => $bands,
         ]);
     }
 }
