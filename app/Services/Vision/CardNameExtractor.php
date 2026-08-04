@@ -27,15 +27,22 @@ class CardNameExtractor
             return null;
         }
 
-        foreach (self::linesTopToBottom($words) as $line) {
-            $cleaned = self::clean($line);
+        $candidates = collect(self::linesTopToBottom($words))
+            ->map(fn (string $line) => self::clean($line))
+            ->filter(fn (string $line) => $line !== '')
+            ->values();
 
-            if ($cleaned !== '') {
-                return $cleaned;
-            }
+        if ($candidates->isEmpty()) {
+            return null;
         }
 
-        return null;
+        // Real card/trainer names are essentially never printed in solid capitals
+        // — that's reserved for category banners ("BASIC", "STAGE 1", "TRAINER")
+        // and stray fragments picked up near logos/watermarks. Prefer the first
+        // line that isn't all-caps, falling back to whatever's left only if
+        // nothing else was found at all.
+        return $candidates->first(fn (string $line) => ! self::isAllCaps($line))
+            ?? $candidates->first();
     }
 
     /**
@@ -126,25 +133,37 @@ class CardNameExtractor
             return '';
         }
 
-        // Guard against accidentally grabbing a long line (ability/flavor text)
-        // if the real name line went undetected — card names are always short.
-        return mb_strlen($line) > 40 ? '' : $line;
+        // Reject anything shorter than a real name could plausibly be ("PA", a
+        // stray 2-letter fragment picked up near a logo/watermark) and guard
+        // against accidentally grabbing a long line (ability/flavor text) if the
+        // real name line went undetected — card names are always in between.
+        $length = mb_strlen($line);
+
+        return ($length < 3 || $length > 40) ? '' : $line;
     }
 
     /**
-     * Trainer cards print a small "Trainer - Supporter/Item/Stadium/Tool" (energy
-     * cards similarly print "Basic {Type} Energy" as a category strip) right above
-     * the actual name — reject an exact match against that strip rather than
-     * mistaking it for the name itself.
+     * Trainer cards print a small "Trainer - Supporter/Item/Stadium/Tool" strip,
+     * and every basic-stage Pokémon prints a plain "Basic" stage label (energy
+     * cards similarly print "Basic {Type} Energy") right above the actual name —
+     * reject an exact match against these rather than mistaking one for the name.
      */
     private static function isCategoryLabel(string $line): bool
     {
         $normalized = strtolower(trim(preg_replace('/[\s\-–—]+/', ' ', $line)));
 
         return in_array($normalized, [
+            'basic', 'stage 1', 'stage 2',
             'trainer', 'supporter', 'item', 'stadium', 'tool', 'pokemon tool', 'pokémon tool',
             'trainer supporter', 'trainer item', 'trainer stadium', 'trainer tool',
             'energy', 'basic energy', 'special energy',
         ], true);
+    }
+
+    private static function isAllCaps(string $line): bool
+    {
+        // clean() already guarantees at least 2 letters are present, so the
+        // absence of any lowercase letter means it's genuinely all-caps.
+        return ! preg_match('/[a-z]/', $line);
     }
 }
