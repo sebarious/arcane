@@ -52,7 +52,13 @@ class RapidIntake extends Page implements HasForms
             'acquisition_lot' => 'LOT-'.now()->format('Y-md').'-'.strtoupper(Str::random(4)),
             'rows'            => [$this->emptyRow()],
             'bulk_add_count'  => '10',
+            'buy_percentage'  => (string) self::defaultBuyPercentage(),
         ]);
+    }
+
+    protected static function defaultBuyPercentage(): int
+    {
+        return (int) round(((float) config('services.pulseapi.default_cost_ratio', 0.9)) * 100);
     }
 
     protected function emptyRow(): array
@@ -78,7 +84,7 @@ class RapidIntake extends Page implements HasForms
             ->components([
                 Section::make('Acquisition details')
                     ->description('These apply to every card you add below.')
-                    ->columns(3)
+                    ->columns(4)
                     ->schema([
                         DatePicker::make('acquired_at')->required(),
                         TextInput::make('acquired_from')
@@ -87,6 +93,18 @@ class RapidIntake extends Page implements HasForms
                         TextInput::make('acquisition_lot')
                             ->label('Lot reference')
                             ->required(),
+                        Select::make('buy_percentage')
+                            ->label('Buy %')
+                            ->options(
+                                collect(range(0, 150, 5))
+                                    ->mapWithKeys(fn (int $percent) => [(string) $percent => "{$percent}%"])
+                            )
+                            ->default((string) self::defaultBuyPercentage())
+                            ->selectablePlaceholder(false)
+                            ->dehydrated(false)
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->recalculateAllCosts())
+                            ->helperText('Drives the Cost (£) for every resolved card below — changing it recalculates them all.'),
                     ]),
 
                 Section::make('Cards')
@@ -243,6 +261,16 @@ class RapidIntake extends Page implements HasForms
 
                                 return trim(($state['card_name'] ?? '').' '.($state['search_number'] ?? '')) ?: null;
                             }),
+
+                        // Mirrors the "Fetch card data" header action — after adding 40-50 rows,
+                        // scrolling all the way back up just to trigger a fetch is a real pain.
+                        Actions::make([
+                            Action::make('fetchCardDataBottom')
+                                ->label('Fetch card data')
+                                ->icon(Heroicon::OutlinedArrowPath)
+                                ->color('gray')
+                                ->action(fn () => $this->fetchCardData()),
+                        ]),
                     ]),
             ])
             ->statePath('data');
@@ -324,12 +352,50 @@ class RapidIntake extends Page implements HasForms
             ? round($attributes['market_value_pence'] / 100, 2)
             : null;
 
-        // Auto-fill Cost (£) when left blank, as a percentage of market value —
-        // still freely editable before saving.
+        // Auto-fill Cost (£) when left blank, as a percentage of market value — driven
+        // by the "Buy %" dropdown at the top of the page (still freely editable per
+        // row before saving; once set, a row's cost is never overwritten by this).
         if (blank($costPounds) && $attributes['market_value_pence'] !== null) {
-            $costRatio = (float) config('services.pulseapi.default_cost_ratio', 0.9);
-            $rows[$key]['cost_pounds'] = round(($attributes['market_value_pence'] * $costRatio) / 100, 2);
+            $buyPercentage = (float) ($this->data['buy_percentage'] ?? self::defaultBuyPercentage());
+            $rows[$key]['cost_pounds'] = round(($attributes['market_value_pence'] * $buyPercentage / 100) / 100, 2);
         }
+    }
+
+    /**
+     * Unlike applyResolvedAttributes()'s fetch-time fill (which only ever fills a
+     * blank Cost), this is a deliberate bulk recalculation — triggered by changing
+     * the "Buy %" dropdown itself, so it recomputes every already-resolved row's
+     * Cost (£) from its current Market (£), overwriting whatever was there before.
+     */
+    public function recalculateAllCosts(): void
+    {
+        $rows          = $this->data['rows'] ?? [];
+        $buyPercentage = (float) ($this->data['buy_percentage'] ?? self::defaultBuyPercentage());
+
+        $updated = 0;
+
+        foreach ($rows as $key => $row) {
+            $marketPounds = $row['market_value_pounds'] ?? null;
+            if (blank($marketPounds)) {
+                continue;
+            }
+
+            $rows[$key]['cost_pounds'] = round(((float) $marketPounds) * $buyPercentage / 100, 2);
+            $updated++;
+        }
+
+        if ($updated === 0) {
+            return;
+        }
+
+        $this->data['rows'] = $rows;
+        $this->form->fill($this->data);
+
+        Notification::make()
+            ->title('Cost prices updated')
+            ->body("{$updated} row(s) recalculated at {$buyPercentage}% of market value.")
+            ->success()
+            ->send();
     }
 
     /**
