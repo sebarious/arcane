@@ -26,8 +26,11 @@ class QrSheetPreviewController extends Controller
 
         $rows = $batch->packs()
             ->with('card')
-            ->orderBy('sequence_no')
             ->get()
+            // Kept in sync with GenerateBatchQrSheetJob's ordering so this preview
+            // reflects the real sheet's row order.
+            ->sortBy(fn ($pack) => strtolower(($pack->card?->set_name ?? '').'|'.($pack->card?->card_name ?? '')))
+            ->values()
             ->map(function ($pack) use ($qrSize, $nameLimit) {
                 $inv = $pack->card;
                 $token = $inv?->qr_token;

@@ -27,8 +27,12 @@ class GenerateBatchQrSheetJob implements ShouldQueue
 
         $rows = $batch->packs()
             ->with('card')
-            ->orderBy('sequence_no')
             ->get()
+            // Physical cards are stored by set, then alphabetically by name within
+            // that set — sort the sheet to match, so it reads as a picking list
+            // rather than the batch's (effectively random) pack-assignment order.
+            ->sortBy(fn ($pack) => strtolower(($pack->card?->set_name ?? '').'|'.($pack->card?->card_name ?? '')))
+            ->values()
             ->map(function ($pack) {
                 $inv   = $pack->card;
                 $token = $inv?->qr_token;
