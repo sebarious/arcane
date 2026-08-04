@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CardInventories;
 
+use App\Filament\Exports\SoldCardExporter;
 use App\Filament\Resources\CardInventories\Pages;
 use App\Models\CardInventory;
 use App\Services\PulseApi\PulseApiCardMapper;
@@ -12,6 +13,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Forms;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -266,6 +268,17 @@ class CardInventoryResource extends Resource
                         ->distinct()
                         ->pluck('acquisition_lot', 'acquisition_lot')
                         ->all()),
+                Tables\Filters\Filter::make('sold_between')
+                    ->label('Sold between')
+                    ->schema([
+                        Forms\Components\DatePicker::make('sold_from'),
+                        Forms\Components\DatePicker::make('sold_until'),
+                    ])
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
+                        return $query
+                            ->when($data['sold_from'] ?? null, fn ($q, $date) => $q->whereDate('delisted_at', '>=', $date))
+                            ->when($data['sold_until'] ?? null, fn ($q, $date) => $q->whereDate('delisted_at', '<=', $date));
+                    }),
             ])
             ->recordActions([
                 Action::make('resyncPrice')
@@ -287,6 +300,7 @@ class CardInventoryResource extends Resource
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+                    ExportBulkAction::make()->exporter(SoldCardExporter::class),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

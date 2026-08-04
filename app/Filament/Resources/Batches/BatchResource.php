@@ -300,6 +300,19 @@ class BatchResource extends Resource
                 ->wrap()
                 ->toggleable(),
             ])
+            ->filters([
+                Tables\Filters\Filter::make('committed_between')
+                    ->label('Sold between')
+                    ->schema([
+                        Forms\Components\DatePicker::make('committed_from'),
+                        Forms\Components\DatePicker::make('committed_until'),
+                    ])
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
+                        return $query
+                            ->when($data['committed_from'] ?? null, fn ($q, $date) => $q->whereDate('committed_at', '>=', $date))
+                            ->when($data['committed_until'] ?? null, fn ($q, $date) => $q->whereDate('committed_at', '<=', $date));
+                    }),
+            ])
             ->recordActions([
                 EditAction::make(),
                 static::retryAction(),
@@ -311,6 +324,7 @@ class BatchResource extends Resource
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+                    \Filament\Actions\ExportBulkAction::make()->exporter(\App\Filament\Exports\BatchSalesExporter::class),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
