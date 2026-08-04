@@ -30,6 +30,7 @@ use App\Http\Controllers\SellerApplication\SellerApplicationThankYouController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Debug\QrSheetPreviewController;
+use App\Http\Controllers\Intake\PhoneScanController;
 
 Route::middleware(['web', 'auth'])
   ->get('/debug/qr-sheet/{batch}', QrSheetPreviewController::class)
@@ -105,6 +106,12 @@ Route::get('/logout', [LoginController::class, 'destroy'])->middleware('auth')->
 
 Route::get('/q/{token}', QrScanController::class)->name('qr.scan');
 Route::post('/q/{token}/confirm', QrConfirmController::class)->name('qr.confirm');
+
+Route::get('/rapid-intake-scan/{token}', [PhoneScanController::class, 'show'])
+  ->name('rapid-intake.scan.show');
+Route::post('/rapid-intake-scan/{token}/frame', [PhoneScanController::class, 'frame'])
+  ->middleware('throttle:60,1')
+  ->name('rapid-intake.scan.frame');
 
 Route::get('/stores', StoreIndexController::class)->name('stores.index');
 Route::get('/{store:slug}', StoreShowController::class)->name('stores.show');

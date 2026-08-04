@@ -6,8 +6,12 @@ use App\Enums\Game;
 use App\Filament\Resources\CardInventories\CardInventoryResource;
 use App\Models\CardInventory;
 use App\Services\Banding\RarityBander;
+use App\Services\Intake\CardRowResolver;
+use App\Services\Intake\ScanSession;
 use App\Services\PulseApi\PulseApiCardMapper;
 use App\Services\PulseApi\PulseApiClient;
+use App\Services\Vision\CardNumberExtractor;
+use App\Services\Vision\GoogleVisionClient;
 use App\Support\Money;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -30,6 +34,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class RapidIntake extends Page implements HasForms
 {
@@ -43,6 +48,16 @@ class RapidIntake extends Page implements HasForms
     public const MAX_ITEMS = 50;
 
     public ?array $data = [];
+
+    // Debounce state for the live camera scanner — avoids re-adding the same row
+    // over and over while a card is held in front of the camera between capture ticks.
+    public ?string $lastScannedNumber = null;
+    public ?int $lastScannedAt = null;
+
+    // "Scan with phone" — a phone opens a camera-only page (see PhoneScanController)
+    // scoped to this token, and pollPhoneScans() merges what it finds in here.
+    public ?string $scanSessionToken = null;
+    public int $scanSessionLastId = 0;
 
     public function mount(): void
     {
@@ -63,19 +78,90 @@ class RapidIntake extends Page implements HasForms
 
     protected function emptyRow(): array
     {
-        return [
-            'product_id'          => null,
-            'card_name'           => null,
-            'search_number'       => null,
-            'resolved'            => null,
-            // Set when a search matches more than one plausible print (Pokémon Center
-            // exclusives, stamped/staff variants, etc.) — JSON-encoded candidate list
-            // for the "Choose variant" action, same reasoning as `resolved` below.
-            'candidates'          => null,
-            'market_value_pounds' => null,
-            'cost_pounds'         => null,
-            'quantity'            => 1,
-        ];
+        return app(CardRowResolver::class)->emptyRow();
+    }
+
+    protected function buyPercentage(): float
+    {
+        return (float) ($this->data['buy_percentage'] ?? self::defaultBuyPercentage());
+    }
+
+    // Reuses the current session if it's still alive, so reopening the "Scan with
+    // phone" modal mid-scan doesn't orphan a phone that's already scanning against
+    // the old token.
+    protected function ensureScanSession(): void
+    {
+        if ($this->scanSessionToken && app(ScanSession::class)->exists($this->scanSessionToken)) {
+            return;
+        }
+
+        $this->scanSessionToken  = app(ScanSession::class)->create($this->buyPercentage());
+        $this->scanSessionLastId = 0;
+    }
+
+    public function endPhoneScanSession(): void
+    {
+        if ($this->scanSessionToken) {
+            app(ScanSession::class)->forget($this->scanSessionToken);
+        }
+
+        $this->scanSessionToken  = null;
+        $this->scanSessionLastId = 0;
+
+        // Close the modal in the same request — otherwise, if it's still open, the
+        // next render re-evaluates scanWithPhoneAction()'s modalContent closure,
+        // which sees a blank token and immediately opens a brand new session.
+        if (filled($this->mountedActions ?? [])) {
+            $this->unmountAction();
+        }
+    }
+
+    // Polled from the page view (wire:poll) while a phone scan session is active —
+    // merges anything the phone has resolved since the last poll straight into the
+    // rows, the same shape a desktop fetch/scan would have produced.
+    public function pollPhoneScans(): void
+    {
+        if (! $this->scanSessionToken) {
+            return;
+        }
+
+        $sessions = app(ScanSession::class);
+
+        if (! $sessions->exists($this->scanSessionToken)) {
+            $this->scanSessionToken = null;
+            return;
+        }
+
+        $entries = $sessions->since($this->scanSessionToken, $this->scanSessionLastId);
+        if (empty($entries)) {
+            return;
+        }
+
+        $rows  = $this->data['rows'] ?? [];
+        $added = 0;
+
+        foreach ($entries as $id => $row) {
+            $this->scanSessionLastId = max($this->scanSessionLastId, $id);
+
+            if (count($rows) >= self::MAX_ITEMS) {
+                continue;
+            }
+
+            $rows[] = $row;
+            $added++;
+        }
+
+        if ($added === 0) {
+            return;
+        }
+
+        $this->data['rows'] = $rows;
+        $this->form->fill($this->data);
+
+        Notification::make()
+            ->title($added === 1 ? '1 card added from phone' : "{$added} cards added from phone")
+            ->success()
+            ->send();
     }
 
     public function form(Schema $schema): Schema
@@ -115,6 +201,12 @@ class RapidIntake extends Page implements HasForms
                         'price before saving.'
                     )
                     ->schema([
+                        \Filament\Forms\Components\ViewField::make('scanner')
+                            ->label('')
+                            ->view('filament.resources.card-inventories.pages.rapid-intake-scanner')
+                            ->dehydrated(false)
+                            ->visible(fn () => filled(config('services.google_vision.key'))),
+
                         Flex::make([
                             Select::make('bulk_add_count')
                                 ->label('')
@@ -295,6 +387,9 @@ class RapidIntake extends Page implements HasForms
         $knownIds = collect($rows)->pluck('product_id')->filter()->unique()->values();
         $resolvedById = $knownIds->isNotEmpty() ? $this->resolveProductIds($knownIds)[0] : [];
 
+        $resolver      = app(CardRowResolver::class);
+        $buyPercentage = $this->buyPercentage();
+
         $resolvedCount   = 0;
         $ambiguousCount  = 0;
         $missingCount    = 0;
@@ -304,7 +399,7 @@ class RapidIntake extends Page implements HasForms
             $attributes = $productId ? ($resolvedById[$productId] ?? null) : null;
 
             if ($attributes) {
-                $this->applyResolvedAttributes($rows, $i, $attributes);
+                $resolver->applyResolvedAttributes($rows, $i, $attributes, $buyPercentage);
                 $resolvedCount++;
                 continue;
             }
@@ -313,7 +408,7 @@ class RapidIntake extends Page implements HasForms
                 continue;
             }
 
-            match ($this->applySearchResolution($rows, $i)) {
+            match ($resolver->applySearchResolution($rows, $i, $buyPercentage)) {
                 'resolved'  => $resolvedCount++,
                 'ambiguous' => $ambiguousCount++,
                 'not_found' => $missingCount++,
@@ -337,28 +432,73 @@ class RapidIntake extends Page implements HasForms
     }
 
     /**
-     * Apply a single, unambiguous PulseAPI match to a row: sets product_id/resolved,
-     * pre-fills the market price, and auto-fills Cost (£) when it's still blank.
-     * Clears any pending disambiguation candidates.
+     * Called from the live camera scanner (see the scanner Blade partial) once per
+     * captured frame — OCRs it, pulls out a set number, and if it's a new one (not
+     * the same card still sat in front of the camera), adds + resolves a row exactly
+     * like typing the number in by hand and clicking "Fetch card data" would.
+     *
+     * @return array{status: string, number?: string, card_name?: string, message?: string}
      */
-    protected function applyResolvedAttributes(array &$rows, int|string $key, array $attributes): void
+    public function scanFrame(string $imageDataUrl): array
     {
-        $costPounds = $rows[$key]['cost_pounds'] ?? null;
-
-        $rows[$key]['product_id'] = $attributes['product_id'];
-        $rows[$key]['resolved']   = json_encode($attributes);
-        $rows[$key]['candidates'] = null;
-        $rows[$key]['market_value_pounds'] = $attributes['market_value_pence'] !== null
-            ? round($attributes['market_value_pence'] / 100, 2)
-            : null;
-
-        // Auto-fill Cost (£) when left blank, as a percentage of market value — driven
-        // by the "Buy %" dropdown at the top of the page (still freely editable per
-        // row before saving; once set, a row's cost is never overwritten by this).
-        if (blank($costPounds) && $attributes['market_value_pence'] !== null) {
-            $buyPercentage = (float) ($this->data['buy_percentage'] ?? self::defaultBuyPercentage());
-            $rows[$key]['cost_pounds'] = round(($attributes['market_value_pence'] * $buyPercentage / 100) / 100, 2);
+        if (str_contains($imageDataUrl, ',')) {
+            $imageDataUrl = substr($imageDataUrl, strpos($imageDataUrl, ',') + 1);
         }
+
+        $bytes = base64_decode($imageDataUrl, true);
+        if ($bytes === false || $bytes === '') {
+            return ['status' => 'error', 'message' => 'Could not read that frame.'];
+        }
+
+        try {
+            $text = app(GoogleVisionClient::class)->detectText($bytes);
+        } catch (\RuntimeException $e) {
+            return ['status' => 'error', 'message' => $e->getMessage()];
+        }
+
+        if (blank($text)) {
+            return ['status' => 'no_text'];
+        }
+
+        $number = CardNumberExtractor::extract($text);
+        if (! $number) {
+            return ['status' => 'no_number'];
+        }
+
+        // Same card almost certainly still held up to the camera — don't spam-add it.
+        if ($this->lastScannedNumber === $number && $this->lastScannedAt && $this->lastScannedAt > (time() - 8)) {
+            return ['status' => 'duplicate', 'number' => $number];
+        }
+
+        $this->lastScannedNumber = $number;
+        $this->lastScannedAt = time();
+
+        $rows = $this->data['rows'] ?? [];
+
+        if (count($rows) >= self::MAX_ITEMS) {
+            return ['status' => 'limit_reached', 'number' => $number];
+        }
+
+        $key = count($rows);
+        $rows[$key] = $this->emptyRow();
+        $rows[$key]['search_number'] = $number;
+
+        $outcome = app(CardRowResolver::class)->applySearchResolution($rows, $key, $this->buyPercentage());
+
+        $cardName = null;
+        if ($outcome === 'resolved') {
+            $resolved = self::decodeResolved($rows[$key]['resolved'] ?? null);
+            $cardName = $resolved['card_name'] ?? null;
+        }
+
+        $this->data['rows'] = $rows;
+        $this->form->fill($this->data);
+
+        return [
+            'status'    => $outcome,
+            'number'    => $number,
+            'card_name' => $cardName,
+        ];
     }
 
     /**
@@ -399,39 +539,6 @@ class RapidIntake extends Page implements HasForms
     }
 
     /**
-     * Search a row's name/number and apply the result: a single match auto-resolves
-     * (via applyResolvedAttributes), several matches are stashed as candidates for the
-     * "Choose variant" action rather than silently guessing which print the row means
-     * (Pokémon Center exclusives, stamped/staff variants, etc. can share a name+number),
-     * and no matches leaves the row untouched for "Fill in manually".
-     *
-     * @return 'resolved'|'ambiguous'|'not_found'
-     */
-    protected function applySearchResolution(array &$rows, int|string $key): string
-    {
-        $row = $rows[$key];
-
-        $candidates = PulseApiCardMapper::searchCandidates(
-            (string) ($row['card_name'] ?? ''),
-            (string) ($row['search_number'] ?? ''),
-        );
-
-        if (empty($candidates)) {
-            return 'not_found';
-        }
-
-        if (count($candidates) === 1) {
-            $this->applyResolvedAttributes($rows, $key, $candidates[0]);
-            return 'resolved';
-        }
-
-        $rows[$key]['candidates'] = json_encode($candidates);
-        $rows[$key]['resolved']   = null;
-
-        return 'ambiguous';
-    }
-
-    /**
      * Cache-first resolution: reuse recent card_inventory data per product_id
      * (see PulseApiCardMapper::cachedAttributes) and only batch-fetch what's missing/stale.
      *
@@ -468,9 +575,7 @@ class RapidIntake extends Page implements HasForms
 
     protected static function decodeResolved(mixed $resolved): ?array
     {
-        if (is_array($resolved)) return $resolved;
-        if (is_string($resolved) && $resolved !== '') return json_decode($resolved, true);
-        return null;
+        return CardRowResolver::decodeResolved($resolved);
     }
 
     protected static function resolvedImageUrl(callable $get): ?string
@@ -500,6 +605,8 @@ class RapidIntake extends Page implements HasForms
 
                 $row       = $rows[$itemKey];
                 $productId = $row['product_id'] ?? null;
+                $resolver  = app(CardRowResolver::class);
+                $buyPercentage = $this->buyPercentage();
 
                 if ($productId) {
                     $attributes = PulseApiCardMapper::cachedAttributes($productId);
@@ -508,7 +615,7 @@ class RapidIntake extends Page implements HasForms
                         $attributes = $card ? PulseApiCardMapper::toInventoryAttributes($card) : null;
                     }
                     if ($attributes) {
-                        $this->applyResolvedAttributes($rows, $itemKey, $attributes);
+                        $resolver->applyResolvedAttributes($rows, $itemKey, $attributes, $buyPercentage);
                         $this->data['rows'] = $rows;
                         $this->form->fill($this->data);
                         Notification::make()->title('Card resolved')->success()->send();
@@ -516,7 +623,7 @@ class RapidIntake extends Page implements HasForms
                     }
                 }
 
-                $outcome = $this->applySearchResolution($rows, $itemKey);
+                $outcome = $resolver->applySearchResolution($rows, $itemKey, $buyPercentage);
                 $this->data['rows'] = $rows;
                 $this->form->fill($this->data);
 
@@ -575,7 +682,7 @@ class RapidIntake extends Page implements HasForms
                 $chosen     = collect($candidates)->firstWhere('product_id', $data['product_id']);
                 if (! $chosen) return;
 
-                $this->applyResolvedAttributes($rows, $itemKey, $chosen);
+                app(CardRowResolver::class)->applyResolvedAttributes($rows, $itemKey, $chosen, $this->buyPercentage());
 
                 $this->data['rows'] = $rows;
                 $this->form->fill($this->data);
@@ -732,10 +839,36 @@ class RapidIntake extends Page implements HasForms
                 ->label('Fetch card data')
                 ->action('fetchCardData')
                 ->color('gray'),
+            $this->scanWithPhoneAction(),
             Action::make('save')
                 ->label('Save intake')
                 ->action('save')
                 ->keyBindings(['mod+s']),
         ];
+    }
+
+    // Opens a modal with a QR code linking to a camera-only scan page (see
+    // PhoneScanController) — cards scanned there are merged in by pollPhoneScans().
+    protected function scanWithPhoneAction(): Action
+    {
+        return Action::make('scanWithPhone')
+            ->label('Scan with phone')
+            ->icon(Heroicon::OutlinedDevicePhoneMobile)
+            ->color('gray')
+            ->visible(fn () => filled(config('services.google_vision.key')))
+            ->modalHeading('Scan with your phone')
+            ->modalDescription('Scan this with your phone camera to open a camera-only scanner — cards you scan there appear here automatically.')
+            ->modalContent(function () {
+                $this->ensureScanSession();
+
+                $url = route('rapid-intake.scan.show', $this->scanSessionToken);
+
+                return view('filament.resources.card-inventories.pages.phone-scan-modal', [
+                    'url' => $url,
+                    'svg' => QrCode::format('svg')->size(220)->margin(1)->generate($url),
+                ]);
+            })
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Close');
     }
 }

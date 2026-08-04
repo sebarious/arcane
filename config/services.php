@@ -48,4 +48,13 @@ return [
         'default_cost_ratio' => (float) env('PULSEAPI_DEFAULT_COST_RATIO', 0.9),
     ],
 
+    // Used by Rapid Intake's live camera scanner to OCR a card's set number
+    // straight off a captured frame — see App\Services\Vision\GoogleVisionClient.
+    // Plain API key, not a service account — this org's Cloud org policy blocks
+    // downloadable service account keys (iam.disableServiceAccountKeyCreation),
+    // but that doesn't affect a project-level API key, which is a separate credential type.
+    'google_vision' => [
+        'key' => env('GOOGLE_VISION_API_KEY'),
+    ],
+
 ];
