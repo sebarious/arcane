@@ -82,15 +82,21 @@ Route::middleware(['web', 'auth', 'role:seller'])
   ->prefix('seller')
   ->name('seller.')
   ->group(function () {
-    Route::get('/', DashboardController::class)->name('dashboard');
-    Route::get('/batches', [BatchesController::class, 'index'])->name('batches.index');
-    Route::get('/batches/{batch}', [BatchesController::class, 'show'])->name('batches.show');
-    Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
-    Route::get('/request-batch', [BatchRequestController::class, 'create'])->name('batches.request');
-    Route::post('/request-batch', [BatchRequestController::class, 'store'])->name('batches.request.store');
-    Route::get('/wallet', \App\Http\Controllers\Seller\WalletController::class)->name('wallet');
-    Route::get('/profile', [\App\Http\Controllers\Seller\ProfileController::class, 'show'])->name('profile.show');
-    Route::post('/profile/{store}', [\App\Http\Controllers\Seller\ProfileController::class, 'update'])->name('profile.update');
+    // Reachable even when the store isn't live yet — everything else below
+    // redirects here until an admin flips Store::public_page_enabled.
+    Route::get('/pending', \App\Http\Controllers\Seller\PendingController::class)->name('pending');
+
+    Route::middleware('store.live')->group(function () {
+      Route::get('/', DashboardController::class)->name('dashboard');
+      Route::get('/batches', [BatchesController::class, 'index'])->name('batches.index');
+      Route::get('/batches/{batch}', [BatchesController::class, 'show'])->name('batches.show');
+      Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
+      Route::get('/request-batch', [BatchRequestController::class, 'create'])->name('batches.request');
+      Route::post('/request-batch', [BatchRequestController::class, 'store'])->name('batches.request.store');
+      Route::get('/wallet', \App\Http\Controllers\Seller\WalletController::class)->name('wallet');
+      Route::get('/profile', [\App\Http\Controllers\Seller\ProfileController::class, 'show'])->name('profile.show');
+      Route::post('/profile/{store}', [\App\Http\Controllers\Seller\ProfileController::class, 'update'])->name('profile.update');
+    });
   });
 
 Route::middleware(['web', 'auth'])->group(function () {

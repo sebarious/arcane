@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             // existing aliases...
             'role' => RoleMiddleware::class,
+            'store.live' => \App\Http\Middleware\EnsureSellerStoreIsPublic::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
