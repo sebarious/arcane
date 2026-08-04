@@ -10,9 +10,7 @@ use App\Services\Intake\CardRowResolver;
 use App\Services\Intake\ScanSession;
 use App\Services\PulseApi\PulseApiCardMapper;
 use App\Services\PulseApi\PulseApiClient;
-use App\Services\Vision\CardNameExtractor;
-use App\Services\Vision\CardNumberExtractor;
-use App\Services\Vision\GoogleVisionClient;
+use App\Services\Vision\RotatingFrameScanner;
 use App\Support\Money;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -54,6 +52,11 @@ class RapidIntake extends Page implements HasForms
     // over and over while a card is held in front of the camera between capture ticks.
     public ?string $lastScannedNumber = null;
     public ?int $lastScannedAt = null;
+
+    // Some mobile browsers hand the canvas a rotated raw camera buffer — once
+    // RotatingFrameScanner finds the rotation this device needs, remember it so
+    // subsequent frames try it first instead of re-sweeping every rotation.
+    public ?int $lastSuccessfulRotation = null;
 
     // "Scan with phone" — a phone opens a camera-only page (see PhoneScanController)
     // scoped to this token, and pollPhoneScans() merges what it finds in here.
@@ -452,19 +455,19 @@ class RapidIntake extends Page implements HasForms
         }
 
         try {
-            $text = app(GoogleVisionClient::class)->detectText($bytes);
+            $scan = app(RotatingFrameScanner::class)->scan($bytes, $this->lastSuccessfulRotation);
         } catch (\RuntimeException $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
 
-        if (blank($text)) {
-            return ['status' => 'no_text'];
-        }
-
-        $number = CardNumberExtractor::extract($text);
+        $number = $scan['number'];
         if (! $number) {
             return ['status' => 'no_number'];
         }
+
+        // Once we know which rotation this device/session needs, try it first on
+        // every subsequent frame instead of re-sweeping all four every time.
+        $this->lastSuccessfulRotation = $scan['rotation'];
 
         // Same card almost certainly still held up to the camera — don't spam-add it.
         if ($this->lastScannedNumber === $number && $this->lastScannedAt && $this->lastScannedAt > (time() - 8)) {
@@ -487,7 +490,7 @@ class RapidIntake extends Page implements HasForms
         // number with whatever name Vision found at the top of the card narrows
         // the search enough that most scans resolve straight away instead of
         // landing in "Choose variant" with every set that ever printed this number.
-        $rows[$key]['card_name'] = CardNameExtractor::extract($text);
+        $rows[$key]['card_name'] = $scan['name'];
 
         $outcome = app(CardRowResolver::class)->applySearchResolution($rows, $key, $this->buyPercentage());
 

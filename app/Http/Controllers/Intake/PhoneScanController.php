@@ -6,9 +6,7 @@ use App\Filament\Resources\CardInventories\Pages\RapidIntake;
 use App\Http\Controllers\Controller;
 use App\Services\Intake\CardRowResolver;
 use App\Services\Intake\ScanSession;
-use App\Services\Vision\CardNameExtractor;
-use App\Services\Vision\CardNumberExtractor;
-use App\Services\Vision\GoogleVisionClient;
+use App\Services\Vision\RotatingFrameScanner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -28,7 +26,7 @@ class PhoneScanController extends Controller
         return view('intake.phone-scan', ['token' => $token]);
     }
 
-    public function frame(Request $request, string $token, ScanSession $sessions, CardRowResolver $resolver)
+    public function frame(Request $request, string $token, ScanSession $sessions, CardRowResolver $resolver, RotatingFrameScanner $scanner)
     {
         if (! $sessions->exists($token)) {
             return response()->json(['status' => 'expired'], 410);
@@ -48,23 +46,25 @@ class PhoneScanController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Could not read that frame.']);
         }
 
+        // Once we know which rotation this phone/browser needs, remember it (per
+        // session, this controller is stateless between requests) so subsequent
+        // frames try it first instead of re-sweeping every rotation.
+        $rotationKey = "rapid_intake_scan_session_rotation:{$token}";
+
         try {
-            $text = app(GoogleVisionClient::class)->detectText($bytes);
+            $scan = $scanner->scan($bytes, Cache::get($rotationKey));
         } catch (\RuntimeException $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
         }
 
-        if (blank($text)) {
-            return response()->json(['status' => 'no_text']);
-        }
-
-        $number = CardNumberExtractor::extract($text);
+        $number = $scan['number'];
         if (! $number) {
             return response()->json(['status' => 'no_number']);
         }
 
-        // Same debounce reasoning as RapidIntake::scanFrame() — this controller is
-        // stateless between requests, so the "last scanned" marker lives in cache too.
+        Cache::put($rotationKey, $scan['rotation'], now()->addMinutes(20));
+
+        // Same card almost certainly still held up to the camera — don't spam-add it.
         $dedupeKey = "rapid_intake_scan_session_last:{$token}";
         $last = Cache::get($dedupeKey);
         if ($last && $last['number'] === $number && $last['at'] > (time() - 8)) {
@@ -83,7 +83,7 @@ class PhoneScanController extends Controller
         // Set numbers are commonly reused across many different sets — pairing the
         // number with whatever name Vision found at the top of the card narrows
         // the search enough to resolve straight away most of the time.
-        $rows[0]['card_name'] = CardNameExtractor::extract($text);
+        $rows[0]['card_name'] = $scan['name'];
 
         $outcome = $resolver->applySearchResolution($rows, 0, $buyPercentage);
 
