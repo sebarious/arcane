@@ -486,11 +486,6 @@ class RapidIntake extends Page implements HasForms
         $key = count($rows);
         $rows[$key] = $this->emptyRow();
         $rows[$key]['search_number'] = $number;
-        // Set numbers are commonly reused across many different sets — pairing the
-        // number with whatever name Vision found at the top of the card narrows
-        // the search enough that most scans resolve straight away instead of
-        // landing in "Choose variant" with every set that ever printed this number.
-        $rows[$key]['card_name'] = $scan['name'];
 
         $outcome = app(CardRowResolver::class)->applySearchResolution($rows, $key, $this->buyPercentage());
 

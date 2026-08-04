@@ -25,7 +25,7 @@ class RotatingFrameScanner
      * @param  int|null  $preferredRotation  Try this rotation first — once a
      *         scanning session learns which rotation a device needs, passing it
      *         back in avoids re-sweeping all four on every subsequent frame.
-     * @return array{number: ?string, name: ?string, rotation: ?int}
+     * @return array{number: ?string, rotation: ?int}
      */
     public function scan(string $bytes, ?int $preferredRotation = null): array
     {
@@ -41,22 +41,18 @@ class RotatingFrameScanner
                 continue;
             }
 
-            $result = $this->vision->detect($frame);
-            if (blank($result['text'])) {
+            $text = $this->vision->detectText($frame);
+            if (blank($text)) {
                 continue;
             }
 
-            $number = CardNumberExtractor::extract($result['text']);
+            $number = CardNumberExtractor::extract($text);
             if ($number) {
-                return [
-                    'number'   => $number,
-                    'name'     => CardNameExtractor::extract($result['annotations']),
-                    'rotation' => $degrees,
-                ];
+                return ['number' => $number, 'rotation' => $degrees];
             }
         }
 
-        return ['number' => null, 'name' => null, 'rotation' => null];
+        return ['number' => null, 'rotation' => null];
     }
 
     private static function rotate(string $bytes, int $degrees): ?string
@@ -67,7 +63,6 @@ class RotatingFrameScanner
         }
 
         $rotated = imagerotate($image, $degrees, 0);
-        imagedestroy($image);
 
         if ($rotated === false) {
             return null;
@@ -76,7 +71,6 @@ class RotatingFrameScanner
         ob_start();
         imagejpeg($rotated, quality: 85);
         $output = ob_get_clean();
-        imagedestroy($rotated);
 
         return $output ?: null;
     }

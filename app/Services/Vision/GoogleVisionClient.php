@@ -11,15 +11,14 @@ class GoogleVisionClient
     ) {}
 
     /**
-     * OCR a single image and return both the flattened text block (used for the
-     * card number regex) and Vision's raw per-word `textAnnotations`, each with
-     * its own pixel bounding box (used to find the topmost line for the card
-     * name — see CardNameExtractor). One Vision call gives us both, so this
-     * deliberately isn't split into two methods that would double the request.
+     * OCR a single image and return the full detected text block, or null if
+     * nothing readable was found (or the request failed — this is best-effort,
+     * called on a background capture loop, so a transient failure just means
+     * "try again on the next frame" rather than something worth throwing over).
      *
-     * @return array{text: ?string, annotations: array}
+     * @param  string  $imageContents  Raw image bytes (not base64-encoded yet).
      */
-    public function detect(string $imageContents): array
+    public function detectText(string $imageContents): ?string
     {
         if (blank($this->apiKey)) {
             throw new \RuntimeException('GOOGLE_VISION_API_KEY is not configured.');
@@ -35,27 +34,24 @@ class GoogleVisionClient
                             'content' => base64_encode($imageContents),
                         ],
                         'features' => [
-                            ['type' => 'TEXT_DETECTION'],
+                            ['type' => 'TEXT_DETECTION', 'maxResults' => 1],
                         ],
                     ],
                 ],
             ]);
 
         if ($response->failed()) {
-            return ['text' => null, 'annotations' => []];
+            return null;
         }
 
         $result = $response->json('responses.0');
 
         if (isset($result['error'])) {
-            return ['text' => null, 'annotations' => []];
+            return null;
         }
 
-        return [
-            'text'        => $result['fullTextAnnotation']['text']
-                ?? $result['textAnnotations'][0]['description']
-                ?? null,
-            'annotations' => $result['textAnnotations'] ?? [],
-        ];
+        return $result['fullTextAnnotation']['text']
+            ?? $result['textAnnotations'][0]['description']
+            ?? null;
     }
 }
