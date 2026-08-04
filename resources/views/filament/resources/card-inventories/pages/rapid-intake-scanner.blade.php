@@ -10,7 +10,11 @@
 
         async start() {
             try {
-                this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                // Cards are portrait-shaped — bias the stream toward portrait so the
+                // preview box (also portrait, see below) doesn't crop the card's edges.
+                this.stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 720 }, height: { ideal: 1280 } },
+                });
             } catch (e) {
                 this.statusText = 'Camera access denied or unavailable.';
                 this.statusColor = 'danger';
@@ -104,7 +108,7 @@
     class="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 mb-4"
 >
     <div class="flex flex-col sm:flex-row gap-4 items-start">
-        <div class="relative w-full sm:w-64 aspect-[4/3] bg-black rounded-md overflow-hidden shrink-0">
+        <div class="relative w-full sm:w-48 aspect-[3/4] bg-black rounded-md overflow-hidden shrink-0">
             <video x-ref="video" autoplay playsinline muted class="w-full h-full object-cover" x-show="active"></video>
             <div x-show="!active" class="absolute inset-0 flex items-center justify-center text-xs text-gray-400 px-4 text-center">
                 Camera preview appears here once scanning starts.

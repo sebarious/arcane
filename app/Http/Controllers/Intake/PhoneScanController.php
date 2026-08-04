@@ -6,6 +6,7 @@ use App\Filament\Resources\CardInventories\Pages\RapidIntake;
 use App\Http\Controllers\Controller;
 use App\Services\Intake\CardRowResolver;
 use App\Services\Intake\ScanSession;
+use App\Services\Vision\CardNameExtractor;
 use App\Services\Vision\CardNumberExtractor;
 use App\Services\Vision\GoogleVisionClient;
 use Illuminate\Http\Request;
@@ -79,6 +80,10 @@ class PhoneScanController extends Controller
 
         $rows = [0 => $resolver->emptyRow()];
         $rows[0]['search_number'] = $number;
+        // Set numbers are commonly reused across many different sets — pairing the
+        // number with whatever name Vision found at the top of the card narrows
+        // the search enough to resolve straight away most of the time.
+        $rows[0]['card_name'] = CardNameExtractor::extract($text);
 
         $outcome = $resolver->applySearchResolution($rows, 0, $buyPercentage);
 

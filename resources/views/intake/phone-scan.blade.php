@@ -32,7 +32,10 @@
     .video-wrap {
       position: relative;
       width: 100%;
-      aspect-ratio: 4 / 3;
+      max-width: 22rem;
+      margin-left: auto;
+      margin-right: auto;
+      aspect-ratio: 3 / 4;
       background: #000;
       border-radius: 0.75rem;
       overflow: hidden;
@@ -145,7 +148,11 @@
 
       async function start() {
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          // Cards are portrait-shaped — bias the stream toward portrait so the
+          // preview box (also portrait, see CSS) doesn't crop the card's edges.
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 720 }, height: { ideal: 1280 } },
+          });
         } catch (e) {
           setStatus('Camera access denied or unavailable.', 'danger');
           return;
