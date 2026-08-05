@@ -63,8 +63,11 @@ class SellerApplicationApprover
         'reviewed_at'         => now(),
       ]);
 
-      // Create a password reset token manually
-      $token = Password::broker()->createToken($user);
+      // A dedicated, longer-lived broker — the default 60-minute expiry (meant
+      // for a self-service "forgot password" request made in the moment) was
+      // routinely expiring before a seller got round to opening this email,
+      // leaving them stuck on "This password reset token is invalid."
+      $token = Password::broker('seller_invite')->createToken($user);
 
       $resetUrl = url(route('password.reset', [
         'token' => $token,

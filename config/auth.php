@@ -99,6 +99,18 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Used only for the seller-approval "set your password" email — a first-time
+        // invite a store owner might not open for a day or two, unlike a self-service
+        // forgot-password request. See SellerApplicationApprover and
+        // ResetPasswordController (which tries both brokers against the one shared
+        // reset-password page/form).
+        'seller_invite' => [
+            'provider' => 'users',
+            'table' => 'seller_invite_tokens',
+            'expire' => 10080, // 7 days
+            'throttle' => 60,
+        ],
     ],
 
     /*

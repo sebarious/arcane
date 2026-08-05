@@ -28,17 +28,26 @@ class ResetPasswordController extends Controller
             'password' => ['required', 'confirmed', 'min:8'],
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->string('password')),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        $credentials = $request->only('email', 'password', 'password_confirmation', 'token');
 
-                event(new PasswordReset($user));
-            }
-        );
+        $resetUser = function ($user) use ($request) {
+            $user->forceFill([
+                'password' => Hash::make($request->string('password')),
+                'remember_token' => Str::random(60),
+            ])->save();
+
+            event(new PasswordReset($user));
+        };
+
+        $status = Password::reset($credentials, $resetUser);
+
+        // Seller-approval invite links are minted via a separate, longer-lived
+        // broker (see SellerApplicationApprover) but land on this same page/form —
+        // if the default broker doesn't recognize the token, this is the other
+        // place it could legitimately have come from.
+        if ($status !== Password::PASSWORD_RESET) {
+            $status = Password::broker('seller_invite')->reset($credentials, $resetUser);
+        }
 
         if ($status === Password::PASSWORD_RESET) {
             return redirect('/login')->with('status', __($status));
