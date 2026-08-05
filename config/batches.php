@@ -10,19 +10,19 @@ return [
       BatchType::Sapphire->value => [
         'label'                  => 'Sapphire',
         'packs'                  => 125,
-        'price_per_pack_pence'   => 850,  // £8.50
+        'price_per_pack_pence'   => 800,  // £8.00
         'target_margin_on_value' => 0.20, // 20% margin vs market value (fallback: cost)
       ],
       BatchType::Ruby->value => [
         'label'                  => 'Ruby',
         'packs'                  => 250,
-        'price_per_pack_pence'   => 800,  // £8.00
+        'price_per_pack_pence'   => 750,  // £7.50
         'target_margin_on_value' => 0.16, // 16%
       ],
       BatchType::Diamond->value => [
         'label'                  => 'Diamond',
         'packs'                  => 500,
-        'price_per_pack_pence'   => 750,  // £7.50
+        'price_per_pack_pence'   => 700,  // £7.00
         'target_margin_on_value' => 0.12, // 12%
       ],
     ],
