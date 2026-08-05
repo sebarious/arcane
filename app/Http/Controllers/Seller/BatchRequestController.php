@@ -21,6 +21,7 @@ class BatchRequestController extends Controller
     {
         $user = $request->user();
         if (! $user->hasRole('seller')) abort(403);
+        if (! config('batches.requests_enabled', true)) abort(403, 'Batch requests are temporarily unavailable.');
 
         $stores = $user->stores()->get(['id', 'name']);
 
@@ -60,6 +61,7 @@ class BatchRequestController extends Controller
     {
         $user = $request->user();
         if (! $user->hasRole('seller')) abort(403);
+        if (! config('batches.requests_enabled', true)) abort(403, 'Batch requests are temporarily unavailable.');
 
         $data = $request->validate([
             'store_id'                => ['required', 'integer'],

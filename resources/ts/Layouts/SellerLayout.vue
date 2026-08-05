@@ -28,6 +28,8 @@ const NAV_LINKS = [
 
 const isActive = (match: string) => (currentRouteName() ?? '').startsWith(match);
 
+const batchRequestsEnabled = () => (page.props.batchRequestsEnabled as boolean | undefined) ?? true;
+
 const mobileOpen = ref(false);
 
 const walletPence = () => (page.props.sellerWallet as number | null) ?? 0;
@@ -65,12 +67,18 @@ function formatPence(pence: number): string {
       </nav>
 
       <div class="px-3 pb-3">
-        <Link href="/seller/request-batch"
+        <Link v-if="batchRequestsEnabled()" href="/seller/request-batch"
           class="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-[6px] text-[#0d0b14] text-sm font-['Jost',sans-serif] font-bold uppercase tracking-wide"
           style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
           <Plus class="size-4" />
           Request batch
         </Link>
+        <button v-else type="button" disabled
+          title="Batch requests are temporarily unavailable"
+          class="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-[6px] bg-[rgba(255,255,255,0.05)] text-[#71717a] text-sm font-['Jost',sans-serif] font-bold uppercase tracking-wide cursor-not-allowed">
+          <Plus class="size-4" />
+          Request batch
+        </button>
       </div>
 
       <div class="px-3 pb-5 pt-2 border-t border-[rgba(220,193,117,0.08)] flex flex-col gap-1">
@@ -101,11 +109,15 @@ function formatPence(pence: number): string {
         <component :is="link.icon" class="size-5 shrink-0" />
         {{ link.label }}
       </Link>
-      <Link href="/seller/request-batch" @click="mobileOpen = false"
+      <Link v-if="batchRequestsEnabled()" href="/seller/request-batch" @click="mobileOpen = false"
         class="mt-4 flex items-center justify-center gap-2 w-full px-3 py-3 rounded-[6px] text-[#0d0b14] font-['Jost',sans-serif] font-bold uppercase tracking-wide"
         style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
         <Plus class="size-4" /> Request batch
       </Link>
+      <button v-else type="button" disabled
+        class="mt-4 flex items-center justify-center gap-2 w-full px-3 py-3 rounded-[6px] bg-[rgba(255,255,255,0.05)] text-[#71717a] font-['Jost',sans-serif] font-bold uppercase tracking-wide cursor-not-allowed">
+        <Plus class="size-4" /> Request batch
+      </button>
       <Link href="/logout" method="get" as="button" class="mt-6 flex items-center gap-3 px-3 py-3 text-sm text-[#71717a]">
         <LogOut class="size-4" /> Log out
       </Link>

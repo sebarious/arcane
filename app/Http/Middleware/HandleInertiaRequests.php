@@ -57,6 +57,9 @@ class HandleInertiaRequests extends Middleware
             'sellerWallet' => fn () => $request->user()?->hasRole('seller')
                 ? (int) $request->user()->stores()->sum('credit_balance_pence')
                 : null,
+            // Drives the "Request batch" button in the seller layout — shared globally
+            // since that button appears on every seller page, not just BatchRequest's own.
+            'batchRequestsEnabled' => (bool) config('batches.requests_enabled', true),
         ];
     }
 }

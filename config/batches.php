@@ -34,4 +34,9 @@ return [
 
   // Optional: how generous packs are vs sale (1.0 = market equals sale)
   'target_market_multiple' => 1,
+
+  // Flip to false to temporarily turn off "Request batch" in the seller
+  // dashboard — disables the button and blocks the route itself, not just the
+  // link (see SellerLayout.vue and Seller\BatchRequestController).
+  'requests_enabled' => (bool) env('BATCH_REQUESTS_ENABLED', true),
 ];
