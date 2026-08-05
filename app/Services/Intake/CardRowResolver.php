@@ -54,9 +54,14 @@ class CardRowResolver
      * (Pokémon Center exclusives, stamped/staff variants, etc. can share a name+number),
      * and no matches leaves the row untouched for "Fill in manually".
      *
+     * @param  string|null  $ocrSetCode  A set code read off the same scan (see
+     *         SetCodeExtractor) — the card number alone is often shared by
+     *         several different Pokémon across different sets, but a set code
+     *         match narrows straight to the real one when exactly one candidate
+     *         matches it, same as if only one had turned up in the first place.
      * @return 'resolved'|'ambiguous'|'not_found'
      */
-    public function applySearchResolution(array &$rows, int|string $key, float $buyPercentage): string
+    public function applySearchResolution(array &$rows, int|string $key, float $buyPercentage, ?string $ocrSetCode = null): string
     {
         $row = $rows[$key];
 
@@ -72,6 +77,18 @@ class CardRowResolver
         if (count($candidates) === 1) {
             $this->applyResolvedAttributes($rows, $key, $candidates[0], $buyPercentage);
             return 'resolved';
+        }
+
+        if ($ocrSetCode) {
+            $matches = array_values(array_filter(
+                $candidates,
+                fn (array $c) => PulseApiCardMapper::setCodeFromImageUrl($c['image_url'] ?? null) === $ocrSetCode,
+            ));
+
+            if (count($matches) === 1) {
+                $this->applyResolvedAttributes($rows, $key, $matches[0], $buyPercentage);
+                return 'resolved';
+            }
         }
 
         $rows[$key]['candidates'] = json_encode($candidates);

@@ -25,7 +25,7 @@ class RotatingFrameScanner
      * @param  int|null  $preferredRotation  Try this rotation first — once a
      *         scanning session learns which rotation a device needs, passing it
      *         back in avoids re-sweeping all four on every subsequent frame.
-     * @return array{number: ?string, rotation: ?int}
+     * @return array{number: ?string, setCode: ?string, rotation: ?int}
      */
     public function scan(string $bytes, ?int $preferredRotation = null): array
     {
@@ -48,11 +48,15 @@ class RotatingFrameScanner
 
             $number = CardNumberExtractor::extract($text);
             if ($number) {
-                return ['number' => $number, 'rotation' => $degrees];
+                return [
+                    'number'   => $number,
+                    'setCode'  => SetCodeExtractor::extract($text),
+                    'rotation' => $degrees,
+                ];
             }
         }
 
-        return ['number' => null, 'rotation' => null];
+        return ['number' => null, 'setCode' => null, 'rotation' => null];
     }
 
     private static function rotate(string $bytes, int $degrees): ?string

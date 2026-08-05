@@ -173,9 +173,12 @@ class PulseApiCardMapper
     }
 
     /**
-     * Display label for one candidate in a disambiguation list (see searchCandidates) —
-     * leads with whatever distinguishes it from the others (finish, promo, grading),
-     * since the name/number/set are typically shared across all candidates already.
+     * Display label for one candidate in a disambiguation list (see searchCandidates).
+     * Rapid Intake's live scanner searches by number alone (a name pulled from OCR
+     * proved too unreliable — see CardNumberExtractor/CardRowResolver history), so a
+     * shared number can surface completely different Pokémon across different sets,
+     * not just different finishes/prints of the same card — the name has to lead,
+     * not just whatever distinguishes prints of what was assumed to be one card.
      *
      * @param  array<string, mixed>  $attributes  Already mapped via toInventoryAttributes().
      */
@@ -190,11 +193,30 @@ class PulseApiCardMapper
         ]);
 
         return sprintf(
-            '%s%s — %s',
+            '%s — %s%s — %s',
+            $attributes['card_name'] ?? 'Unknown card',
             $attributes['set_name'] ?? 'Unknown set',
             $descriptors ? ' · '.implode(' · ', $descriptors) : ' · Standard',
             Money::format($attributes['market_value_pence'] ?? null),
         );
+    }
+
+    /**
+     * Pulls the folder segment out of a card's image URL, e.g.
+     * ".../cards/images/DRI/Crustle_186_182.webp" -> "DRI" — this happens to
+     * match the official set code printed on modern cards, even though
+     * PulseAPI's own `set_id` uses a different, internal scheme (e.g. "sv10"
+     * for that same set). Confirmed against several real sets; not documented
+     * by PulseAPI, so this is a best-effort match, not a guaranteed contract —
+     * callers should treat a null/mismatch as "no signal", not an error.
+     */
+    public static function setCodeFromImageUrl(?string $imageUrl): ?string
+    {
+        if (! $imageUrl || ! preg_match('#/cards/images/([^/]+)/#i', $imageUrl, $m)) {
+            return null;
+        }
+
+        return strtoupper($m[1]);
     }
 
     /**

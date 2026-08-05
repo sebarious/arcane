@@ -176,6 +176,8 @@
   @php
   $qty = $invoice->batch?->pack_count ?? 1;
   $unitPence = $qty > 0 ? intdiv($invoice->total_pence, $qty) : $invoice->total_pence;
+  $vatRegistered = config('vat.registered');
+  $exVatPence = $invoice->total_pence - $invoice->internal_margin_vat_pence;
   @endphp
 
   <table class="items">
@@ -208,10 +210,25 @@
           £{{ number_format($invoice->total_pence / 100, 2) }}
         </td>
       </tr>
+      @if($vatRegistered)
+      <tr>
+        <td colspan="3" class="right">Subtotal (ex VAT)</td>
+        <td class="right">£{{ number_format($exVatPence / 100, 2) }}</td>
+      </tr>
+      <tr>
+        <td colspan="3" class="right">VAT</td>
+        <td class="right">No VAT (Margin Scheme)</td>
+      </tr>
+      <tr>
+        <td colspan="3" class="right">Total (incl. VAT)</td>
+        <td class="right">£{{ number_format($invoice->total_pence / 100, 2) }}</td>
+      </tr>
+      @else
       <tr>
         <td colspan="3" class="right">Subtotal</td>
         <td class="right">£{{ number_format($invoice->total_pence / 100, 2) }}</td>
       </tr>
+      @endif
       @if($invoice->credit_applied_pence > 0)
       <tr class="credit-row">
         <td colspan="3" class="right">Store credit applied</td>
@@ -225,10 +242,12 @@
     </tbody>
   </table>
 
+  @if($vatRegistered)
   <p class="note">
     This invoice is issued under the VAT second-hand margin scheme for goods.
     VAT is accounted for on the margin and cannot be reclaimed.
   </p>
+  @endif
 
   <p class="footer-brand">Arcane &middot; All cards authenticated &middot; All packs sealed fresh</p>
 </body>

@@ -487,7 +487,7 @@ class RapidIntake extends Page implements HasForms
         $rows[$key] = $this->emptyRow();
         $rows[$key]['search_number'] = $number;
 
-        $outcome = app(CardRowResolver::class)->applySearchResolution($rows, $key, $this->buyPercentage());
+        $outcome = app(CardRowResolver::class)->applySearchResolution($rows, $key, $this->buyPercentage(), $scan['setCode']);
 
         $cardName = null;
         if ($outcome === 'resolved') {
