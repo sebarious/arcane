@@ -72,7 +72,7 @@
                     this.flash('⚠ ' + result.number + ' — multiple matches, resolve below', 'warning');
                     break;
                 case 'not_found':
-                    this.flash('✎ ' + result.number + ' not found — fill in manually', 'warning');
+                    this.flash('✕ ' + result.number + ' — no match, nothing added. Set aside or try again.', 'warning');
                     break;
                 case 'duplicate':
                     // Same card still in frame — stay quiet rather than re-flashing.

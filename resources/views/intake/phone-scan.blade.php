@@ -232,9 +232,7 @@
             flash('⚠ ' + result.number + ' — multiple matches, resolve on your computer', 'warning');
             break;
           case 'not_found':
-            addedCount++;
-            countEl.textContent = addedCount;
-            flash('✎ ' + result.number + ' not found — fill in manually on your computer', 'warning');
+            flash('✕ ' + result.number + ' — no match, nothing added. Set aside or try again.', 'warning');
             break;
           case 'duplicate':
             break;

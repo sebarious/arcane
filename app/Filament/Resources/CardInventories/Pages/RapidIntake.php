@@ -483,20 +483,27 @@ class RapidIntake extends Page implements HasForms
             return ['status' => 'limit_reached', 'number' => $number];
         }
 
-        $key = count($rows);
-        $rows[$key] = $this->emptyRow();
-        $rows[$key]['search_number'] = $number;
+        // Resolve against a scratch row first — a scan that finds nothing at all
+        // shouldn't leave a row behind to clean up later. The point of scanning is
+        // to sort cards into "identified" and "not" piles as you go; a card PulseAPI
+        // has no match for at all should just get set aside and tried again, not
+        // clutter the list with an empty row needing manual attention.
+        $scratch = [0 => $this->emptyRow()];
+        $scratch[0]['search_number'] = $number;
 
-        $outcome = app(CardRowResolver::class)->applySearchResolution($rows, $key, $this->buyPercentage(), $scan['setCode']);
+        $outcome = app(CardRowResolver::class)->applySearchResolution($scratch, 0, $this->buyPercentage(), $scan['setCode']);
 
         $cardName = null;
         if ($outcome === 'resolved') {
-            $resolved = self::decodeResolved($rows[$key]['resolved'] ?? null);
+            $resolved = self::decodeResolved($scratch[0]['resolved'] ?? null);
             $cardName = $resolved['card_name'] ?? null;
         }
 
-        $this->data['rows'] = $rows;
-        $this->form->fill($this->data);
+        if ($outcome !== 'not_found') {
+            $rows[] = $scratch[0];
+            $this->data['rows'] = $rows;
+            $this->form->fill($this->data);
+        }
 
         return [
             'status'    => $outcome,

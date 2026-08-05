@@ -78,17 +78,22 @@ class PhoneScanController extends Controller
 
         $buyPercentage = $sessions->buyPercentage($token) ?? 0.0;
 
+        // A scan that finds nothing at all doesn't get pushed into the session —
+        // see RapidIntake::scanFrame() for the full reasoning (sort into piles as
+        // you go, without an unresolved row left behind to clean up later).
         $rows = [0 => $resolver->emptyRow()];
         $rows[0]['search_number'] = $number;
 
         $outcome = $resolver->applySearchResolution($rows, 0, $buyPercentage, $scan['setCode']);
 
-        $sessions->push($token, $rows[0]);
-
         $cardName = null;
         if ($outcome === 'resolved') {
             $resolved = CardRowResolver::decodeResolved($rows[0]['resolved'] ?? null);
             $cardName = $resolved['card_name'] ?? null;
+        }
+
+        if ($outcome !== 'not_found') {
+            $sessions->push($token, $rows[0]);
         }
 
         return response()->json([
