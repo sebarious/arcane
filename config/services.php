@@ -55,6 +55,11 @@ return [
     // but that doesn't affect a project-level API key, which is a separate credential type.
     'google_vision' => [
         'key' => env('GOOGLE_VISION_API_KEY'),
+        // Logs each frame's raw OCR text plus the extracted number/set code —
+        // toggle on only while diagnosing a scan format that isn't matching
+        // (e.g. an unfamiliar promo layout), then back off; a live scan session
+        // fires this every ~1.5s and the log line is per-frame.
+        'debug_ocr' => env('RAPID_INTAKE_DEBUG_OCR', false),
     ],
 
 ];

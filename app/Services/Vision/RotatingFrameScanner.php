@@ -2,6 +2,8 @@
 
 namespace App\Services\Vision;
 
+use Illuminate\Support\Facades\Log;
+
 /**
  * Some mobile browsers hand canvas.drawImage() the camera's raw sensor buffer,
  * which can be rotated 90°/180°/270° from what's actually shown on screen — a
@@ -47,6 +49,16 @@ class RotatingFrameScanner
             }
 
             $number = CardNumberExtractor::extract($text);
+
+            if (config('services.google_vision.debug_ocr')) {
+                Log::info('rapid_intake.ocr_frame', [
+                    'rotation' => $degrees,
+                    'text'     => $text,
+                    'number'   => $number,
+                    'setCode'  => $number ? SetCodeExtractor::extract($text) : null,
+                ]);
+            }
+
             if ($number) {
                 return [
                     'number'   => $number,

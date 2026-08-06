@@ -87,11 +87,19 @@ class CardNumberExtractor
      * passes above have failed. PulseAPI stores these zero-padded to 3 digits
      * (e.g. "MEP022") regardless of how many digits are actually printed/read,
      * so this pads to match rather than passing through whatever OCR saw.
+     *
+     * `fullTextAnnotation.text` is the *whole card's* OCR text with a real
+     * newline between every detected line (HP, attack costs, illustrator
+     * credit, copyright, flavor text, ...) — a `\s*` gap here would happily
+     * bridge a hallucinated short prefix on one line to an unrelated digit run
+     * several lines away and misfire on ordinary cards. Restricted to a single
+     * space/dash on the same line, and 2+ digits, to keep this to genuine
+     * "MEP 028" / "SWSH1234"-style adjacency only.
      */
     private static function extractPromo(string $text): ?string
     {
         $prefixAlt = implode('|', array_keys(self::PROMO_PREFIXES));
-        $pattern   = '/\b('.$prefixAlt.')\s*-?\s*(\d{1,4})\b/i';
+        $pattern   = '/\b('.$prefixAlt.')[ -]?(\d{2,4})\b/i';
 
         if (! preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
             return null;
