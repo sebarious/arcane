@@ -9,11 +9,6 @@ class SetCodeExtractor
     // sometimes printed as their own space-separated word instead ("CRI EN").
     private const LANGUAGE_SUFFIXES = ['EN', 'JP', 'DE', 'FR', 'IT', 'ES', 'PT', 'NL', 'KO', 'ZH'];
 
-    // A lone leading letter occasionally printed/read ahead of the real set code
-    // (e.g. "J CRIEN 096/086", "JCRIEN 095/086") — a format/rotation marker
-    // Vision picks up as part of the same run, not part of the code itself.
-    private const LEADING_PREFIXES = ['J'];
-
     /**
      * Modern cards often print a short set code right next to (or glued onto)
      * the collector number — e.g. "DRI 186/182", or with no space at all,
@@ -25,16 +20,17 @@ class SetCodeExtractor
      * both are present it can narrow a same-number match straight to the
      * right set without a human choosing from a list.
      *
-     * The set code, an optional leading rotation marker, and an optional
-     * language suffix can all show up as one glued token ("PFLEN"), or as
-     * separate space-separated words on the same line ("CRI EN", "J CRIEN") —
-     * this captures every same-line letter-run immediately touching the
-     * number so it doesn't stop short at just the last word. Restricted to
-     * `[ \t]` (not `\s`) between words within that run, so it can't bridge
-     * across a newline onto an unrelated word from a line further up (e.g. an
-     * illustrator credit) — but a *single* line break is allowed right before
-     * the number itself, since Vision sometimes puts the code and the number
-     * on their own consecutive lines ("PFLEN\n103/094") rather than one line.
+     * The set code, an optional leading rotation/format marker, and an
+     * optional language suffix can all show up as one glued token ("PFLEN",
+     * "HPFLEN"), or as separate space-separated words on the same line
+     * ("CRI EN", "J CRIEN") — this captures every same-line letter-run
+     * immediately touching the number so it doesn't stop short at just the
+     * last word. Restricted to `[ \t]` (not `\s`) between words within that
+     * run, so it can't bridge across a newline onto an unrelated word from a
+     * line further up (e.g. an illustrator credit) — but a *single* line
+     * break is allowed right before the number itself, since Vision
+     * sometimes puts the code and the number on their own consecutive lines
+     * ("PFLEN\n103/094") rather than one line.
      */
     public static function extract(string $text): ?string
     {
@@ -51,13 +47,12 @@ class SetCodeExtractor
             }
         }
 
-        foreach (self::LEADING_PREFIXES as $prefix) {
-            if (strlen($code) > strlen($prefix) && str_starts_with($code, $prefix)) {
-                $code = substr($code, strlen($prefix));
-                break;
-            }
-        }
-
-        return $code;
+        // Every core set code seen from real scans (ASC, DRI, PFL, CRI, ...) is
+        // exactly 3 letters — a rotation/format marker occasionally glued in
+        // front by print or OCR ("J CRIEN" -> "JCRI", "HPFLEN" -> "HPFL") can be
+        // any letter, so rather than maintaining a growing allowlist, anything
+        // still longer than 3 characters at this point is trimmed down to the
+        // trailing 3 — the actual code always sits at the end of the run.
+        return strlen($code) > 3 ? substr($code, -3) : $code;
     }
 }
