@@ -134,8 +134,16 @@ class PulseApiCardMapper
         $filters = $number !== '' ? ['card_number' => $number] : [];
         $results = app(PulseApiClient::class)->search($name, self::withDefaultFilters($filters), limit: $limit);
 
+        // A shared collector number is very often a coincidence across sets rather
+        // than the same print (see setCodeFromImageUrl's caveat above — PulseAPI
+        // exposes no printed set-code field to disambiguate by) — most commonly a
+        // Japan-exclusive set reusing the same number as the English print we
+        // actually stock. We only ever buy allowed-language stock (same rule the
+        // Sell flow already enforces), so cutting those before the ambiguity check
+        // below resolves a lot of "ambiguous" numbers straight to the one real match.
         return collect($results['data'] ?? [])
             ->map(fn (array $card) => self::toInventoryAttributes($card))
+            ->filter(fn (array $attributes) => self::isAllowedLanguage($attributes['language'] ?? null))
             ->values()
             ->all();
     }
