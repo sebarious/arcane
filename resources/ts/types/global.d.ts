@@ -31,6 +31,7 @@ export interface PageProps<T extends Record<string, unknown> = Record<string, un
     auth: { user: User | null }
     flash: { success?: string; error?: string }
     ziggy: { location: string; url: string }
+    impersonating: boolean
     [key: string]: unknown
 }
 

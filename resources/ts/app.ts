@@ -5,6 +5,7 @@ import { createApp, h, type DefineComponent } from 'vue';
 import { createInertiaApp, Link } from '@inertiajs/vue3';
 import { ZiggyVue } from 'ziggy-js';
 import { MotionPlugin } from '@vueuse/motion';
+import AppRoot from './Components/AppRoot.vue';
 
 createInertiaApp( {
     title: ( title ) => ( title ? `${title} · Arcane` : 'Arcane' ),
@@ -17,7 +18,7 @@ createInertiaApp( {
     },
 
     setup ( { el, App, props, plugin } ) {
-        const app = createApp( { render: () => h( App, props ) } );
+        const app = createApp( { render: () => h( AppRoot, { appComponent: App, appProps: props } ) } );
 
         app
             .use( plugin )

@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Users;
 
-use App\Filament\Resources\Users\Pages;
 use App\Models\User;
+use App\Services\Auth\ImpersonationManager;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -86,6 +86,7 @@ class UserResource extends Resource
                     ->relationship('roles', 'name'),
             ])
             ->recordActions([
+                static::impersonateAction(),
                 static::resetPasswordAction(),
                 EditAction::make(),
             ])
@@ -125,12 +126,29 @@ class UserResource extends Resource
             });
     }
 
+    /** Logs the admin in as another user, without knowing their password, via ImpersonationManager. */
+    public static function impersonateAction(): Action
+    {
+        return Action::make('impersonate')
+            ->label('Impersonate')
+            ->icon(Heroicon::OutlinedUserCircle)
+            ->color('gray')
+            ->visible(fn (User $record) => ! $record->is(auth()->user()))
+            ->requiresConfirmation()
+            ->modalDescription(fn (User $record) => "You'll be logged in as {$record->name} ({$record->email}). "
+                .'A banner will let you end this and return to your own account at any time.')
+            ->action(function (User $record, ImpersonationManager $impersonation) {
+                $impersonation->start(request(), $record);
+            })
+            ->successRedirectUrl(fn (User $record, ImpersonationManager $impersonation) => $impersonation->redirectPathFor($record));
+    }
+
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListUsers::route('/'),
+            'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
-            'edit'   => Pages\EditUser::route('/{record}/edit'),
+            'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }
 }

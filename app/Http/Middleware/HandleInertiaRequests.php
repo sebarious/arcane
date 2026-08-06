@@ -44,10 +44,13 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => fn () => $request->user()?->only('id', 'name', 'email'),
             ],
+            // Drives the impersonation banner shown on every Inertia page — see
+            // App\Services\Auth\ImpersonationManager and Components/ImpersonationBanner.vue.
+            'impersonating' => fn () => $request->session()->has('impersonator_id'),
             'flash' => [
-                'success' => fn() => $request->session()->get('success'),
-                'error'   => fn() => $request->session()->get('error'),
-                'status'  => fn() => $request->session()->get('status'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'status' => fn () => $request->session()->get('status'),
             ],
             // Absolute URL fallback for og:image/twitter:image on pages that don't have
             // a more specific image (a store logo, a card image, etc) to point to.

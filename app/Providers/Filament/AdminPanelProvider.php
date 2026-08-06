@@ -2,6 +2,16 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\AttentionList;
+use App\Filament\Widgets\CancelledBatchesWidget;
+use App\Filament\Widgets\DashboardStats;
+use App\Filament\Widgets\InventoryAgingWidget;
+use App\Filament\Widgets\InventoryByBand;
+use App\Filament\Widgets\MarginByProduct;
+use App\Filament\Widgets\MarginRealisedWidget;
+use App\Filament\Widgets\PacksSoldChart;
+use App\Filament\Widgets\StorePerformanceWidget;
+use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -10,24 +20,13 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Filament\Enums\ThemeMode;
-use App\Filament\Widgets\AttentionList;
-use App\Filament\Widgets\DashboardStats;
-use App\Filament\Widgets\InventoryByBand;
-use App\Filament\Widgets\MarginByProduct;
-use App\Filament\Widgets\PacksSoldChart;
-use App\Filament\Widgets\MarginRealisedWidget;
-use App\Filament\Widgets\InventoryAgingWidget;
-use App\Filament\Widgets\StorePerformanceWidget;
-use App\Filament\Widgets\CancelledBatchesWidget;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -45,7 +44,7 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
                 'primary' => '#512b74',
-                'gray'    => Color::Slate,
+                'gray' => Color::Slate,
             ])
             ->font('Inter')
             ->favicon(asset('images/logo.png'))
@@ -82,7 +81,11 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->databaseNotifications()
-            ->databaseNotificationsPolling('30s');
+            ->databaseNotificationsPolling('30s')
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn () => view('filament.impersonation-banner'),
+            );
 
         return $panel;
     }
