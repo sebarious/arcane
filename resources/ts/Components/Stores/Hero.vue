@@ -1,15 +1,11 @@
 <template>
-  <div class="lg:h-[641px] lg:max-h-[704.7000122070312px] relative shrink-0 w-full">
+  <div class="relative shrink-0 w-full">
     <div class="bg-clip-padding border-0 border-[transparent] border-solid relative size-full">
       <HeroBG />
       <HeroSparkles />
       <FloatingRings />
-      <div class="absolute content-stretch flex flex-col h-[40px] items-start left-[535px] top-[703px] w-px">
-        <div
-          class="absolute bg-gradient-to-b from-[rgba(255,185,0,0.35)] h-[5.363px] left-0 to-[rgba(0,0,0,0)] top-0 w-px" />
-      </div>
       <div
-        class="lg:absolute content-stretch flex flex-col gap-[24px] lg:h-[326px] items-center justify-center left-0 pb-[48px] pt-[80px] px-8 lg:px-16 top-[-15px] w-full">
+        class="relative content-stretch flex flex-col gap-[24px] items-center justify-center pb-[48px] pt-[80px] px-8 lg:px-16 w-full">
         <div
           class="[word-break:break-word] content-stretch flex flex-col gap-[12px] items-start relative shrink-0 w-full">
           <h1
@@ -26,7 +22,7 @@
         </div>
       </div>
       <div
-        class="lg:absolute content-stretch flex flex-col gap-[32px] items-center justify-center left-0 pb-[80px] px-8 lg:px-16 top-[311px] w-full">
+        class="relative content-stretch flex flex-col gap-[32px] items-center justify-center pb-[80px] px-8 lg:px-16 w-full">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
           <Card v-for="store in stores" :key="store.id" :store="store" />
         </div>
