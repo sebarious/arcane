@@ -5,8 +5,14 @@ namespace App\Services\Vision;
 class SetCodeExtractor
 {
     // Print-language suffixes sometimes glued directly onto a set code right next
-    // to the card number (e.g. "DRIEN" = set code "DRI" + language "EN").
+    // to the card number (e.g. "DRIEN" = set code "DRI" + language "EN"), and
+    // sometimes printed as their own space-separated word instead ("CRI EN").
     private const LANGUAGE_SUFFIXES = ['EN', 'JP', 'DE', 'FR', 'IT', 'ES', 'PT', 'NL', 'KO', 'ZH'];
+
+    // A lone leading letter occasionally printed/read ahead of the real set code
+    // (e.g. "J CRIEN 096/086", "JCRIEN 095/086") — a format/rotation marker
+    // Vision picks up as part of the same run, not part of the code itself.
+    private const LEADING_PREFIXES = ['J'];
 
     /**
      * Modern cards often print a short set code right next to (or glued onto)
@@ -18,18 +24,35 @@ class SetCodeExtractor
      * internal set_id — matches what's actually printed on the card, so when
      * both are present it can narrow a same-number match straight to the
      * right set without a human choosing from a list.
+     *
+     * The set code, an optional leading rotation marker, and an optional
+     * language suffix can all show up as one glued token ("PFLEN"), or as
+     * separate space-separated words on the same line ("CRI EN", "J CRIEN") —
+     * this captures every same-line letter-run immediately touching the
+     * number so it doesn't stop short at just the last word. Restricted to
+     * `[ \t]` (not `\s`) between words so it can't bridge across a newline
+     * onto an unrelated word from the previous OCR line (e.g. an illustrator
+     * credit sitting right above the number line).
      */
     public static function extract(string $text): ?string
     {
-        if (! preg_match_all('/\b([A-Z]{2,8})\s*\d{1,3}\s*\/\s*\d{1,3}\b/', $text, $matches)) {
+        if (! preg_match_all('/\b((?:[A-Z]{1,8}[ \t]*){1,3})\d{1,3}[ \t]*\/[ \t]*\d{1,3}\b/i', $text, $matches)) {
             return null;
         }
 
-        $code = strtoupper(end($matches[1]));
+        $code = strtoupper(preg_replace('/\s+/', '', end($matches[1])));
 
         foreach (self::LANGUAGE_SUFFIXES as $lang) {
             if (strlen($code) > strlen($lang) && str_ends_with($code, $lang)) {
-                return substr($code, 0, -strlen($lang));
+                $code = substr($code, 0, -strlen($lang));
+                break;
+            }
+        }
+
+        foreach (self::LEADING_PREFIXES as $prefix) {
+            if (strlen($code) > strlen($prefix) && str_starts_with($code, $prefix)) {
+                $code = substr($code, strlen($prefix));
+                break;
             }
         }
 
