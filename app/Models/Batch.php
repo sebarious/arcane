@@ -20,6 +20,7 @@ class Batch extends Model
         'admin_notes',
         'merged_into_batch_id', 'merged_at',
         'merge_request_batch_id',
+        'top_card_1_id', 'top_card_2_id',
 
     ];
 
@@ -54,6 +55,11 @@ class Batch extends Model
     {
         return $this->hasManyThrough(CardInventory::class, Pack::class, 'batch_id', 'pack_id');
     }
+
+    // Frozen at generation time — see the migration for why these never get
+    // recomputed after the fact (Card Lists storefront thumbnail).
+    public function topCard1() { return $this->belongsTo(CardInventory::class, 'top_card_1_id'); }
+    public function topCard2() { return $this->belongsTo(CardInventory::class, 'top_card_2_id'); }
 
     public static function nextReference(): string
     {

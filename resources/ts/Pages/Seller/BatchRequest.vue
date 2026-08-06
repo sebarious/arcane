@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import SellerLayout from '@/Layouts/SellerLayout.vue';
+
+const page = usePage();
+const vatRegistered = computed(() => (page.props.vatRegistered as boolean | undefined) ?? false);
+
+function formatPrice(pounds: number): string {
+  return '£' + pounds.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 interface Store {
   id: number;
@@ -105,7 +112,7 @@ const submit = () => {
               class="w-full bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3 text-sm text-white font-['Jost',sans-serif] focus:outline-none focus:border-[#c9a84c]"
               required>
               <option v-for="p in typesForGame" :key="p.type" :value="p.type">
-                {{ p.type_label }} — {{ p.packs }} packs, £{{ p.price_pounds.toFixed(2) }}
+                {{ p.type_label }} — {{ p.packs }} packs, {{ formatPrice(p.price_pounds) }}
               </option>
             </select>
           </div>
@@ -114,7 +121,7 @@ const submit = () => {
         <div v-if="selectedProduct" class="bg-[#1a1628] border border-[rgba(124,58,237,0.25)] rounded-[8px] p-4 text-xs text-[#a3a3a3] font-['Jost',sans-serif]">
           <strong class="text-white">{{ selectedProduct.type_label }}</strong>
           — {{ selectedProduct.packs }} sealed mystery packs,
-          invoiced at <strong class="text-[#c9a84c]">£{{ selectedProduct.price_pounds.toFixed(2) }}</strong> ex VAT,
+          invoiced at <strong class="text-[#c9a84c]">{{ formatPrice(selectedProduct.price_pounds) }}</strong><template v-if="vatRegistered"> ex VAT</template>,
           due 48 hours after generation.
         </div>
 

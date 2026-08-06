@@ -57,9 +57,18 @@ class HandleInertiaRequests extends Middleware
             'sellerWallet' => fn () => $request->user()?->hasRole('seller')
                 ? (int) $request->user()->stores()->sum('credit_balance_pence')
                 : null,
+            // Affiliate code for the seller layout's header — same "1 store per
+            // seller" assumption as the store() convenience relation.
+            'sellerAffiliateCode' => fn () => $request->user()?->hasRole('seller')
+                ? $request->user()->store?->affiliate_code
+                : null,
             // Drives the "Request batch" button in the seller layout — shared globally
             // since that button appears on every seller page, not just BatchRequest's own.
             'batchRequestsEnabled' => (bool) config('batches.requests_enabled', true),
+            // Whether the business is VAT-registered — while off, no VAT-related copy
+            // ("ex VAT", etc) should appear anywhere seller/storefront-facing. Shared
+            // globally since price displays touching this live on several pages.
+            'vatRegistered' => (bool) config('vat.registered'),
         ];
     }
 }

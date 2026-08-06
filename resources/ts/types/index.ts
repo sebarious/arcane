@@ -55,3 +55,20 @@ export interface Store {
   games: StoreGame[];
   logo: string;
 }
+
+export interface CardListBatch {
+  id: number;
+  reference: string;
+  type: string | null;
+  type_label: string | null;
+  game: string | null;
+  game_label: string | null;
+  pack_count: number;
+  remaining_packs: number;
+  store: {
+    slug: string;
+    name: string;
+  };
+  top_card_1_image: string | null;
+  top_card_2_image: string | null;
+}

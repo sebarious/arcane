@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
   LayoutDashboard, PackageSearch, FileText, Wallet, UserRound,
-  Plus, LogOut, Menu, X, ExternalLink,
+  Plus, LogOut, Menu, X, ExternalLink, Copy, Check,
 } from 'lucide-vue-next';
 import arcaneLogo from '@/Assets/Link___Arcane.png';
 
@@ -36,6 +36,19 @@ const walletPence = () => (page.props.sellerWallet as number | null) ?? 0;
 
 function formatPence(pence: number): string {
   return '£' + (pence / 100).toFixed(2);
+}
+
+const affiliateCode = () => (page.props.sellerAffiliateCode as string | null) ?? null;
+
+const affiliateCopied = ref(false);
+
+function copyAffiliateCode() {
+  const code = affiliateCode();
+  if (!code) return;
+
+  navigator.clipboard.writeText(code);
+  affiliateCopied.value = true;
+  setTimeout(() => { affiliateCopied.value = false; }, 2000);
 }
 </script>
 
@@ -131,14 +144,25 @@ function formatPence(pence: number): string {
           <p v-if="subtitle" class="font-['Jost',sans-serif] text-sm text-[#a3a3a3] mt-1">{{ subtitle }}</p>
         </div>
 
-        <Link href="/seller/wallet"
-          class="flex items-center gap-3 bg-[#13101e] border border-[rgba(201,168,76,0.25)] rounded-[8px] px-4 py-2.5 shrink-0 hover:border-[rgba(201,168,76,0.5)] transition-colors">
-          <Wallet class="size-4 text-[#c9a84c]" />
-          <div>
-            <p class="font-['Jost',sans-serif] text-[10px] text-[rgba(255,255,255,0.35)] uppercase tracking-wide leading-none">Wallet</p>
-            <p class="font-['Cinzel',sans-serif] font-bold text-sm text-[#c9a84c] leading-tight mt-0.5">{{ formatPence(walletPence()) }}</p>
-          </div>
-        </Link>
+        <div class="flex items-center gap-3">
+          <button v-if="affiliateCode()" type="button" @click="copyAffiliateCode"
+            class="flex items-center gap-3 bg-[#13101e] border border-[rgba(201,168,76,0.25)] rounded-[8px] px-4 py-2.5 shrink-0 hover:border-[rgba(201,168,76,0.5)] transition-colors">
+            <component :is="affiliateCopied ? Check : Copy" class="size-4 text-[#c9a84c]" />
+            <div class="text-left">
+              <p class="font-['Jost',sans-serif] text-[10px] text-[rgba(255,255,255,0.35)] uppercase tracking-wide leading-none">Affiliate code</p>
+              <p class="font-['Cinzel',sans-serif] font-bold text-sm text-[#c9a84c] leading-tight mt-0.5">{{ affiliateCopied ? 'Copied!' : affiliateCode() }}</p>
+            </div>
+          </button>
+
+          <Link href="/seller/wallet"
+            class="flex items-center gap-3 bg-[#13101e] border border-[rgba(201,168,76,0.25)] rounded-[8px] px-4 py-2.5 shrink-0 hover:border-[rgba(201,168,76,0.5)] transition-colors">
+            <Wallet class="size-4 text-[#c9a84c]" />
+            <div>
+              <p class="font-['Jost',sans-serif] text-[10px] text-[rgba(255,255,255,0.35)] uppercase tracking-wide leading-none">Wallet</p>
+              <p class="font-['Cinzel',sans-serif] font-bold text-sm text-[#c9a84c] leading-tight mt-0.5">{{ formatPence(walletPence()) }}</p>
+            </div>
+          </Link>
+        </div>
       </header>
 
       <main class="px-6 lg:px-10 py-8">

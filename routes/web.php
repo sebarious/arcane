@@ -7,6 +7,7 @@ use App\Http\Controllers\QrScanController;
 use App\Http\Controllers\QrConfirmController;
 use App\Http\Controllers\Storefront\StoreIndexController;
 use App\Http\Controllers\Storefront\StoreShowController;
+use App\Http\Controllers\Storefront\CardListIndexController;
 use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\BatchesController;
 use App\Http\Controllers\Auth\LoginController;
@@ -120,5 +121,6 @@ Route::post('/rapid-intake-scan/{token}/frame', [PhoneScanController::class, 'fr
   ->name('rapid-intake.scan.frame');
 
 Route::get('/stores', StoreIndexController::class)->name('stores.index');
+Route::get('/card-lists', CardListIndexController::class)->name('card-lists.index');
 Route::get('/{store:slug}', StoreShowController::class)->name('stores.show');
 Route::get('/{store:slug}/{batch}', BatchListController::class)->name('stores.lists.show');

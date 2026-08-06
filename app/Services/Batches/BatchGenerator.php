@@ -207,6 +207,13 @@ class BatchGenerator
         }
 
         $cards = $selected->values();
+
+        // Snapshot the two priciest cards now, before allocation/sale can touch
+        // them — this is the only point where "top cards in this batch" is ever
+        // computed, so the Card Lists storefront thumbnail stays fixed even once
+        // these particular cards are pulled and sold out of the batch.
+        $topCards = $cards->sortByDesc('market_value_pence')->values();
+
         foreach ($packs as $index => $pack) {
           /** @var CardInventory $card */
           $card = $cards[$index];
@@ -233,6 +240,8 @@ class BatchGenerator
           'failure_reason'           => null,
           'failed_at'                => null,
           'committed_at'             => now(),
+          'top_card_1_id'            => $topCards->get(0)?->id,
+          'top_card_2_id'            => $topCards->get(1)?->id,
         ]);
 
         $invoice = Invoice::create([

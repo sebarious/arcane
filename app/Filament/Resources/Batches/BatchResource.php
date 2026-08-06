@@ -95,13 +95,13 @@ class BatchResource extends Resource
                         ->disabled()
                         ->dehydrated(),
                     Forms\Components\TextInput::make('sale_price_pounds')
-                        ->label('Batch price (ex VAT)')
+                        ->label(config('vat.registered') ? 'Batch price (ex VAT)' : 'Batch price')
                         ->prefix('£')
                         ->numeric()
                         ->disabled()
                         ->formatStateUsing(
                             fn($state) => $state !== null
-                                ? number_format((float) $state, 2, '.', '')
+                                ? number_format((float) $state, 2, '.', ',')
                                 : null
                         )
                         ->afterStateHydrated(function ($state, $set, $get) {
@@ -208,7 +208,7 @@ class BatchResource extends Resource
                 ->badge(),
                 Tables\Columns\TextColumn::make('pack_count'),
                 Tables\Columns\TextColumn::make('sale_price_pence')
-                    ->label('Sale (ex VAT)')
+                    ->label(config('vat.registered') ? 'Sale (ex VAT)' : 'Sale')
                     ->formatStateUsing(fn($state) => \App\Support\Money::format($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('total_cost_pence')

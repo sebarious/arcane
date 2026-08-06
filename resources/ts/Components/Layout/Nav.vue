@@ -73,6 +73,7 @@ const isLoggedIn = computed( () => !!(page?.props?.auth as any)?.user );
 const NAV_LINKS = computed( (): [string, string, boolean][] => [
   ['Sell to Us', '/sell', !!(page?.props?.route as any)?.name?.startsWith('sell')],
   ['Stores', '/stores', !!(page?.props?.route as any)?.name?.startsWith('stores')],
+  ['Card Lists', '/card-lists', !!(page?.props?.route as any)?.name?.startsWith('card-lists')],
   ['Affiliate', '/affiliate-program', !!(page?.props?.route as any)?.name?.startsWith('affiliate-program')],
   ...( isLoggedIn.value
     ? []
