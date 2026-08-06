@@ -26,10 +26,9 @@
         </div>
       </div>
       <div
-        class="lg:absolute content-stretch flex flex-col gap-[32px] lg:h-[378px] items-center justify-center left-0 pb-[80px] px-8 lg:px-16 top-[311px] w-full">
-        <div
-          class="content-stretch space-y-8 lg:space-y-0 lg:flex lg:gap-[24px] lg:items-start relative lg:shrink-0 w-full">
-          <Card v-for=" store in stores " :key="store.id" :store="store" />
+        class="lg:absolute content-stretch flex flex-col gap-[32px] items-center justify-center left-0 pb-[80px] px-8 lg:px-16 top-[311px] w-full">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
+          <Card v-for="store in stores" :key="store.id" :store="store" />
         </div>
       </div>
     </div>

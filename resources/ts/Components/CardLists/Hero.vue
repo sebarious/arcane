@@ -19,7 +19,7 @@
         </div>
       </div>
       <div class="relative flex flex-col gap-[32px] items-center justify-center pb-[80px] lg:pt-[311px] lg:pt-[380px] px-8 lg:px-16 w-full">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
           <Card v-for="batch in batches" :key="batch.id" :batch="batch" />
         </div>
         <p v-if="batches.length === 0" class="font-['Jost',sans-serif] text-[#a3a3a3] text-sm py-12">

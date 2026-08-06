@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-[#13101e] flex-[1_0_0] min-w-px relative rounded-[8px]">
+  <div class="bg-[#13101e] w-full relative rounded-[8px]">
     <div class="content-stretch flex flex-col items-start overflow-clip relative rounded-[inherit] size-full">
       <div class="content-stretch flex h-[151px] items-center justify-center overflow-clip relative shrink-0 w-full"
         :style="{
