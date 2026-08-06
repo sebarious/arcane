@@ -144,7 +144,7 @@ const generalMotion = {
                   {{ store.location }}</p>
               </div>
               <div class="content-stretch flex gap-[16px] items-center relative shrink-0">
-                <div class="relative shrink-0 size-[18px]">
+                <div class="relative shrink-0 size-[18px]" v-if=" store?.social_links?.facebook ">
                   <a :href="store?.social_links?.facebook" rel="noopener noreferrer" target="_blank">
                     <Facebook class="size-5" />
                   </a>
