@@ -90,16 +90,19 @@ class CardNumberExtractor
      *
      * `fullTextAnnotation.text` is the *whole card's* OCR text with a real
      * newline between every detected line (HP, attack costs, illustrator
-     * credit, copyright, flavor text, ...) — a `\s*` gap here would happily
-     * bridge a hallucinated short prefix on one line to an unrelated digit run
-     * several lines away and misfire on ordinary cards. Restricted to a single
-     * space/dash on the same line, and 2+ digits, to keep this to genuine
-     * "MEP 028" / "SWSH1234"-style adjacency only.
+     * credit, copyright, flavor text, ...) — an unrestricted whitespace gap
+     * here would happily bridge a hallucinated short prefix on one line to an
+     * unrelated digit run several lines away and misfire on ordinary cards.
+     * Restricted to a single space/dash on the same line, or at most one line
+     * break directly in between (Vision sometimes puts the prefix and the
+     * number on their own consecutive lines rather than one), to keep this to
+     * genuine "MEP 028" / "SWSH1234" / "MEP\n028"-style adjacency only — never
+     * two tokens separated by an intervening line of unrelated card text.
      */
     private static function extractPromo(string $text): ?string
     {
         $prefixAlt = implode('|', array_keys(self::PROMO_PREFIXES));
-        $pattern   = '/\b('.$prefixAlt.')[ -]?(\d{2,4})\b/i';
+        $pattern   = '/\b('.$prefixAlt.')[ \t]*-?[ \t]*\R?[ \t]*(\d{2,4})\b/i';
 
         if (! preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
             return null;

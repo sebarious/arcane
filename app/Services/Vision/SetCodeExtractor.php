@@ -30,13 +30,15 @@ class SetCodeExtractor
      * separate space-separated words on the same line ("CRI EN", "J CRIEN") —
      * this captures every same-line letter-run immediately touching the
      * number so it doesn't stop short at just the last word. Restricted to
-     * `[ \t]` (not `\s`) between words so it can't bridge across a newline
-     * onto an unrelated word from the previous OCR line (e.g. an illustrator
-     * credit sitting right above the number line).
+     * `[ \t]` (not `\s`) between words within that run, so it can't bridge
+     * across a newline onto an unrelated word from a line further up (e.g. an
+     * illustrator credit) — but a *single* line break is allowed right before
+     * the number itself, since Vision sometimes puts the code and the number
+     * on their own consecutive lines ("PFLEN\n103/094") rather than one line.
      */
     public static function extract(string $text): ?string
     {
-        if (! preg_match_all('/\b((?:[A-Z]{1,8}[ \t]*){1,3})\d{1,3}[ \t]*\/[ \t]*\d{1,3}\b/i', $text, $matches)) {
+        if (! preg_match_all('/\b((?:[A-Z]{1,8}[ \t]*){1,3})[ \t]*\R?[ \t]*\d{1,3}[ \t]*\/[ \t]*\d{1,3}\b/i', $text, $matches)) {
             return null;
         }
 
