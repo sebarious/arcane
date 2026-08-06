@@ -19,7 +19,7 @@ class CardListIndexController extends Controller
                 $query->where('public_page_enabled', true)->where('status', 'active');
             })
             ->with([
-                'store:id,slug,name',
+                'store:id,slug,name,logo',
                 'topCard1:id,image_url',
                 'topCard2:id,image_url',
             ])
@@ -42,6 +42,7 @@ class CardListIndexController extends Controller
                 'store'           => [
                     'slug' => $batch->store->slug,
                     'name' => $batch->store->name,
+                    'logo' => $batch->store->logo,
                 ],
                 'top_card_1_image' => $batch->topCard1?->image_url,
                 'top_card_2_image' => $batch->topCard2?->image_url,

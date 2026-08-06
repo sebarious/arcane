@@ -68,6 +68,7 @@ export interface CardListBatch {
   store: {
     slug: string;
     name: string;
+    logo: string | null;
   };
   top_card_1_image: string | null;
   top_card_2_image: string | null;

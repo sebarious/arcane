@@ -6,6 +6,9 @@
       }">
         <div class="-translate-x-1/2 -translate-y-1/2 absolute blur-[24px] left-1/2 size-[100px] top-1/2"
           :style="blurStyle" />
+        <img v-if="batch.store.logo" :src="batch.store.logo" :alt="batch.store.name"
+          class="absolute left-3 top-3 size-[50px] rounded-[6px] bg-[#06060b] object-contain p-0.5 border border-[rgba(220,193,117,0.15)]"
+          loading="lazy" />
         <PackThumb :top-card-image1="batch.top_card_1_image" :top-card-image2="batch.top_card_2_image" />
       </div>
       <div class="relative shrink-0 w-full">
