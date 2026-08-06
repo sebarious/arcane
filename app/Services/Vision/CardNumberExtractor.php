@@ -9,6 +9,21 @@ class CardNumberExtractor
     // so real prefixed numbers (e.g. "TG01/TG30") keep their prefix.
     private const KNOWN_PREFIXES = ['TG', 'GG', 'SV', 'RC'];
 
+    // Promo-era cards (Scarlet & Violet Promos, Mega Evolutions Promos, Sword &
+    // Shield Promos, ...) don't carry a numerator/denominator at all — just a
+    // short prefix next to a bare number, either spaced ("MEP 028") or glued
+    // ("SWSH235"). Values are the prefix PulseAPI's own card_number actually
+    // uses, confirmed against existing card_inventory rows — "SVI" is a common
+    // print/OCR read for what PulseAPI stores as "SVP".
+    private const PROMO_PREFIXES = [
+        'SWSHP' => 'SWSH',
+        'SWSH'  => 'SWSH',
+        'SVP'   => 'SVP',
+        'SVI'   => 'SVP',
+        'MEP'   => 'MEP',
+        'SMP'   => 'SMP',
+    ];
+
     /**
      * Pull the most likely set number (e.g. "199/165", "TG01/TG30") out of a raw
      * OCR text blob. The number is printed at the very bottom of a physical card,
@@ -25,7 +40,11 @@ class CardNumberExtractor
             return $prefixed;
         }
 
-        return self::extractDigitsOnly($text);
+        if ($digits = self::extractDigitsOnly($text)) {
+            return $digits;
+        }
+
+        return self::extractPromo($text);
     }
 
     private static function extractWithKnownPrefix(string $text): ?string
@@ -61,5 +80,26 @@ class CardNumberExtractor
         $last = end($matches);
 
         return $last[1].'/'.$last[2];
+    }
+
+    /**
+     * Promo numbers have no slash at all, so this only runs once both slash-based
+     * passes above have failed. PulseAPI stores these zero-padded to 3 digits
+     * (e.g. "MEP022") regardless of how many digits are actually printed/read,
+     * so this pads to match rather than passing through whatever OCR saw.
+     */
+    private static function extractPromo(string $text): ?string
+    {
+        $prefixAlt = implode('|', array_keys(self::PROMO_PREFIXES));
+        $pattern   = '/\b('.$prefixAlt.')\s*-?\s*(\d{1,4})\b/i';
+
+        if (! preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
+            return null;
+        }
+
+        $last   = end($matches);
+        $prefix = self::PROMO_PREFIXES[strtoupper($last[1])];
+
+        return $prefix.str_pad($last[2], 3, '0', STR_PAD_LEFT);
     }
 }
