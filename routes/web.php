@@ -25,6 +25,7 @@ use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\InvoicesController;
 use App\Http\Controllers\Seller\PendingController;
 use App\Http\Controllers\Seller\ProfileController;
+use App\Http\Controllers\Seller\ScanStationController;
 use App\Http\Controllers\Seller\WalletController;
 use App\Http\Controllers\SellerApplication\CreateSellerApplicationController;
 use App\Http\Controllers\SellerApplication\SellerApplicationThankYouController;
@@ -99,6 +100,8 @@ Route::middleware(['web', 'auth', 'role:seller'])
             Route::get('/wallet', WalletController::class)->name('wallet');
             Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
             Route::post('/profile/{store}', [ProfileController::class, 'update'])->name('profile.update');
+            Route::get('/scan', [ScanStationController::class, 'show'])->name('scan');
+            Route::post('/scan', [ScanStationController::class, 'scan'])->name('scan.submit');
         });
     });
 

@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
   LayoutDashboard, PackageSearch, FileText, Wallet, UserRound,
-  Plus, LogOut, Menu, X, ExternalLink, Copy, Check,
+  Plus, LogOut, Menu, X, ExternalLink, Copy, Check, ScanLine,
 } from 'lucide-vue-next';
 import arcaneLogo from '@/Assets/Link___Arcane.png';
 
@@ -20,6 +20,7 @@ const currentRouteName = () => (page.props.route as any)?.name as string | undef
 
 const NAV_LINKS = [
   { label: 'Dashboard', href: '/seller', match: 'seller.dashboard', icon: LayoutDashboard },
+  { label: 'Scan pack', href: '/seller/scan', match: 'seller.scan', icon: ScanLine },
   { label: 'Batches', href: '/seller/batches', match: 'seller.batches', icon: PackageSearch },
   { label: 'Invoices', href: '/seller/invoices', match: 'seller.invoices', icon: FileText },
   { label: 'Wallet', href: '/seller/wallet', match: 'seller.wallet', icon: Wallet },
