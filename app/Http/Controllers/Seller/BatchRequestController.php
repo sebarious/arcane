@@ -5,37 +5,44 @@ namespace App\Http\Controllers\Seller;
 use App\Enums\BatchType;
 use App\Enums\Game;
 use App\Http\Controllers\Controller;
-use App\Models\Batch;
-use App\Services\Batches\BatchDesign;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Filament\Notifications\Notification;
-use App\Models\User;
 use App\Mail\BatchRequestSubmittedMail;
+use App\Models\Batch;
+use App\Models\BatchTypeSetting;
+use App\Models\User;
+use App\Services\Batches\BatchDesign;
+use Filament\Notifications\Notification;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-
+use Inertia\Inertia;
 
 class BatchRequestController extends Controller
 {
     public function create(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole('seller')) abort(403);
-        if (! config('batches.requests_enabled', true)) abort(403, 'Batch requests are temporarily unavailable.');
+        if (! $user->hasRole('seller')) {
+            abort(403);
+        }
+        if (! config('batches.requests_enabled', true)) {
+            abort(403, 'Batch requests are temporarily unavailable.');
+        }
 
         $stores = $user->stores()->get(['id', 'name']);
 
         // Product info for the form
+        $enabledTypes = BatchTypeSetting::enabledMap();
+
         $products = [];
         foreach (Game::cases() as $game) {
             foreach (BatchType::cases() as $type) {
                 $products[] = [
-                    'game'         => $game->value,
-                    'game_label'   => $game->label(),
-                    'type'         => $type->value,
-                    'type_label'   => $type->label(),
-                    'packs'        => BatchDesign::packCount($game, $type),
+                    'game' => $game->value,
+                    'game_label' => $game->label(),
+                    'type' => $type->value,
+                    'type_label' => $type->label(),
+                    'packs' => BatchDesign::packCount($game, $type),
                     'price_pounds' => BatchDesign::targetSalePrice($game, $type) / 100,
+                    'enabled' => $enabledTypes[$type->value] ?? true,
                 ];
             }
         }
@@ -51,8 +58,8 @@ class BatchRequestController extends Controller
             ->get(['id', 'reference', 'store_id', 'type', 'pack_count']);
 
         return Inertia::render('Seller/BatchRequest', [
-            'stores'           => $stores,
-            'products'         => $products,
+            'stores' => $stores,
+            'products' => $products,
             'mergeableBatches' => $mergeableBatches,
         ]);
     }
@@ -60,15 +67,19 @@ class BatchRequestController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole('seller')) abort(403);
-        if (! config('batches.requests_enabled', true)) abort(403, 'Batch requests are temporarily unavailable.');
+        if (! $user->hasRole('seller')) {
+            abort(403);
+        }
+        if (! config('batches.requests_enabled', true)) {
+            abort(403, 'Batch requests are temporarily unavailable.');
+        }
 
         $data = $request->validate([
-            'store_id'                => ['required', 'integer'],
-            'game'                    => ['required', 'string'],
-            'type'                    => ['required', 'string'],
-            'notes'                   => ['nullable', 'string', 'max:1000'],
-            'merge_request_batch_id'  => ['nullable', 'integer'],
+            'store_id' => ['required', 'integer'],
+            'game' => ['required', 'string'],
+            'type' => ['required', 'string'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'merge_request_batch_id' => ['nullable', 'integer'],
         ]);
 
         // Verify seller owns this store
@@ -91,6 +102,10 @@ class BatchRequestController extends Controller
         $game = Game::from($data['game']);
         $type = BatchType::from($data['type']);
 
+        if (! BatchTypeSetting::isEnabled($type)) {
+            abort(403, "{$type->label()} isn't currently available to request.");
+        }
+
         $notes = collect([
             "Requested by seller {$user->email}",
             $data['notes'] ?? null,
@@ -100,21 +115,20 @@ class BatchRequestController extends Controller
         ])->filter()->implode(' — ');
 
         $batch = Batch::create([
-            'reference'                => Batch::nextReference(),
-            'store_id'                 => $data['store_id'],
-            'game'                     => $game->value,
-            'type'                     => $type->value,
-            'status'                   => 'draft',
-            'pack_count'               => BatchDesign::packCount($game, $type),
-            'sale_price_pence'         => BatchDesign::targetSalePrice($game, $type),
-            'total_cost_pence'         => 0,
+            'reference' => Batch::nextReference(),
+            'store_id' => $data['store_id'],
+            'game' => $game->value,
+            'type' => $type->value,
+            'status' => 'draft',
+            'pack_count' => BatchDesign::packCount($game, $type),
+            'sale_price_pence' => BatchDesign::targetSalePrice($game, $type),
+            'total_cost_pence' => 0,
             'total_market_value_pence' => 0,
-            'margin_pence'             => 0,
-            'margin_scheme_vat_pence'  => 0,
-            'admin_notes'              => $notes,
-            'merge_request_batch_id'   => $mergeRequestBatchId,
+            'margin_pence' => 0,
+            'margin_scheme_vat_pence' => 0,
+            'admin_notes' => $notes,
+            'merge_request_batch_id' => $mergeRequestBatchId,
         ]);
-
 
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {

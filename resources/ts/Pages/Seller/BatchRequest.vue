@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import SellerLayout from '@/Layouts/SellerLayout.vue';
 
 const page = usePage();
@@ -22,6 +22,7 @@ interface Product {
   type_label: string;
   packs: number;
   price_pounds: number;
+  enabled: boolean;
 }
 
 interface MergeableBatch {
@@ -40,13 +41,27 @@ interface Props {
 
 const props = defineProps<Props>();
 
+function firstEnabledType(game: string): string | undefined {
+  const forGame = props.products.filter(p => p.game === game);
+  return (forGame.find(p => p.enabled) ?? forGame[0])?.type;
+}
+
 const form = useForm({
   store_id: props.stores[0]?.id ?? null,
   game: 'pokemon',
-  type: 'ruby',
+  type: firstEnabledType('pokemon') ?? 'ruby',
   notes: '',
   wants_merge: false,
   merge_request_batch_id: null as number | null,
+});
+
+// If the selected game changes and its current type isn't offered (or is
+// disabled) under the new game, fall back to that game's first enabled type.
+watch(() => form.game, (game) => {
+  const stillValid = props.products.some(p => p.game === game && p.type === form.type && p.enabled);
+  if (! stillValid) {
+    form.type = firstEnabledType(game) ?? form.type;
+  }
 });
 
 const games = computed(() => {
@@ -111,8 +126,8 @@ const submit = () => {
             <select v-model="form.type"
               class="w-full bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3 text-sm text-white font-['Jost',sans-serif] focus:outline-none focus:border-[#c9a84c]"
               required>
-              <option v-for="p in typesForGame" :key="p.type" :value="p.type">
-                {{ p.type_label }} — {{ p.packs }} packs, {{ formatPrice(p.price_pounds) }}
+              <option v-for="p in typesForGame" :key="p.type" :value="p.type" :disabled="!p.enabled">
+                {{ p.type_label }} — {{ p.packs }} packs, {{ formatPrice(p.price_pounds) }}<template v-if="!p.enabled"> (unavailable)</template>
               </option>
             </select>
           </div>
@@ -164,7 +179,7 @@ const submit = () => {
             class="w-full bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3 text-sm text-white font-['Jost',sans-serif] focus:outline-none focus:border-[#c9a84c]" />
         </div>
 
-        <button type="submit" :disabled="form.processing"
+        <button type="submit" :disabled="form.processing || !selectedProduct?.enabled"
           class="w-full px-6 py-3.5 rounded-[4px] text-sm font-['Jost',sans-serif] font-bold uppercase tracking-wide text-[#0d0b14] disabled:opacity-50"
           style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
           {{ form.processing ? 'Submitting…' : 'Submit request' }}
