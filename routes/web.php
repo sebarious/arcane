@@ -13,6 +13,7 @@ use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\Pages\AffiliateProgramController;
 use App\Http\Controllers\Pages\PrivacyPolicyController;
 use App\Http\Controllers\Pages\TermsController;
+use App\Http\Controllers\Pages\VerifiedController;
 use App\Http\Controllers\QrScanController;
 use App\Http\Controllers\Sell\AffiliateCodeController;
 use App\Http\Controllers\Sell\SellCardSearchController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\SellerApplication\CreateSellerApplicationController;
 use App\Http\Controllers\SellerApplication\SellerApplicationThankYouController;
 use App\Http\Controllers\SellerApplication\StoreSellerApplicationController;
 use App\Http\Controllers\Storefront\BatchListController;
+use App\Http\Controllers\Storefront\BatchVerifyController;
 use App\Http\Controllers\Storefront\CardListIndexController;
 use App\Http\Controllers\Storefront\StoreIndexController;
 use App\Http\Controllers\Storefront\StoreShowController;
@@ -75,6 +77,7 @@ Route::get('/sell/verify-affiliate-code', AffiliateCodeController::class)
     ->name('sell.verify-affiliate-code');
 
 Route::get('/affiliate-program', AffiliateProgramController::class)->name('pages.affiliate-program');
+Route::get('/verified', VerifiedController::class)->name('pages.verified');
 Route::get('/terms', TermsController::class)->name('pages.terms');
 Route::get('/privacy', PrivacyPolicyController::class)->name('pages.privacy');
 
@@ -137,3 +140,4 @@ Route::get('/stores', StoreIndexController::class)->name('stores.index');
 Route::get('/card-lists', CardListIndexController::class)->name('card-lists.index');
 Route::get('/{store:slug}', StoreShowController::class)->name('stores.show');
 Route::get('/{store:slug}/{batch}', BatchListController::class)->name('stores.lists.show');
+Route::get('/{store:slug}/{batch}/verify', [BatchVerifyController::class, 'show'])->name('stores.lists.verify');

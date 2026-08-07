@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Enums\BatchType;
 use App\Enums\Game;
+use Illuminate\Database\Eloquent\Model;
 
 class Batch extends Model
 {
@@ -21,30 +21,70 @@ class Batch extends Model
         'merged_into_batch_id', 'merged_at',
         'merge_request_batch_id',
         'top_card_1_id', 'top_card_2_id',
-
+        // Not verification_seed/verification_hash/verification_committed_at — those are
+        // only ever set directly in booted()'s creating hook below, never mass-assigned.
+        'verification_revealed_at', 'verification_snapshot_path',
     ];
 
     protected $casts = [
-        'committed_at'  => 'datetime',
+        'committed_at' => 'datetime',
         'dispatched_at' => 'datetime',
-        'failed_at'     => 'datetime',
-        'merged_at'     => 'datetime',
-        'type'          => BatchType::class,
-        'game'          => Game::class,
+        'failed_at' => 'datetime',
+        'merged_at' => 'datetime',
+        'verification_committed_at' => 'datetime',
+        'verification_revealed_at' => 'datetime',
+        'type' => BatchType::class,
+        'game' => Game::class,
     ];
 
-    public function store()    { return $this->belongsTo(Store::class); }
-    public function packs()    { return $this->hasMany(Pack::class); }
-    public function invoice()  { return $this->belongsTo(Invoice::class); }
+    protected static function booted(): void
+    {
+        static::creating(function (Batch $batch) {
+            $seed = bin2hex(random_bytes(32));
+
+            $batch->verification_seed = $seed;
+            $batch->verification_hash = hash('sha256', $seed);
+            $batch->verification_committed_at = now();
+        });
+    }
+
+    public function isVerificationRevealed(): bool
+    {
+        return $this->verification_revealed_at !== null;
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function packs()
+    {
+        return $this->hasMany(Pack::class);
+    }
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class);
+    }
 
     // The batch this one was merged into, if any.
-    public function mergedInto() { return $this->belongsTo(Batch::class, 'merged_into_batch_id'); }
+    public function mergedInto()
+    {
+        return $this->belongsTo(Batch::class, 'merged_into_batch_id');
+    }
 
     // Other batches that were merged into this one.
-    public function mergedFrom() { return $this->hasMany(Batch::class, 'merged_into_batch_id'); }
+    public function mergedFrom()
+    {
+        return $this->hasMany(Batch::class, 'merged_into_batch_id');
+    }
 
     // The existing batch the seller asked to have merged into this one, once generated.
-    public function mergeRequestBatch() { return $this->belongsTo(Batch::class, 'merge_request_batch_id'); }
+    public function mergeRequestBatch()
+    {
+        return $this->belongsTo(Batch::class, 'merge_request_batch_id');
+    }
 
     public function isMerged(): bool
     {
@@ -58,8 +98,15 @@ class Batch extends Model
 
     // Frozen at generation time — see the migration for why these never get
     // recomputed after the fact (Card Lists storefront thumbnail).
-    public function topCard1() { return $this->belongsTo(CardInventory::class, 'top_card_1_id'); }
-    public function topCard2() { return $this->belongsTo(CardInventory::class, 'top_card_2_id'); }
+    public function topCard1()
+    {
+        return $this->belongsTo(CardInventory::class, 'top_card_1_id');
+    }
+
+    public function topCard2()
+    {
+        return $this->belongsTo(CardInventory::class, 'top_card_2_id');
+    }
 
     public static function nextReference(): string
     {
@@ -84,7 +131,7 @@ class Batch extends Model
             $exists = static::where('reference', $ref)->exists();
             $nextNumber++;
         } while ($exists);
+
         return $ref;
     }
-
 }

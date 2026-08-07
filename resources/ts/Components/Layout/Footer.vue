@@ -13,6 +13,13 @@
           <p class="font-['Jost',sans-serif] text-[13px] text-[#a3a3a3] leading-relaxed mt-[16px] max-w-[220px]">
             Authenticated, near-mint Pokémon singles sealed into mystery packs — live pull odds, zero guesswork.
           </p>
+
+          <div class="mt-4">
+            <a href="/verified" class="bg-[rgba(34,197,94,0.08)] content-stretch inline-flex items-center gap-[6px] px-[12px] py-[6px] relative rounded-[4px] shrink-0 hover:bg-[rgba(34,197,94,0.14)] transition-colors">
+              <div aria-hidden="" class="absolute border border-[rgba(34,197,94,0.25)] border-solid inset-0 pointer-events-none rounded-[4px]"></div>
+              <p class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#22c55e] text-[11px] uppercase whitespace-nowrap">Verified - Randomised SHA-256</p>
+            </a>
+          </div>
         </div>
 
         <div v-for=" column in columns " :key=" column.title ">

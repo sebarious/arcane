@@ -295,7 +295,7 @@ const generalMotion = {
           <div class="bg-[#13101e] relative rounded-[8px] w-full">
             <div aria-hidden
               class="absolute border border-[rgba(220,193,117,0.1)] border-solid inset-0 pointer-events-none rounded-[8px]" />
-            <div class="flex flex-row items-center size-full">
+            <div class="flex flex-col items-center size-full divide-y divide-[rgba(255,255,255,0.1)]">
               <template v-for="batch in batches" :key="batch.reference">
                 <div class="content-stretch flex items-center justify-between p-[20px] relative size-full">
                   <div class="content-stretch space-y-5 lg:space-y-0 lg:flex gap-[32px] items-center relative">

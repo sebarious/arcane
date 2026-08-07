@@ -20,8 +20,8 @@ class BatchListController extends Controller
         $remaining = $batch->packs()
             ->with('card')
             ->get()
-            ->filter(fn($pack) => $pack->status === 'sealed')
-            ->map(fn($pack) => $pack->card)
+            ->filter(fn ($pack) => $pack->status === 'sealed')
+            ->map(fn ($pack) => $pack->card)
             ->filter()
             ->groupBy('rarity_band');
 
@@ -33,11 +33,11 @@ class BatchListController extends Controller
                 'count' => $cards->count(),
                 'cards' => $cards->map(function ($inv) {
                     return [
-                        'name'   => $inv->card_name,
-                        'set'    => $inv->set_name,
+                        'name' => $inv->card_name,
+                        'set' => $inv->set_name,
                         'number' => $inv->card_number,
-                        'image'  => $inv->image_url,
-                        'band'   => $inv->rarity_band,
+                        'image' => $inv->image_url,
+                        'band' => $inv->rarity_band,
                         'market_price' => $inv->market_value_pence ? round($inv->market_value_pence / 100, 2) : null,
                     ];
                 })->values(),
@@ -46,20 +46,25 @@ class BatchListController extends Controller
 
         return Inertia::render('Storefront/BatchListShow', [
             'store' => [
-                'id'       => $store->id,
-                'slug'     => $store->slug,
-                'name'     => $store->name,
-                'city'     => $store->city,
+                'id' => $store->id,
+                'slug' => $store->slug,
+                'name' => $store->name,
+                'city' => $store->city,
                 'postcode' => $store->postcode,
             ],
             'batch' => [
-                'id'        => $batch->id,
+                'id' => $batch->id,
                 'reference' => $batch->reference,
-                'type'      => $batch->type?->value,
-                'game'      => $batch->game?->value,
+                'type' => $batch->type?->value,
+                'game' => $batch->game?->value,
                 'game_label' => $batch->game ? $batch->game->label() : null,
                 'created_at' => $batch->created_at?->format('d M Y'),
                 'pack_count' => $batch->pack_count,
+                'verification' => [
+                    'id' => $batch->verification_hash,
+                    'revealed' => $batch->isVerificationRevealed(),
+                    'seed' => $batch->isVerificationRevealed() ? $batch->verification_seed : null,
+                ],
             ],
             'bands' => $bands,
         ]);

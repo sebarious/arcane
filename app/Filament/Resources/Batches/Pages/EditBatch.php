@@ -14,8 +14,12 @@ class EditBatch extends EditRecord
         return [
             BatchResource::generateAction(),
             BatchResource::qrSheetAction(),
+            BatchResource::verifyAction(),
             BatchResource::mergeIntoAction(),
-            BatchResource::deleteBatchAction(),
+            // Redirect after delete — this is the record's own edit page, so it 404s
+            // once the batch is gone. The list-page row action (same deleteBatchAction())
+            // doesn't need this since it just refreshes the table in place.
+            BatchResource::deleteBatchAction()->successRedirectUrl(BatchResource::getUrl('index')),
         ];
     }
 }

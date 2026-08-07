@@ -3,37 +3,41 @@
 namespace App\Filament\Resources\Batches;
 
 use App\Enums\BatchType;
-use App\Filament\Resources\Batches\Pages;
+use App\Enums\Game;
+use App\Filament\Exports\BatchSalesExporter;
+use App\Jobs\GenerateBatchJob;
 use App\Models\Batch;
 use App\Models\Store;
+use App\Services\Batches\BatchDeleter;
 use App\Services\Batches\BatchDesign;
+use App\Services\Batches\BatchMerger;
 use App\Support\Money;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Forms;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
-use Filament\Support\Enums\ActionSize;
-use Filament\Actions\EditAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Schemas\Components\Section;
-use App\Enums\Game;
-use App\Services\Batches\BatchDeleter;
-use App\Services\Batches\BatchMerger;
-use Filament\Notifications\Notification;
-
 
 class BatchResource extends Resource
 {
     protected static ?string $model = Batch::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquaresPlus;
+
     protected static string|UnitEnum|null $navigationGroup = 'Batches & billing';
+
     protected static ?int $navigationSort = 30;
 
     public static function form(Schema $schema): Schema
@@ -51,22 +55,22 @@ class BatchResource extends Resource
                     Forms\Components\Select::make('game')
                         ->label('Game')
                         ->options(collect(Game::cases())->mapWithKeys(
-                            fn(Game $g) => [$g->value => $g->label()]
+                            fn (Game $g) => [$g->value => $g->label()]
                         ))
                         ->default(Game::Pokemon->value)
                         ->required()
                         ->live()
                         ->afterStateUpdated(function ($state, $set, $get) {
                             $typeValue = $get('type') ?: BatchType::Ruby->value;
-                            $game      = Game::from($state ?: Game::Pokemon->value);
-                            $type      = BatchType::from($typeValue);
+                            $game = Game::from($state ?: Game::Pokemon->value);
+                            $type = BatchType::from($typeValue);
                             $set('pack_count', BatchDesign::packCount($game, $type));
                             $set('sale_price_pounds', BatchDesign::targetSalePrice($game, $type) / 100);
                         }),
                     Forms\Components\Select::make('type')
                         ->label('Product')
                         ->options(collect(BatchType::cases())->mapWithKeys(
-                            fn(BatchType $t) => [$t->value => $t->label()]
+                            fn (BatchType $t) => [$t->value => $t->label()]
                         ))
                         ->default(BatchType::Ruby->value)
                         ->required()
@@ -75,11 +79,12 @@ class BatchResource extends Resource
                             if (! $state) {
                                 $set('pack_count', null);
                                 $set('sale_price_pounds', null);
+
                                 return;
                             }
                             $gameValue = $get('game') ?: Game::Pokemon->value;
-                            $game      = Game::from($gameValue);
-                            $type      = BatchType::from($state);
+                            $game = Game::from($gameValue);
+                            $type = BatchType::from($state);
                             $set('pack_count', BatchDesign::packCount($game, $type));
                             $set('sale_price_pounds', BatchDesign::targetSalePrice($game, $type) / 100);
                         }),
@@ -87,6 +92,7 @@ class BatchResource extends Resource
                     Forms\Components\Hidden::make('sale_price_pence')
                         ->dehydrateStateUsing(function ($state, $get) {
                             $pounds = $get('sale_price_pounds');
+
                             return $pounds ? (int) round($pounds * 100) : null;
                         }),
                     Forms\Components\TextInput::make('pack_count')
@@ -100,7 +106,7 @@ class BatchResource extends Resource
                         ->numeric()
                         ->disabled()
                         ->formatStateUsing(
-                            fn($state) => $state !== null
+                            fn ($state) => $state !== null
                                 ? number_format((float) $state, 2, '.', ',')
                                 : null
                         )
@@ -117,6 +123,19 @@ class BatchResource extends Resource
                             $set('sale_price_pounds', BatchDesign::targetSalePrice($game, $type) / 100);
                         }),
                 ]),
+            Section::make('Verification')
+                ->description('Provably-fair generation')
+                ->columns(2)
+                ->schema([
+                    Forms\Components\Placeholder::make('verification_hash_display')
+                        ->label('Verification ID (published on creation)')
+                        ->content(fn (?Batch $record) => $record?->verification_hash ?? '—'),
+                    Forms\Components\Placeholder::make('verification_seed_display')
+                        ->label('Seed')
+                        ->content(fn (?Batch $record) => $record?->isVerificationRevealed()
+                            ? $record->verification_seed
+                            : 'Hidden until this batch is generated'),
+                ]),
             Section::make('Failure')
                 ->visible(fn (?Batch $record) => $record?->status === 'cancelled')
                 ->schema([
@@ -131,7 +150,7 @@ class BatchResource extends Resource
                 ]),
             Section::make('Internal notes')
                 ->schema([
-                    \Filament\Infolists\Components\TextEntry::make('merge_request_notice')
+                    TextEntry::make('merge_request_notice')
                         ->label('')
                         ->visible(fn (?Batch $record) => filled($record?->merge_request_batch_id))
                         ->state(fn (?Batch $record) => 'Seller asked for batch #'.$record?->mergeRequestBatch?->reference.' to be merged into this one once generated — use the "Merge into" action on that batch after this one is committed.')
@@ -147,18 +166,24 @@ class BatchResource extends Resource
                 ->schema([
                     Forms\Components\Placeholder::make('margin_vs_cost')
                         ->label('Profit % vs our cost')
-                        ->content(function (\App\Models\Batch $record) {
-                            if (! $record->total_cost_pence) return '—';
+                        ->content(function (Batch $record) {
+                            if (! $record->total_cost_pence) {
+                                return '—';
+                            }
                             $pct = ($record->margin_pence / $record->total_cost_pence) * 100;
-                            return number_format($pct, 1) . '%';
+
+                            return number_format($pct, 1).'%';
                         }),
                     Forms\Components\Placeholder::make('margin_vs_market')
                         ->label('Profit % vs market value')
-                        ->content(function (\App\Models\Batch $record) {
-                            if (! $record->total_market_value_pence) return '—';
+                        ->content(function (Batch $record) {
+                            if (! $record->total_market_value_pence) {
+                                return '—';
+                            }
                             $pct = (($record->sale_price_pence - $record->total_market_value_pence)
                                 / $record->total_market_value_pence) * 100;
-                            return number_format($pct, 1) . '%';
+
+                            return number_format($pct, 1).'%';
                         }),
                 ])
                 ->visibleOn('edit'),
@@ -191,63 +216,71 @@ class BatchResource extends Resource
                         if (is_string($state)) {
                             return Game::from($state)->label();
                         }
+
                         return (string) $state;
                     })
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('type')
-                ->label('Product')
-                ->formatStateUsing(function ($state) {
-                    if ($state instanceof \App\Enums\BatchType) {
-                        return $state->label();
-                    }
-                    if (is_string($state)) {
-                        return \App\Enums\BatchType::from($state)->label();
-                    }
-                    return (string) $state;
-                })
-                ->badge(),
+                    ->label('Product')
+                    ->formatStateUsing(function ($state) {
+                        if ($state instanceof BatchType) {
+                            return $state->label();
+                        }
+                        if (is_string($state)) {
+                            return BatchType::from($state)->label();
+                        }
+
+                        return (string) $state;
+                    })
+                    ->badge(),
                 Tables\Columns\TextColumn::make('pack_count'),
                 Tables\Columns\TextColumn::make('sale_price_pence')
                     ->label(config('vat.registered') ? 'Sale (ex VAT)' : 'Sale')
-                    ->formatStateUsing(fn($state) => \App\Support\Money::format($state))
+                    ->formatStateUsing(fn ($state) => Money::format($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('total_cost_pence')
                     ->label('Cost')
-                    ->formatStateUsing(fn($state) => \App\Support\Money::format($state))
+                    ->formatStateUsing(fn ($state) => Money::format($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('margin_pence')
                     ->label('Margin')
-                    ->formatStateUsing(fn($state) => \App\Support\Money::format($state))
+                    ->formatStateUsing(fn ($state) => Money::format($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('margin_percentage')
                     ->label('Profit % (cost)')
                     ->tooltip('Sale price minus what we paid for the cards, as a percentage of cost. This is your actual accounting margin.')
                     ->alignEnd()
-                    ->getStateUsing(function (\App\Models\Batch $record) {
-                        $cost   = $record->total_cost_pence;
+                    ->getStateUsing(function (Batch $record) {
+                        $cost = $record->total_cost_pence;
                         $margin = $record->margin_pence;
                         if ($cost <= 0 || $margin === null) {
                             return null;
                         }
                         $percent = ($margin / $cost) * 100;
-                        return number_format($percent, 1) . '%';
+
+                        return number_format($percent, 1).'%';
                     })
                     ->default('—'),
                 Tables\Columns\TextColumn::make('margin_vs_market')
                     ->label('Profit % (market)')
                     ->alignEnd()
                     ->tooltip('Sale price minus total market value, as a percentage of market value. Tells you whether the pack is generous or stingy versus what the cards are worth.')
-                    ->getStateUsing(function (\App\Models\Batch $record) {
+                    ->getStateUsing(function (Batch $record) {
                         $market = $record->total_market_value_pence;
-                        $sale   = $record->sale_price_pence;
-                        if ($market <= 0 || $sale === null) return null;
+                        $sale = $record->sale_price_pence;
+                        if ($market <= 0 || $sale === null) {
+                            return null;
+                        }
                         $marginVsMarket = (($sale - $market) / $market) * 100;
-                        return number_format($marginVsMarket, 1) . '%';
+
+                        return number_format($marginVsMarket, 1).'%';
                     })
-                    ->color(function (\App\Models\Batch $record) {
+                    ->color(function (Batch $record) {
                         $market = $record->total_market_value_pence;
-                        $sale   = $record->sale_price_pence;
-                        if ($market <= 0 || $sale === null) return 'gray';
+                        $sale = $record->sale_price_pence;
+                        if ($market <= 0 || $sale === null) {
+                            return 'gray';
+                        }
 
                         $marginVsMarket = ($sale - $market) / $market;
 
@@ -255,9 +288,9 @@ class BatchResource extends Resource
                         // strongly positive means you're charging more than the cards are worth.
                         return match (true) {
                             $marginVsMarket < -0.05 => 'success',  // pack EV > sale = great for customer
-                            $marginVsMarket < 0.10  => 'info',     // roughly fair
-                            $marginVsMarket < 0.30  => 'warning',  // store-favourable
-                            default                 => 'danger',   // too rich, customers will feel it
+                            $marginVsMarket < 0.10 => 'info',     // roughly fair
+                            $marginVsMarket < 0.30 => 'warning',  // store-favourable
+                            default => 'danger',   // too rich, customers will feel it
                         };
                     })
                     ->badge()
@@ -265,21 +298,21 @@ class BatchResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn(string $state) => match ($state) {
-                        'draft'      => 'Draft (not generated)',
-                        'committed'  => 'Live (in store)',
+                    ->formatStateUsing(fn (string $state) => match ($state) {
+                        'draft' => 'Draft (not generated)',
+                        'committed' => 'Live (in store)',
                         'dispatched' => 'Dispatched',
-                        'completed'  => 'Completed',
-                        'cancelled'  => 'Cancelled (failed)',
-                        default      => ucfirst($state),
+                        'completed' => 'Completed',
+                        'cancelled' => 'Cancelled (failed)',
+                        default => ucfirst($state),
                     })
-                    ->color(fn(string $state) => match ($state) {
-                        'draft'      => 'gray',
-                        'committed'  => 'success',
+                    ->color(fn (string $state) => match ($state) {
+                        'draft' => 'gray',
+                        'committed' => 'success',
                         'dispatched' => 'warning',
-                        'completed'  => 'info',
-                        'cancelled'  => 'danger',
-                        default      => 'gray',
+                        'completed' => 'info',
+                        'cancelled' => 'danger',
+                        default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('merged_into_batch_id')
                     ->label('Merged')
@@ -289,16 +322,16 @@ class BatchResource extends Resource
                         ? 'Merged → '.$record->mergedInto?->reference
                         : 'Active')
                     ->toggleable(),
-            Tables\Columns\TextColumn::make('failed_at')
-                ->label('Failed')
-                ->dateTime('d M Y H:i')
-                ->sortable()
-                ->toggleable(),
-            Tables\Columns\TextColumn::make('failure_reason')
-                ->label('Failure reason')
-                ->limit(80)
-                ->wrap()
-                ->toggleable(),
+                Tables\Columns\TextColumn::make('failed_at')
+                    ->label('Failed')
+                    ->dateTime('d M Y H:i')
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('failure_reason')
+                    ->label('Failure reason')
+                    ->limit(80)
+                    ->wrap()
+                    ->toggleable(),
             ])
             ->filters([
                 Tables\Filters\Filter::make('committed_between')
@@ -307,7 +340,7 @@ class BatchResource extends Resource
                         Forms\Components\DatePicker::make('committed_from'),
                         Forms\Components\DatePicker::make('committed_until'),
                     ])
-                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
+                    ->query(function (Builder $query, array $data) {
                         return $query
                             ->when($data['committed_from'] ?? null, fn ($q, $date) => $q->whereDate('committed_at', '>=', $date))
                             ->when($data['committed_until'] ?? null, fn ($q, $date) => $q->whereDate('committed_at', '<=', $date));
@@ -324,7 +357,7 @@ class BatchResource extends Resource
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    \Filament\Actions\ExportBulkAction::make()->exporter(\App\Filament\Exports\BatchSalesExporter::class),
+                    ExportBulkAction::make()->exporter(BatchSalesExporter::class),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -338,7 +371,7 @@ class BatchResource extends Resource
             ->visible(fn (Batch $record) => $record->status === 'draft')
             ->requiresConfirmation()
             ->action(function (Batch $record) {
-                \App\Jobs\GenerateBatchJob::dispatch($record->id);
+                GenerateBatchJob::dispatch($record->id);
                 Notification::make()
                     ->title('Batch generation started')
                     ->body('Cards will be assigned shortly.')
@@ -357,6 +390,17 @@ class BatchResource extends Resource
             ->visible(fn (Batch $record) => $record->status === 'committed');
     }
 
+    public static function verifyAction(): Action
+    {
+        return Action::make('verify')
+            ->label('Verification page')
+            ->icon(Heroicon::OutlinedShieldCheck)
+            ->color('gray')
+            ->url(fn (Batch $record) => route('stores.lists.verify', ['store' => $record->store, 'batch' => $record]))
+            ->openUrlInNewTab()
+            ->visible(fn (Batch $record) => $record->isVerificationRevealed());
+    }
+
     public static function retryAction(): Action
     {
         return Action::make('retry')
@@ -366,11 +410,11 @@ class BatchResource extends Resource
             ->requiresConfirmation()
             ->action(function (Batch $record) {
                 $record->update([
-                    'status'         => 'draft',
+                    'status' => 'draft',
                     'failure_reason' => null,
-                    'failed_at'      => null,
+                    'failed_at' => null,
                 ]);
-                \App\Jobs\GenerateBatchJob::dispatch($record->id);
+                GenerateBatchJob::dispatch($record->id);
                 Notification::make()
                     ->title('Batch retry queued')
                     ->success()
@@ -384,8 +428,7 @@ class BatchResource extends Resource
             ->label('Merge into…')
             ->icon(Heroicon::OutlinedArrowsPointingIn)
             ->color('warning')
-            ->visible(fn (Batch $record) =>
-                ! $record->isMerged()
+            ->visible(fn (Batch $record) => ! $record->isMerged()
                 && in_array($record->status, ['committed', 'dispatched'], true)
                 && $record->packs()->where('status', 'sealed')->exists())
             ->requiresConfirmation()
@@ -414,6 +457,7 @@ class BatchResource extends Resource
                         ->body($e->getMessage())
                         ->danger()
                         ->send();
+
                     return;
                 }
 
@@ -435,7 +479,7 @@ class BatchResource extends Resource
     {
         return Action::make('deleteBatch')
             ->label('Delete batch')
-            ->icon(\Filament\Support\Icons\Heroicon::OutlinedTrash)
+            ->icon(Heroicon::OutlinedTrash)
             ->color('danger')
             ->visible(fn (Batch $record) => ! $record->packs()->where('status', 'sold')->exists())
             ->requiresConfirmation()
@@ -469,10 +513,10 @@ class BatchResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListBatches::route('/'),
+            'index' => Pages\ListBatches::route('/'),
             'create' => Pages\CreateBatch::route('/create'),
-            'edit'   => Pages\EditBatch::route('/{record}/edit'),
-            'view'   => Pages\ViewBatch::route('/{record}'),
+            'edit' => Pages\EditBatch::route('/{record}/edit'),
+            'view' => Pages\ViewBatch::route('/{record}'),
         ];
     }
 }
