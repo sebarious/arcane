@@ -15,38 +15,48 @@
           </p>
 
           <div class="mt-4">
-            <a href="/verified" class="bg-[rgba(34,197,94,0.08)] content-stretch inline-flex items-center gap-[6px] px-[12px] py-[6px] relative rounded-[4px] shrink-0 hover:bg-[rgba(34,197,94,0.14)] transition-colors">
-              <div class="absolute border border-[rgba(34,197,94,0.25)] border-solid inset-0 pointer-events-none rounded-[4px]"></div>
-              <p class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#22c55e] text-[11px] uppercase whitespace-nowrap">Verified - Randomised SHA-256</p>
+            <a href="/verified"
+              class="bg-[rgba(34,197,94,0.08)] content-stretch inline-flex items-center gap-[6px] px-[12px] py-[6px] relative rounded-[4px] shrink-0 hover:bg-[rgba(34,197,94,0.14)] transition-colors">
+              <div
+                class="absolute border border-[rgba(34,197,94,0.25)] border-solid inset-0 pointer-events-none rounded-[4px]">
+              </div>
+              <p
+                class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#22c55e] text-[11px] uppercase whitespace-nowrap">
+                Randomised · SHA-256 · Verifiable</p>
             </a>
           </div>
         </div>
 
         <div v-for=" column in columns " :key=" column.title ">
-          <p class="font-['Cinzel',sans-serif] font-bold text-[12px] tracking-[0.15em] text-[#DCC175]/70 uppercase mb-[16px]">
+          <p
+            class="font-['Cinzel',sans-serif] font-bold text-[12px] tracking-[0.15em] text-[#DCC175]/70 uppercase mb-[16px]">
             {{ column.title }}
           </p>
           <ul class="flex flex-col gap-[10px]">
             <li v-for=" link in column.links " :key=" link.label ">
               <Link :href=" link.href "
                 class="font-['Jost',sans-serif] text-[13px] text-[#a3a3a3] hover:text-[#DCC175] transition-colors">
-                {{ link.label }}
+              {{ link.label }}
               </Link>
             </li>
           </ul>
         </div>
       </div>
 
-      <div class="mt-[48px] pt-[24px] border-t border-[#DCC175]/8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <span class="text-[10px] text-[#DCC175]/70 tracking-widest text-center" :style="{ fontFamily: 'Jost, sans-serif' }">
+      <div
+        class="mt-[48px] pt-[24px] border-t border-[#DCC175]/8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <span class="text-[10px] text-[#DCC175]/70 tracking-widest text-center"
+          :style="{ fontFamily: 'Jost, sans-serif' }">
           © {{ new Date().getFullYear() }} Arcane. All cards authenticated. All packs sealed fresh.
         </span>
         <div class="flex gap-[20px]">
-          <Link href="/terms" class="text-[10px] text-[#a3a3a3] hover:text-[#DCC175] tracking-widest uppercase" :style="{ fontFamily: 'Jost, sans-serif' }">
-            Terms
+          <Link href="/terms" class="text-[10px] text-[#a3a3a3] hover:text-[#DCC175] tracking-widest uppercase"
+            :style="{ fontFamily: 'Jost, sans-serif' }">
+          Terms
           </Link>
-          <Link href="/privacy" class="text-[10px] text-[#a3a3a3] hover:text-[#DCC175] tracking-widest uppercase" :style="{ fontFamily: 'Jost, sans-serif' }">
-            Privacy
+          <Link href="/privacy" class="text-[10px] text-[#a3a3a3] hover:text-[#DCC175] tracking-widest uppercase"
+            :style="{ fontFamily: 'Jost, sans-serif' }">
+          Privacy
           </Link>
         </div>
       </div>
