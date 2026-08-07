@@ -13,7 +13,6 @@ use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\Pages\AffiliateProgramController;
 use App\Http\Controllers\Pages\PrivacyPolicyController;
 use App\Http\Controllers\Pages\TermsController;
-use App\Http\Controllers\QrConfirmController;
 use App\Http\Controllers\QrScanController;
 use App\Http\Controllers\Sell\AffiliateCodeController;
 use App\Http\Controllers\Sell\SellCardSearchController;
@@ -124,7 +123,6 @@ Route::middleware('guest')->group(function () {
 Route::get('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::get('/q/{token}', QrScanController::class)->name('qr.scan');
-Route::post('/q/{token}/confirm', QrConfirmController::class)->name('qr.confirm');
 
 Route::get('/rapid-intake-scan/{token}', [PhoneScanController::class, 'show'])
     ->name('rapid-intake.scan.show');
