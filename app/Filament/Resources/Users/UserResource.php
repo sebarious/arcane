@@ -71,6 +71,13 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('email')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('stores.name')
+                    ->label('Business')
+                    ->badge()
+                    ->color('gray')
+                    ->separator(',')
+                    ->searchable()
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Roles')
                     ->badge()
