@@ -28,23 +28,27 @@ class BatchDesign
   }
 
   /**
-   * Target margin as a fraction (0.30 = 30%) of the cards' "value".
+   * Target margin as a fraction (0.30 = 30%) against cost — what we actually
+   * paid for the cards, not their market value. This is what CandidateSelector
+   * treats as the batch's real profitability target/window.
    */
   public static function targetMargin(Game $game, BatchType $type): float
   {
-    return (float) (self::config($game, $type)['target_margin_on_value'] ?? 0.2);
+    return (float) (self::config($game, $type)['target_margin_on_cost'] ?? 0.2);
   }
 
   /**
-   * Target total "value" of the cards in the batch:
-   *   sale = value * (1 + margin)
-   *   value = sale / (1 + margin)
+   * Target total card VALUE for the batch — a sizing/generosity reference for
+   * card selection (config('batches.target_market_multiple'), e.g. 0.90 =
+   * 10% under sale price), deliberately independent of targetMargin(). This
+   * only feeds CandidateSelector's "how close to this size" scoring; it plays
+   * no part in judging profitability — see targetMargin() for that.
    */
   public static function targetValue(Game $game, BatchType $type): int
   {
-    $sale   = self::targetSalePrice($game, $type);
-    $margin = self::targetMargin($game, $type);
+    $sale = self::targetSalePrice($game, $type);
+    $multiple = (float) config('batches.target_market_multiple', 1);
 
-    return (int) round($sale / (1 + $margin));
+    return (int) round($sale * $multiple);
   }
 }

@@ -485,7 +485,7 @@ class BatchResource extends Resource
 
     /**
      * Green once profit clears this batch type's target margin
-     * (config('batches...target_margin_on_value')), red below it.
+     * (config('batches...target_margin_on_cost')), red below it.
      */
     protected static function profitPercentColor(Batch $record): string
     {

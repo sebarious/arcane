@@ -54,8 +54,8 @@ class BatchGenerator
 
         $packCount = BatchDesign::packCount($game, $type);
         $targetSale = BatchDesign::targetSalePrice($game, $type);
-        $targetMargin = BatchDesign::targetMargin($game, $type);   // 0.40 / 0.30 / 0.20
-        $targetValue = BatchDesign::targetValue($game, $type);    // sale / (1 + margin)
+        $targetMargin = BatchDesign::targetMargin($game, $type);   // profit target against COST — 0.25 / 0.20 / 0.15
+        $targetValue = BatchDesign::targetValue($game, $type);    // sizing only — sale * target_market_multiple
 
         $bandDistribution = Distribution::forGameAndType($game, $type);
         if (empty($bandDistribution)) {
@@ -143,25 +143,19 @@ class BatchGenerator
 
         if (! $best) {
             $sampleSummary = collect($debug['sample'])
-                ->map(fn ($s) => "value=£{$s['value']} margin=".number_format($s['margin'] * 100, 1).'% margin_on_cost='.number_format($s['margin_on_cost'] * 100, 1).'%')
+                ->map(fn ($s) => "cost=£{$s['cost']} margin_on_cost=".number_format($s['margin_on_cost'] * 100, 1).'% (value=£'.$s['value'].' margin_on_value='.number_format($s['margin_on_value'] * 100, 1).'%)')
                 ->implode(' | ');
             throw new \RuntimeException(sprintf(
-                'Could not find a batch within margin window for %s/%s. '.
-                  'Target sale=£%.2f, target value=£%.2f, target margin=%.1f%% (window %.1f%% – %.1f%%), '.
-                  'worst-case margin on cost floor=%.1f%%. '.
-                  'Tried %d. Rejected: %d too-low, %d too-high, %d below the cost-margin floor, %d duplicate-limit failures. Samples: %s',
+                'Could not find a batch clearing the profit-on-cost floor for %s/%s. '.
+                  'Target sale=£%.2f, target value=£%.2f (sizing only), minimum margin on cost=%.1f%% (no upper bound — more is fine). '.
+                  'Tried %d. Rejected: %d below the margin floor, %d duplicate-limit failures. Samples: %s',
                 $game->value,
                 $type->value,
                 $targetSale / 100,
                 $targetValue / 100,
                 $targetMargin * 100,
-                max(0, $targetMargin - 0.10) * 100,
-                ($targetMargin + 0.10) * 100,
-                $targetMargin * 100,
                 $debug['tried'],
                 $debug['rejected_lo'],
-                $debug['rejected_hi'],
-                $debug['rejected_cost_floor'],
                 $debug['duplicate_failures'],
                 $sampleSummary ?: 'none',
             ));

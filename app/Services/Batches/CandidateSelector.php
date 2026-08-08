@@ -24,8 +24,8 @@ class CandidateSelector
      *         A band missing here (or whose counts don't sum to that band's total) falls back to an
      *         even auto-split — see selectForBand().
      * @return array{
-     *     best: array{selected_ids:int[],total_cost:int,total_market:int,total_value:int,margin_value:float}|null,
-     *     debug: array{tried:int,rejected_lo:int,rejected_hi:int,rejected_cost_floor:int,duplicate_failures:int,sample:array},
+     *     best: array{selected_ids:int[],total_cost:int,total_market:int,total_value:int,margin_cost:float}|null,
+     *     debug: array{tried:int,rejected_lo:int,duplicate_failures:int,sample:array},
      * }
      */
     public function select(
@@ -46,15 +46,16 @@ class CandidateSelector
             $bucketed[$card['rarity_band']][] = $card;
         }
 
-        $minMargin = max(0.0, $targetMargin - 0.10);
-        $maxMargin = $targetMargin + 0.10;
-
+        // Profitability is a floor, not a target: $targetMargin is judged
+        // against COST — what we actually paid, not market/value — and a
+        // candidate only needs to clear it, with no upper rejection. Making
+        // MORE than target is fine (expected, even); we just never accept
+        // less. $targetValue plays no part in this at all — it only steers
+        // the scoring below toward a consistently-sized batch.
         $best = null;
         $debug = [
             'tried' => 0,
             'rejected_lo' => 0,
-            'rejected_hi' => 0,
-            'rejected_cost_floor' => 0,
             'duplicate_failures' => 0,
             'sample' => [],
         ];
@@ -84,12 +85,12 @@ class CandidateSelector
             $totalCost = array_sum(array_column($selected, 'cost_pence'));
             $totalMarket = array_sum(array_column($selected, 'market_value_pence'));
 
-            if ($totalValue <= 0) {
+            if ($totalValue <= 0 || $totalCost <= 0) {
                 continue;
             }
 
-            $marginVsValue = ($targetSale - $totalValue) / $totalValue;
-            $marginVsCost = $totalCost > 0 ? ($targetSale - $totalCost) / $totalCost : 0.0;
+            $marginVsCost = ($targetSale - $totalCost) / $totalCost;
+            $marginVsValue = ($targetSale - $totalValue) / $totalValue; // informational only — see below
             $debug['tried']++;
 
             if ($i < 5) {
@@ -97,36 +98,28 @@ class CandidateSelector
                     'value' => round($totalValue / 100, 2),
                     'cost' => round($totalCost / 100, 2),
                     'market' => round($totalMarket / 100, 2),
-                    'margin' => round($marginVsValue, 4),
                     'margin_on_cost' => round($marginVsCost, 4),
+                    'margin_on_value' => round($marginVsValue, 4),
                 ];
             }
 
-            if ($marginVsValue < $minMargin) {
+            // Profitability is judged entirely against cost — margin_on_value is
+            // captured above for visibility only, it never gates or scores a
+            // candidate. Floor only: no upper rejection, and scoring below
+            // never pulls toward $targetMargin either — a candidate at 43%
+            // is just as valid a "best" as one at 25%, so this can't quietly
+            // turn back into "try to match" via the score instead of the gate.
+            if ($marginVsCost < $targetMargin) {
                 $debug['rejected_lo']++;
 
                 continue;
             }
-            if ($marginVsValue > $maxMargin) {
-                $debug['rejected_hi']++;
 
-                continue;
-            }
-
-            // Worst-case safety net, not a target: real profit on what we actually
-            // paid must clear $targetMargin. Unlike the value-based window above,
-            // there's no upper rejection here — making MORE than target on cost is
-            // exactly what we want, we just never accept less. Scoring below still
-            // only optimises against value/market, same as before; this is purely
-            // a pass/fail gate.
-            if ($marginVsCost < $targetMargin) {
-                $debug['rejected_cost_floor']++;
-
-                continue;
-            }
-
-            $score = abs($marginVsValue - $targetMargin)
-                + abs(($totalValue - $targetValue) / max(1, $targetValue));
+            // The only thing scored is closeness to $targetValue — a pure
+            // sizing/generosity reference (see BatchDesign::targetValue) for
+            // picking a consistently-sized batch among everything that already
+            // cleared the profit floor above.
+            $score = abs(($totalValue - $targetValue) / max(1, $targetValue));
 
             if (! $best || $score < $best['score']) {
                 $best = [
@@ -134,7 +127,7 @@ class CandidateSelector
                     'total_cost' => $totalCost,
                     'total_market' => $totalMarket,
                     'total_value' => $totalValue,
-                    'margin_value' => $marginVsValue,
+                    'margin_cost' => $marginVsCost,
                     'score' => $score,
                 ];
             }
