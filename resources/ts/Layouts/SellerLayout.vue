@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
   LayoutDashboard, PackageSearch, FileText, Wallet, UserRound,
-  Plus, LogOut, Menu, X, ExternalLink, Copy, Check, ScanLine,
+  Plus, LogOut, Menu, X, ExternalLink, Copy, Check, ScanLine, KeyRound,
 } from 'lucide-vue-next';
 import arcaneLogo from '@/Assets/Link___Arcane.png';
 
@@ -25,6 +25,7 @@ const NAV_LINKS = [
   { label: 'Invoices', href: '/seller/invoices', match: 'seller.invoices', icon: FileText },
   { label: 'Wallet', href: '/seller/wallet', match: 'seller.wallet', icon: Wallet },
   { label: 'Store profile', href: '/seller/profile', match: 'seller.profile', icon: UserRound },
+  { label: 'API access', href: '/seller/api-access', match: 'seller.api-access', icon: KeyRound },
 ];
 
 const isActive = (match: string) => (currentRouteName() ?? '').startsWith(match);

@@ -6,6 +6,7 @@ use App\Models\CardInventory;
 use App\Services\Banding\RarityBander;
 use App\Support\Money;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 
 class PulseApiCardMapper
 {
@@ -78,7 +79,12 @@ class PulseApiCardMapper
             'market_value_pence'       => $marketPence,
             // PulseAPI's own timestamp — when THEY last calculated this price upstream.
             // Purely informational; not used for our cache TTL (see `synced_at` below).
-            'market_value_updated_at'  => Arr::get($card, 'prices.market_price_updated_at'),
+            // Normalized here (not left as PulseAPI's raw ISO-8601 string) because this
+            // array is also written via query-builder ->update() calls (CardPriceSyncer,
+            // RefreshInventoryPricesCommand), which bypass the model's `datetime` cast
+            // entirely — an un-normalized value reaches the DB as-is, and MySQL's DATETIME
+            // columns reject PulseAPI's "...T00:00:00.000Z" format outright.
+            'market_value_updated_at'  => self::parseTimestamp(Arr::get($card, 'prices.market_price_updated_at')),
             'rarity_band'              => (new RarityBander())->bandFor($marketPence),
             // When WE last synced this record from PulseAPI — always "now" here, since this
             // method only ever runs right after a live fetch. Deliberately ignores PulseAPI's
@@ -86,6 +92,24 @@ class PulseApiCardMapper
             // drives the intake cache TTL and the "Price synced" display.
             'synced_at'                => now(),
         ];
+    }
+
+    /**
+     * PulseAPI's timestamp is untrusted external input — malformed or unexpected
+     * formats fall back to null rather than blowing up card sync/batch generation
+     * over a field that's purely informational (see toInventoryAttributes above).
+     */
+    private static function parseTimestamp(mixed $value): ?string
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toDateTimeString();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

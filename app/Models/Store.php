@@ -27,11 +27,17 @@ class Store extends Model
         'vat_number',
         'public_page_enabled',
         'status',
-        'logo'
+        'logo',
+        'api_access_granted',
+        'api_enabled',
+        'daily_request_limit',
     ];
 
     protected $casts = [
         'public_page_enabled' => 'boolean',
+        'api_access_granted'  => 'boolean',
+        'api_enabled'         => 'boolean',
+        'daily_request_limit' => 'integer',
         'platforms'           => 'array',
         'social_links'        => 'array',
     ];
@@ -57,7 +63,31 @@ class Store extends Model
             if (blank($store->affiliate_code)) {
                 $store->affiliate_code = static::generateAffiliateCode($store->name ?: $store->slug ?: 'STORE');
             }
+            if (blank($store->api_token)) {
+                $store->api_token = static::generateApiToken();
+            }
         });
+    }
+
+    /**
+     * Invalidates any existing token and issues a fresh one — used both when a
+     * store is first created and whenever a seller regenerates their key from
+     * the dashboard (e.g. after a suspected leak).
+     */
+    public function regenerateApiToken(): string
+    {
+        // Not mass-assigned via update() — api_token is deliberately excluded
+        // from $fillable (see affiliate_code above), so that would silently no-op.
+        $token = static::generateApiToken();
+        $this->api_token = $token;
+        $this->save();
+
+        return $token;
+    }
+
+    public static function generateApiToken(): string
+    {
+        return bin2hex(random_bytes(32));
     }
 
     /**

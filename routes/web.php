@@ -20,6 +20,7 @@ use App\Http\Controllers\Sell\SellCardSearchController;
 use App\Http\Controllers\Sell\SubmissionCreateController;
 use App\Http\Controllers\Sell\SubmissionStoreController;
 use App\Http\Controllers\Sell\SubmissionThankYouController;
+use App\Http\Controllers\Seller\ApiAccessController;
 use App\Http\Controllers\Seller\BatchesController;
 use App\Http\Controllers\Seller\BatchRequestController;
 use App\Http\Controllers\Seller\DashboardController;
@@ -103,6 +104,9 @@ Route::middleware(['web', 'auth', 'role:seller'])
             Route::get('/wallet', WalletController::class)->name('wallet');
             Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
             Route::post('/profile/{store}', [ProfileController::class, 'update'])->name('profile.update');
+            Route::get('/api-access', [ApiAccessController::class, 'show'])->name('api-access.show');
+            Route::post('/api-access/{store}', [ApiAccessController::class, 'toggle'])->name('api-access.toggle');
+            Route::post('/api-access/{store}/regenerate', [ApiAccessController::class, 'regenerate'])->name('api-access.regenerate');
             Route::get('/scan', [ScanStationController::class, 'show'])->name('scan');
             Route::post('/scan', [ScanStationController::class, 'scan'])->name('scan.submit');
         });

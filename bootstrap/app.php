@@ -9,6 +9,7 @@ use Spatie\Permission\Middleware\RoleMiddleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
@@ -21,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // existing aliases...
             'role' => RoleMiddleware::class,
             'store.live' => \App\Http\Middleware\EnsureSellerStoreIsPublic::class,
+            'store.api' => \App\Http\Middleware\AuthenticateStoreApiToken::class,
+            'store.api.daily-limit' => \App\Http\Middleware\EnforceStoreDailyApiLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

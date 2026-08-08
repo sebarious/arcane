@@ -214,6 +214,22 @@ class StoreResource extends Resource
                         ->default(true),
                 ]),
 
+            Section::make('API access')
+                ->columnSpanFull()
+                ->schema([
+                    Forms\Components\Toggle::make('api_access_granted')
+                        ->label('Allow this seller to use the API')
+                        ->helperText('Unlocks the API access area on their dashboard, where they can turn the API on for their own store and grab their token. Turning this off immediately blocks both endpoints, even if they\'d switched it on themselves.')
+                        ->default(false),
+                    Forms\Components\TextInput::make('daily_request_limit')
+                        ->label('Daily request limit')
+                        ->numeric()
+                        ->minValue(1)
+                        ->default(1000)
+                        ->required()
+                        ->helperText('Resets at midnight UTC.'),
+                ]),
+
             Section::make('Wallet')
                 ->columnSpanFull()
                 ->visibleOn('edit')
@@ -276,6 +292,10 @@ class StoreResource extends Resource
                 Tables\Columns\IconColumn::make('public_page_enabled')
                     ->label('Public')
                     ->boolean(),
+                Tables\Columns\IconColumn::make('api_access_granted')
+                    ->label('API')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('d M Y')->sortable()->toggleable(),
             ])

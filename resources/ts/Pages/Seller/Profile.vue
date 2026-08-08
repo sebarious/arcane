@@ -51,7 +51,8 @@ function onLogoChange(e: Event) {
 }
 
 function submit() {
-  form.post(`/seller/profile/${props.store.id}`, {
+  // Store's route key is its slug, not its id — see Store::getRouteKeyName().
+  form.post(`/seller/profile/${props.store.slug}`, {
     forceFormData: true,
     preserveScroll: true,
   });
