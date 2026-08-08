@@ -111,11 +111,18 @@ class CardNumberExtractor
      * number on their own consecutive lines rather than one), to keep this to
      * genuine "MEP 028" / "SWSH1234" / "MEP\n028"-style adjacency only — never
      * two tokens separated by an intervening line of unrelated card text.
+     *
+     * Newer promo prints (confirmed on SVP) also glue/space a 2-letter language
+     * code in between, e.g. "SVPEN212" or "SVP EN 212" — PulseAPI's card_number
+     * for that card is plain "SVP212", no language code at all, so a stray
+     * 2-letter run here is matched and discarded rather than folded into the
+     * number. Digits can't be mistaken for it (`[A-Z]` only), so this can't
+     * eat part of a genuine number.
      */
     private static function extractPromo(string $text): ?string
     {
         $prefixAlt = implode('|', array_keys(self::PROMO_PREFIXES));
-        $pattern   = '/\b('.$prefixAlt.')[ \t]*-?[ \t]*\R?[ \t]*(\d{2,4})\b/i';
+        $pattern   = '/\b('.$prefixAlt.')[ \t]*-?[ \t]*(?:[A-Z]{2}[ \t]*-?[ \t]*)?\R?[ \t]*(\d{2,4})\b/i';
 
         if (! preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
             return null;
