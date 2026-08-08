@@ -164,27 +164,12 @@ class BatchResource extends Resource
             Section::make('Margin analysis')
                 ->columns(2)
                 ->schema([
-                    Forms\Components\Placeholder::make('margin_vs_cost')
-                        ->label('Profit % vs our cost')
-                        ->content(function (Batch $record) {
-                            if (! $record->total_cost_pence) {
-                                return '—';
-                            }
-                            $pct = ($record->margin_pence / $record->total_cost_pence) * 100;
-
-                            return number_format($pct, 1).'%';
-                        }),
-                    Forms\Components\Placeholder::make('margin_vs_market')
-                        ->label('Profit % vs market value')
-                        ->content(function (Batch $record) {
-                            if (! $record->total_market_value_pence) {
-                                return '—';
-                            }
-                            $pct = (($record->sale_price_pence - $record->total_market_value_pence)
-                                / $record->total_market_value_pence) * 100;
-
-                            return number_format($pct, 1).'%';
-                        }),
+                    Forms\Components\Placeholder::make('margin_total')
+                        ->label('Profit')
+                        ->content(fn (Batch $record) => $record->margin_pence !== null ? Money::format($record->margin_pence) : '—'),
+                    Forms\Components\Placeholder::make('margin_percentage')
+                        ->label('Profit %')
+                        ->content(fn (Batch $record) => static::profitPercent($record) ?? '—'),
                 ])
                 ->visibleOn('edit'),
             Section::make('Cards in this batch')
@@ -243,56 +228,16 @@ class BatchResource extends Resource
                     ->formatStateUsing(fn ($state) => Money::format($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('margin_pence')
-                    ->label('Margin')
+                    ->label('Profit')
+                    ->tooltip('Sale price minus what we paid for the cards — the batch\'s total profit.')
                     ->formatStateUsing(fn ($state) => Money::format($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('margin_percentage')
-                    ->label('Profit % (cost)')
-                    ->tooltip('Sale price minus what we paid for the cards, as a percentage of cost. This is your actual accounting margin.')
+                    ->label('Profit %')
+                    ->tooltip('Profit as a percentage of what we paid for the cards — your real accounting margin.')
                     ->alignEnd()
-                    ->getStateUsing(function (Batch $record) {
-                        $cost = $record->total_cost_pence;
-                        $margin = $record->margin_pence;
-                        if ($cost <= 0 || $margin === null) {
-                            return null;
-                        }
-                        $percent = ($margin / $cost) * 100;
-
-                        return number_format($percent, 1).'%';
-                    })
-                    ->default('—'),
-                Tables\Columns\TextColumn::make('margin_vs_market')
-                    ->label('Profit % (market)')
-                    ->alignEnd()
-                    ->tooltip('Sale price minus total market value, as a percentage of market value. Tells you whether the pack is generous or stingy versus what the cards are worth.')
-                    ->getStateUsing(function (Batch $record) {
-                        $market = $record->total_market_value_pence;
-                        $sale = $record->sale_price_pence;
-                        if ($market <= 0 || $sale === null) {
-                            return null;
-                        }
-                        $marginVsMarket = (($sale - $market) / $market) * 100;
-
-                        return number_format($marginVsMarket, 1).'%';
-                    })
-                    ->color(function (Batch $record) {
-                        $market = $record->total_market_value_pence;
-                        $sale = $record->sale_price_pence;
-                        if ($market <= 0 || $sale === null) {
-                            return 'gray';
-                        }
-
-                        $marginVsMarket = ($sale - $market) / $market;
-
-                        // Negative (sale < market) is good for end customers / pack EV;
-                        // strongly positive means you're charging more than the cards are worth.
-                        return match (true) {
-                            $marginVsMarket < -0.05 => 'success',  // pack EV > sale = great for customer
-                            $marginVsMarket < 0.10 => 'info',     // roughly fair
-                            $marginVsMarket < 0.30 => 'warning',  // store-favourable
-                            default => 'danger',   // too rich, customers will feel it
-                        };
-                    })
+                    ->getStateUsing(fn (Batch $record) => static::profitPercent($record))
+                    ->color(fn (Batch $record) => static::profitPercentColor($record))
                     ->badge()
                     ->default('—'),
                 Tables\Columns\TextColumn::make('status')
@@ -518,5 +463,41 @@ class BatchResource extends Resource
             'edit' => Pages\EditBatch::route('/{record}/edit'),
             'view' => Pages\ViewBatch::route('/{record}'),
         ];
+    }
+
+    /**
+     * Profit as a percentage of cost — the real accounting margin (mirrors the
+     * cost-based worst-case floor CandidateSelector enforces at generation
+     * time). Shared by the table column and the edit page's "Margin analysis"
+     * section so the two figures can't drift apart.
+     */
+    protected static function profitPercent(Batch $record): ?string
+    {
+        $cost = $record->total_cost_pence;
+        $margin = $record->margin_pence;
+
+        if ($cost === null || $cost <= 0 || $margin === null) {
+            return null;
+        }
+
+        return number_format(($margin / $cost) * 100, 1).'%';
+    }
+
+    /**
+     * Green once profit clears this batch type's target margin
+     * (config('batches...target_margin_on_value')), red below it.
+     */
+    protected static function profitPercentColor(Batch $record): string
+    {
+        $cost = $record->total_cost_pence;
+        $margin = $record->margin_pence;
+
+        if ($cost === null || $cost <= 0 || $margin === null || ! $record->game instanceof Game || ! $record->type instanceof BatchType) {
+            return 'gray';
+        }
+
+        $targetMargin = BatchDesign::targetMargin($record->game, $record->type);
+
+        return ($margin / $cost) >= $targetMargin ? 'success' : 'danger';
     }
 }

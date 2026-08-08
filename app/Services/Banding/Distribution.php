@@ -12,4 +12,10 @@ class Distribution
   {
     return config("banding.distribution.{$game->value}.{$type->value}", []);
   }
+
+  /** @return array<string, array{tier_1?:int, tier_2?:int, tier_3?:int}> */
+  public static function tiersForGameAndType(Game $game, BatchType $type): array
+  {
+    return config("banding.tier_distribution.{$game->value}.{$type->value}", []);
+  }
 }

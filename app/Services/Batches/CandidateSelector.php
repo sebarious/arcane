@@ -19,9 +19,13 @@ class CandidateSelector
      * @param  array<string,int>  $bandDistribution
      * @param  array<string,int>  $duplicateLimits
      * @param  array<string,array{min:int,max:int}>  $thresholds
+     * @param  array<string,array{tier_1?:int,tier_2?:int,tier_3?:int}>  $tierDistribution  Per-band target
+     *         split across the band's 3 equal-width price tiers (config('banding.tier_distribution')).
+     *         A band missing here (or whose counts don't sum to that band's total) falls back to an
+     *         even auto-split — see selectForBand().
      * @return array{
      *     best: array{selected_ids:int[],total_cost:int,total_market:int,total_value:int,margin_value:float}|null,
-     *     debug: array{tried:int,rejected_lo:int,rejected_hi:int,duplicate_failures:int,sample:array},
+     *     debug: array{tried:int,rejected_lo:int,rejected_hi:int,rejected_cost_floor:int,duplicate_failures:int,sample:array},
      * }
      */
     public function select(
@@ -34,6 +38,7 @@ class CandidateSelector
         int $targetValue,
         int $packCount,
         SeededRandom $rng,
+        array $tierDistribution = [],
         int $attempts = 150,
     ): array {
         $bucketed = [];
@@ -49,6 +54,7 @@ class CandidateSelector
             'tried' => 0,
             'rejected_lo' => 0,
             'rejected_hi' => 0,
+            'rejected_cost_floor' => 0,
             'duplicate_failures' => 0,
             'sample' => [],
         ];
@@ -67,7 +73,7 @@ class CandidateSelector
                     continue 2;
                 }
 
-                $selected = [...$selected, ...$this->selectForBand($dedupedPool, $needed, $band, $thresholds, $rng)];
+                $selected = [...$selected, ...$this->selectForBand($dedupedPool, $needed, $band, $thresholds, $tierDistribution[$band] ?? null, $rng)];
             }
 
             if (count($selected) !== $packCount) {
@@ -83,6 +89,7 @@ class CandidateSelector
             }
 
             $marginVsValue = ($targetSale - $totalValue) / $totalValue;
+            $marginVsCost = $totalCost > 0 ? ($targetSale - $totalCost) / $totalCost : 0.0;
             $debug['tried']++;
 
             if ($i < 5) {
@@ -91,6 +98,7 @@ class CandidateSelector
                     'cost' => round($totalCost / 100, 2),
                     'market' => round($totalMarket / 100, 2),
                     'margin' => round($marginVsValue, 4),
+                    'margin_on_cost' => round($marginVsCost, 4),
                 ];
             }
 
@@ -101,6 +109,18 @@ class CandidateSelector
             }
             if ($marginVsValue > $maxMargin) {
                 $debug['rejected_hi']++;
+
+                continue;
+            }
+
+            // Worst-case safety net, not a target: real profit on what we actually
+            // paid must clear $targetMargin. Unlike the value-based window above,
+            // there's no upper rejection here — making MORE than target on cost is
+            // exactly what we want, we just never accept less. Scoring below still
+            // only optimises against value/market, same as before; this is purely
+            // a pass/fail gate.
+            if ($marginVsCost < $targetMargin) {
+                $debug['rejected_cost_floor']++;
 
                 continue;
             }
@@ -143,78 +163,227 @@ class CandidateSelector
     }
 
     /**
+     * Splits $pool into this band's 3 equal-width price tiers and draws $needed
+     * cards from them. Two recipes:
+     *
+     * - Configured (a valid tier_distribution entry for $band, i.e. one whose
+     *   tier_1+tier_2+tier_3 actually sums to $needed): each tier is drawn via
+     *   selectBalancedForTier — cards chosen so the tier's realised average price
+     *   lands as close as possible to that tier's own midpoint, for predictable
+     *   per-tier economics. A tier that comes up short first tries to borrow from
+     *   the next tier up's cheaper half (see the escalation loop below) before
+     *   falling back to an unconstrained top-up from anywhere left in the band.
+     * - Unconfigured (band missing from tier_distribution, or its counts don't
+     *   add up — e.g. a stale config edit) — an even auto-split with plain random
+     *   picking per tier, same as the top-up fallback. mythic has no config
+     *   entry by default, so it lands here — the auto-split for a 1-card band
+     *   happens to land it in tier_2, and for a 2-card band splits it tier_1 +
+     *   tier_3 — but a band+type can now pin mythic to specific tiers just
+     *   like any other rarity (e.g. Sapphire's single mythic pinned to tier_2,
+     *   to keep it away from the top of a shared £150–£400 mythic range that a
+     *   cheap batch's economics can't absorb).
+     *
      * @param  array<string,array{min:int,max:int}>  $thresholds
+     * @param  array{tier_1?:int,tier_2?:int,tier_3?:int}|null  $configuredTiers
      */
-    private function selectForBand(array $pool, int $needed, string $band, array $thresholds, SeededRandom $rng): array
+    private function selectForBand(array $pool, int $needed, string $band, array $thresholds, ?array $configuredTiers, SeededRandom $rng): array
     {
-        if ($band === 'mythic') {
-            return array_slice($rng->shuffle($pool), 0, $needed);
-        }
-
         $range = $thresholds[$band] ?? null;
         if (! $range) {
             return array_slice($rng->shuffle($pool), 0, $needed);
         }
 
         $tierWidth = max(1, ($range['max'] - $range['min']) / 3);
-        $lowMax = $range['min'] + $tierWidth;
-        $midMax = $range['min'] + (2 * $tierWidth);
+        $bounds = [
+            'tier_1' => ['min' => $range['min'], 'max' => $range['min'] + $tierWidth],
+            'tier_2' => ['min' => $range['min'] + $tierWidth, 'max' => $range['min'] + (2 * $tierWidth)],
+            'tier_3' => ['min' => $range['min'] + (2 * $tierWidth), 'max' => $range['max']],
+        ];
 
-        $tiers = ['low' => [], 'mid' => [], 'high' => []];
+        $tiers = ['tier_1' => [], 'tier_2' => [], 'tier_3' => []];
         foreach ($pool as $card) {
-            if ($card['market_value_pence'] < $lowMax) {
-                $tiers['low'][] = $card;
-            } elseif ($card['market_value_pence'] < $midMax) {
-                $tiers['mid'][] = $card;
+            $price = (int) ($card['market_value_pence'] ?? 0);
+            if ($price < $bounds['tier_1']['max']) {
+                $tiers['tier_1'][] = $card;
+            } elseif ($price < $bounds['tier_2']['max']) {
+                $tiers['tier_2'][] = $card;
             } else {
-                $tiers['high'][] = $card;
+                $tiers['tier_3'][] = $card;
             }
+        }
+
+        $isConfigured = $configuredTiers !== null && array_sum($configuredTiers) === $needed;
+
+        if (! $isConfigured) {
+            $selected = [];
+            $selectedIds = [];
+
+            foreach ($this->autoSplitTierTargets($needed) as $tier => $count) {
+                $take = array_slice($rng->shuffle($tiers[$tier]), 0, $count);
+                $selected = [...$selected, ...$take];
+                $selectedIds = [...$selectedIds, ...array_column($take, 'id')];
+            }
+
+            return $this->topUpToNeeded($selected, $selectedIds, $pool, $needed, $rng);
         }
 
         $selected = [];
         $selectedIds = [];
+        $shortfall = ['tier_1' => 0, 'tier_2' => 0, 'tier_3' => 0];
 
-        foreach ($this->tierTargets($needed) as $tier => $count) {
-            $take = array_slice($rng->shuffle($tiers[$tier]), 0, $count);
+        foreach (['tier_1', 'tier_2', 'tier_3'] as $tier) {
+            $count = $configuredTiers[$tier] ?? 0;
+            if ($count <= 0) {
+                continue;
+            }
+
+            $take = $this->selectBalancedForTier($tiers[$tier], $count, $this->tierMidpoint($bounds[$tier]), $rng);
             $selected = [...$selected, ...$take];
             $selectedIds = [...$selectedIds, ...array_column($take, 'id')];
+            $shortfall[$tier] = $count - count($take);
         }
 
-        // A tier came up short (not enough stock at that price point) — top up from
-        // whatever's left in the band so we still hit $needed, just less evenly spread.
-        if (count($selected) < $needed) {
-            $remaining = array_values(array_filter($pool, fn ($c) => ! in_array($c['id'], $selectedIds, true)));
-            $extra = array_slice($rng->shuffle($remaining), 0, $needed - count($selected));
-            $selected = [...$selected, ...$extra];
+        // Escalation: a tier short of stock first tries the tier above it,
+        // restricted to that tier's cheaper half; if that's not enough (or
+        // doesn't exist — tier_3 has no tier above), it then tries the tier
+        // below, restricted to ITS pricier half. Either way the substitute
+        // stays as close as possible to the shortfall tier's own boundary,
+        // rather than an unconstrained pick from anywhere in the band — that
+        // unconstrained pick is still the final fallback (topUpToNeeded
+        // below), just now the last resort instead of the first one. Cards
+        // already taken (including by another tier's own primary pass) are
+        // excluded throughout, so this only ever spends a tier's genuine
+        // leftover capacity.
+        $neighbors = [
+            'tier_1' => ['up' => 'tier_2'],
+            'tier_2' => ['up' => 'tier_3', 'down' => 'tier_1'],
+            'tier_3' => ['down' => 'tier_2'],
+        ];
+
+        foreach (['tier_1', 'tier_2', 'tier_3'] as $tier) {
+            foreach ($neighbors[$tier] as $direction => $neighbor) {
+                if ($shortfall[$tier] <= 0) {
+                    break;
+                }
+
+                $midpoint = $this->tierMidpoint($bounds[$neighbor]);
+                $candidates = array_values(array_filter($tiers[$neighbor], function ($c) use ($selectedIds, $midpoint, $direction) {
+                    if (in_array($c['id'], $selectedIds, true)) {
+                        return false;
+                    }
+                    $price = (int) ($c['market_value_pence'] ?? 0);
+
+                    // Borrowing "up" stays in the neighbour's cheaper half (closest
+                    // to the tier below it); borrowing "down" stays in its pricier
+                    // half (closest to the tier above it) — either way, closest to
+                    // the shortfall tier's own boundary with that neighbour.
+                    return $direction === 'up' ? $price < $midpoint : $price >= $midpoint;
+                }));
+
+                $take = array_slice($rng->shuffle($candidates), 0, $shortfall[$tier]);
+                $selected = [...$selected, ...$take];
+                $selectedIds = [...$selectedIds, ...array_column($take, 'id')];
+                $shortfall[$tier] -= count($take);
+            }
+        }
+
+        return $this->topUpToNeeded($selected, $selectedIds, $pool, $needed, $rng);
+    }
+
+    /**
+     * Last-resort fallback shared by both recipes: an unconstrained random pick
+     * from whatever's left anywhere in the band, so a struggling card pool still
+     * produces a batch rather than failing generation outright.
+     */
+    private function topUpToNeeded(array $selected, array $selectedIds, array $pool, int $needed, SeededRandom $rng): array
+    {
+        if (count($selected) >= $needed) {
+            return $selected;
+        }
+
+        $remaining = array_values(array_filter($pool, fn ($c) => ! in_array($c['id'], $selectedIds, true)));
+        $extra = array_slice($rng->shuffle($remaining), 0, $needed - count($selected));
+
+        return [...$selected, ...$extra];
+    }
+
+    /**
+     * Greedily keeps the running average as close to $midpoint as possible: at
+     * each step, picks whichever remaining card brings the group's average
+     * value nearest to it. This is what makes a tier's realised average price
+     * predictable/consistent batch to batch (directly drives real margin),
+     * rather than swinging with whatever random cards happen to be in stock.
+     * Ties are broken by $rng's shuffle order, so the pick stays fair and
+     * deterministic without a second source of randomness.
+     */
+    private function selectBalancedForTier(array $pool, int $needed, int $midpoint, SeededRandom $rng): array
+    {
+        if ($needed <= 0 || empty($pool)) {
+            return [];
+        }
+
+        $remaining = array_values($rng->shuffle($pool));
+        $selected = [];
+        $runningTotal = 0;
+
+        for ($n = 1; $n <= $needed && ! empty($remaining); $n++) {
+            $bestIndex = 0;
+            $bestDistance = null;
+
+            foreach ($remaining as $index => $card) {
+                $price = (int) ($card['market_value_pence'] ?? 0);
+                $averageIfPicked = ($runningTotal + $price) / $n;
+                $distance = abs($averageIfPicked - $midpoint);
+
+                if ($bestDistance === null || $distance < $bestDistance) {
+                    $bestDistance = $distance;
+                    $bestIndex = $index;
+                }
+            }
+
+            $chosen = $remaining[$bestIndex];
+            $selected[] = $chosen;
+            $runningTotal += (int) ($chosen['market_value_pence'] ?? 0);
+            unset($remaining[$bestIndex]);
+            $remaining = array_values($remaining);
         }
 
         return $selected;
     }
 
+    private function tierMidpoint(array $bound): int
+    {
+        return (int) round(($bound['min'] + $bound['max']) / 2);
+    }
+
     /**
-     * @return array{low: int, mid: int, high: int}
+     * The even, no-config-needed split — used for any band without a valid
+     * tier_distribution entry (currently: mythic never gets one by design, plus
+     * a safety net for a stale/typo'd config elsewhere).
+     *
+     * @return array{tier_1: int, tier_2: int, tier_3: int}
      */
-    private function tierTargets(int $needed): array
+    private function autoSplitTierTargets(int $needed): array
     {
         if ($needed <= 0) {
-            return ['low' => 0, 'mid' => 0, 'high' => 0];
+            return ['tier_1' => 0, 'tier_2' => 0, 'tier_3' => 0];
         }
         if ($needed === 1) {
-            return ['low' => 0, 'mid' => 1, 'high' => 0];
+            return ['tier_1' => 0, 'tier_2' => 1, 'tier_3' => 0];
         }
         if ($needed === 2) {
-            return ['low' => 1, 'mid' => 0, 'high' => 1];
+            return ['tier_1' => 1, 'tier_2' => 0, 'tier_3' => 1];
         }
 
         $base = intdiv($needed, 3);
         $remainder = $needed % 3;
-        $targets = ['low' => $base, 'mid' => $base, 'high' => $base];
+        $targets = ['tier_1' => $base, 'tier_2' => $base, 'tier_3' => $base];
 
         if ($remainder === 1) {
-            $targets['mid']++;
+            $targets['tier_2']++;
         } elseif ($remainder === 2) {
-            $targets['low']++;
-            $targets['high']++;
+            $targets['tier_1']++;
+            $targets['tier_3']++;
         }
 
         return $targets;

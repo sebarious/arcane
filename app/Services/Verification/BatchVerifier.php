@@ -66,6 +66,7 @@ class BatchVerifier
             targetValue: $snapshot['target_value_pence'],
             packCount: $snapshot['pack_count'],
             rng: $rng,
+            tierDistribution: $snapshot['tier_distribution'] ?? [],
             attempts: $snapshot['attempts'],
         );
 

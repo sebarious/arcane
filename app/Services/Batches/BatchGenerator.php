@@ -62,6 +62,11 @@ class BatchGenerator
             throw new \RuntimeException("No band distribution configured for {$game->value}/{$type->value}.");
         }
 
+        // Per-band split across each band's 3 price tiers — see CandidateSelector::
+        // selectForBand(). A band absent here (or whose tier counts don't sum to its
+        // total above) just falls back to an even auto-split, so this is optional.
+        $tierDistribution = Distribution::tiersForGameAndType($game, $type);
+
         // Refresh any stale prices in this pool before selecting from it — a card
         // priced weeks ago could since have moved bands entirely, so this needs to
         // happen before we group by rarity_band below, not after.
@@ -130,6 +135,7 @@ class BatchGenerator
             targetValue: $targetValue,
             packCount: $packCount,
             rng: $rng,
+            tierDistribution: $tierDistribution,
         );
 
         $best = $result['best'];
@@ -137,12 +143,13 @@ class BatchGenerator
 
         if (! $best) {
             $sampleSummary = collect($debug['sample'])
-                ->map(fn ($s) => "value=£{$s['value']} margin=".number_format($s['margin'] * 100, 1).'%')
+                ->map(fn ($s) => "value=£{$s['value']} margin=".number_format($s['margin'] * 100, 1).'% margin_on_cost='.number_format($s['margin_on_cost'] * 100, 1).'%')
                 ->implode(' | ');
             throw new \RuntimeException(sprintf(
                 'Could not find a batch within margin window for %s/%s. '.
-                  'Target sale=£%.2f, target value=£%.2f, target margin=%.1f%% (window %.1f%% – %.1f%%). '.
-                  'Tried %d. Rejected: %d too-low, %d too-high, %d duplicate-limit failures. Samples: %s',
+                  'Target sale=£%.2f, target value=£%.2f, target margin=%.1f%% (window %.1f%% – %.1f%%), '.
+                  'worst-case margin on cost floor=%.1f%%. '.
+                  'Tried %d. Rejected: %d too-low, %d too-high, %d below the cost-margin floor, %d duplicate-limit failures. Samples: %s',
                 $game->value,
                 $type->value,
                 $targetSale / 100,
@@ -150,9 +157,11 @@ class BatchGenerator
                 $targetMargin * 100,
                 max(0, $targetMargin - 0.10) * 100,
                 ($targetMargin + 0.10) * 100,
+                $targetMargin * 100,
                 $debug['tried'],
                 $debug['rejected_lo'],
                 $debug['rejected_hi'],
+                $debug['rejected_cost_floor'],
                 $debug['duplicate_failures'],
                 $sampleSummary ?: 'none',
             ));
@@ -163,7 +172,7 @@ class BatchGenerator
         $marginAtCost = $targetSale - $totalCost; // what hits the books
         $vatOnMargin = Money::marginSchemeVat($marginAtCost);
 
-        $snapshotPath = $this->writeVerificationSnapshot($batch, $poolData, $bandDistribution, $duplicateLimits, $thresholds, $targetSale, $targetMargin, $targetValue, $packCount, $best['selected_ids']);
+        $snapshotPath = $this->writeVerificationSnapshot($batch, $poolData, $bandDistribution, $tierDistribution, $duplicateLimits, $thresholds, $targetSale, $targetMargin, $targetValue, $packCount, $best['selected_ids']);
 
         // Cards in final pack order — whereIn() doesn't preserve the IN-list order,
         // so re-sort by the selector's own selected_ids sequence explicitly. That
@@ -271,6 +280,7 @@ class BatchGenerator
         Batch $batch,
         array $poolData,
         array $bandDistribution,
+        array $tierDistribution,
         array $duplicateLimits,
         array $thresholds,
         int $targetSale,
@@ -286,6 +296,7 @@ class BatchGenerator
         Storage::disk('local')->put($path, json_encode([
             'pool' => $redactedPool,
             'band_distribution' => $bandDistribution,
+            'tier_distribution' => $tierDistribution,
             'duplicate_limits' => $duplicateLimits,
             'thresholds' => $thresholds,
             'target_sale_pence' => $targetSale,
