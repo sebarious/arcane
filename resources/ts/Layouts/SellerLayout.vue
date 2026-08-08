@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
   LayoutDashboard, PackageSearch, FileText, Wallet, UserRound,
-  Plus, LogOut, Menu, X, ExternalLink, Copy, Check, ScanLine, KeyRound,
+  Plus, LogOut, Menu, X, ExternalLink, Copy, Check, ScanLine, KeyRound, Link2,
 } from 'lucide-vue-next';
 import arcaneLogo from '@/Assets/Link___Arcane.png';
 
@@ -41,6 +41,7 @@ function formatPence(pence: number): string {
 }
 
 const affiliateCode = () => (page.props.sellerAffiliateCode as string | null) ?? null;
+const storeSlug = () => (page.props.sellerStoreSlug as string | null) ?? null;
 
 const affiliateCopied = ref(false);
 
@@ -51,6 +52,17 @@ function copyAffiliateCode() {
   navigator.clipboard.writeText(code);
   affiliateCopied.value = true;
   setTimeout(() => { affiliateCopied.value = false; }, 2000);
+}
+
+const affiliateLinkCopied = ref(false);
+
+function copyAffiliateLink() {
+  const slug = storeSlug();
+  if (!slug) return;
+
+  navigator.clipboard.writeText(`${window.location.origin}/a/${slug}`);
+  affiliateLinkCopied.value = true;
+  setTimeout(() => { affiliateLinkCopied.value = false; }, 2000);
 }
 </script>
 
@@ -147,14 +159,22 @@ function copyAffiliateCode() {
         </div>
 
         <div class="flex items-center gap-3">
-          <button v-if="affiliateCode()" type="button" @click="copyAffiliateCode"
-            class="flex items-center gap-3 bg-[#13101e] border border-[rgba(201,168,76,0.25)] rounded-[8px] px-4 py-2.5 shrink-0 hover:border-[rgba(201,168,76,0.5)] transition-colors">
-            <component :is="affiliateCopied ? Check : Copy" class="size-4 text-[#c9a84c]" />
-            <div class="text-left">
-              <p class="font-['Jost',sans-serif] text-[10px] text-[rgba(255,255,255,0.35)] uppercase tracking-wide leading-none">Affiliate code</p>
-              <p class="font-['Cinzel',sans-serif] font-bold text-sm text-[#c9a84c] leading-tight mt-0.5">{{ affiliateCopied ? 'Copied!' : affiliateCode() }}</p>
-            </div>
-          </button>
+          <div v-if="affiliateCode()"
+            class="flex items-stretch bg-[#13101e] border border-[rgba(201,168,76,0.25)] rounded-[8px] shrink-0 overflow-hidden">
+            <button type="button" @click="copyAffiliateCode"
+              class="flex items-center gap-3 px-4 py-2.5 hover:bg-[rgba(201,168,76,0.08)] transition-colors">
+              <component :is="affiliateCopied ? Check : Copy" class="size-4 text-[#c9a84c]" />
+              <div class="text-left">
+                <p class="font-['Jost',sans-serif] text-[10px] text-[rgba(255,255,255,0.35)] uppercase tracking-wide leading-none">Affiliate code</p>
+                <p class="font-['Cinzel',sans-serif] font-bold text-sm text-[#c9a84c] leading-tight mt-0.5">{{ affiliateCopied ? 'Copied!' : affiliateCode() }}</p>
+              </div>
+            </button>
+            <button v-if="storeSlug()" type="button" @click="copyAffiliateLink"
+              title="Copy your Sell to Us link — prefills your affiliate code for whoever opens it"
+              class="flex items-center justify-center px-3 border-l border-[rgba(201,168,76,0.25)] hover:bg-[rgba(201,168,76,0.08)] transition-colors">
+              <component :is="affiliateLinkCopied ? Check : Link2" class="size-4 text-[#c9a84c]" />
+            </button>
+          </div>
 
           <Link href="/seller/wallet"
             class="flex items-center gap-3 bg-[#13101e] border border-[rgba(201,168,76,0.25)] rounded-[8px] px-4 py-2.5 shrink-0 hover:border-[rgba(201,168,76,0.5)] transition-colors">

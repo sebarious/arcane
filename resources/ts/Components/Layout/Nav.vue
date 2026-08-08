@@ -38,8 +38,23 @@
     <!-- Mobile drawer -->
     <div class="fixed inset-0 z-[100] md:hidden flex flex-col" v-if="open"
       :style="{ background: 'rgba(6,6,11,0.97)', backdropFilter: 'blur(24px)' }" :aria-hidden="!open">
-      <div class="h-20" />
+      <div class="h-20 px-6 flex items-center justify-between shrink-0">
+        <a href="/" @click="close" title="Home">
+          <img :src="arcaneLogo" alt="Arcane" class="h-9 w-auto" />
+        </a>
+        <button class="flex items-center justify-center w-10 h-10 text-[#DCC175]" @click="close" aria-label="Close menu">
+          <X :size="24" />
+        </button>
+      </div>
       <nav class="flex flex-col px-8 gap-1 flex-1">
+        <a href="/" @click="close"
+          :class="[
+            'py-4 text-2xl border-b border-[#DCC175]/8 transition-colors',
+            isHome ? 'text-white underline' : 'text-[#DCC175] hover:text-[#DCC175]',
+          ]"
+          :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
+          Home
+        </a>
         <a v-for="( [label, href, active], i) in NAV_LINKS" :key="label" :href="href" @click="close"
           :class="[
             'py-4 text-2xl border-b border-[#DCC175]/8 transition-colors',
@@ -69,6 +84,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 const page = usePage();
 
 const isLoggedIn = computed( () => !!(page?.props?.auth as any)?.user );
+const isHome = computed( () => (page?.props?.route as any)?.name === 'home' );
 
 const NAV_LINKS = computed( (): [string, string, boolean][] => [
   ['Sell to Us', '/sell', !!(page?.props?.route as any)?.name?.startsWith('sell')],

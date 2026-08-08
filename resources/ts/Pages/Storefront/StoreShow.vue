@@ -297,7 +297,7 @@ const generalMotion = {
               class="absolute border border-[rgba(220,193,117,0.1)] border-solid inset-0 pointer-events-none rounded-[8px]" />
             <div class="flex flex-col items-center size-full divide-y divide-[rgba(255,255,255,0.1)]">
               <template v-for="batch in batches" :key="batch.reference">
-                <div class="content-stretch flex items-center justify-between p-[20px] relative size-full">
+                <div class="content-stretch flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-[16px] lg:gap-0 p-[20px] relative size-full">
                   <div class="content-stretch space-y-5 lg:space-y-0 lg:flex gap-[32px] items-center relative">
                     <div
                       class="[word-break:break-word] content-stretch lg:flex flex-col gap-[4px] items-start leading-[normal] relative lg:whitespace-nowrap">
@@ -339,7 +339,7 @@ const generalMotion = {
                     </div>
                   </div>
                   <div
-                    class="bg-[#7b4fe9] content-stretch drop-shadow-[0px_0px_8px_rgba(123,79,233,0.5)] flex items-start px-[24px] py-[12px] relative rounded-[4px] shrink-0">
+                    class="bg-[#7b4fe9] content-stretch drop-shadow-[0px_0px_8px_rgba(123,79,233,0.5)] flex items-center justify-center px-[24px] py-[12px] relative rounded-[4px] shrink-0 w-full lg:w-auto">
                     <p
                       class="[word-break:break-word] font-['Jost',sans-serif] font-bold leading-[normal] relative shrink-0 text-[14px] text-white uppercase whitespace-nowrap">
                       <a :href="`${store.slug}/${batch.id}`">Explore</a></p>

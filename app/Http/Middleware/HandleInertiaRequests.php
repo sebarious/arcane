@@ -65,6 +65,11 @@ class HandleInertiaRequests extends Middleware
             'sellerAffiliateCode' => fn () => $request->user()?->hasRole('seller')
                 ? $request->user()->store?->affiliate_code
                 : null,
+            // Backs the seller layout's "copy affiliate link" button — builds
+            // /a/{slug}, which redirects to Sell to Us with the code prefilled.
+            'sellerStoreSlug' => fn () => $request->user()?->hasRole('seller')
+                ? $request->user()->store?->slug
+                : null,
             // Drives the "Request batch" button in the seller layout — shared globally
             // since that button appears on every seller page, not just BatchRequest's own.
             'batchRequestsEnabled' => (bool) config('batches.requests_enabled', true),

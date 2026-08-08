@@ -18,6 +18,7 @@ use App\Http\Controllers\Pages\TermsController;
 use App\Http\Controllers\Pages\VerifiedController;
 use App\Http\Controllers\QrScanController;
 use App\Http\Controllers\Sell\AffiliateCodeController;
+use App\Http\Controllers\Sell\AffiliateLinkController;
 use App\Http\Controllers\Sell\SellCardSearchController;
 use App\Http\Controllers\Sell\SubmissionCreateController;
 use App\Http\Controllers\Sell\SubmissionStoreController;
@@ -75,6 +76,7 @@ Route::post('/apply', StoreSellerApplicationController::class)->name('applicatio
 Route::get('/apply/thanks', SellerApplicationThankYouController::class)->name('application.thankyou');
 Route::get('/sell', SubmissionCreateController::class)->name('sell.create');
 Route::post('/sell', SubmissionStoreController::class)->name('sell.store');
+Route::get('/a/{store:slug}', AffiliateLinkController::class)->name('sell.affiliate-link');
 Route::get('/sell/thanks/{reference}', SubmissionThankYouController::class)->name('sell.thankyou');
 Route::get('/sell/search-cards', SellCardSearchController::class)
     ->middleware('throttle:20,1')

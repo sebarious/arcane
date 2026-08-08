@@ -34,19 +34,28 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         // Branded 403/404/500/503 pages instead of Laravel's defaults — see
-        // resources/ts/Pages/Errors/Error.vue. Left alone in local/testing so
-        // Ignition's debug page (with the actual stack trace) still shows —
-        // use Debug\ErrorPagePreviewController's routes to preview the design
-        // without needing to trigger a real error or flip APP_ENV.
+        // resources/ts/Pages/Errors/Error.vue.
         $exceptions->respond(function (SymfonyResponse $response, Throwable $exception, Request $request) {
             if ($request->is('api/*')) {
                 return $response;
             }
 
-            if (! app()->environment(['local', 'testing']) && in_array($response->getStatusCode(), [403, 404, 500, 503], true)) {
-                return Inertia::render('Errors/Error', ['status' => $response->getStatusCode()])
+            $status = $response->getStatusCode();
+
+            // 403/404/503 have no stack trace worth keeping — there's nothing to
+            // debug, the route just didn't match or access was denied — so these
+            // show the branded page in every environment, including local. 500 is
+            // the one that matters while developing: left alone in local/testing
+            // so Ignition's real stack trace still shows. Use
+            // Debug\ErrorPagePreviewController's routes to preview any of these
+            // locally without needing to trigger a real error.
+            $alwaysBranded = in_array($status, [403, 404, 503], true);
+            $brandedFiveHundred = $status === 500 && ! app()->environment(['local', 'testing']);
+
+            if ($alwaysBranded || $brandedFiveHundred) {
+                return Inertia::render('Errors/Error', ['status' => $status])
                     ->toResponse($request)
-                    ->setStatusCode($response->getStatusCode());
+                    ->setStatusCode($status);
             }
 
             return $response;

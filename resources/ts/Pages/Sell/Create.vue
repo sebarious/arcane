@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import axios from 'axios';
 import { Head, useForm } from '@inertiajs/vue3';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
+
+const props = defineProps<{ affiliateCode?: string | null }>();
 
 interface SearchResult {
   product_id: string;
@@ -84,6 +86,15 @@ function clearAffiliateCode() {
   affiliateError.value = '';
   affiliateBonusPercentage.value = 0;
 }
+
+// Arriving via a store's /a/{slug} link — prefill and validate straight away
+// so the bonus is already showing, not just the code sitting in the box.
+onMounted( () => {
+  if ( props.affiliateCode ) {
+    affiliateCodeInput.value = props.affiliateCode;
+    applyAffiliateCode();
+  }
+} );
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 

@@ -75,13 +75,13 @@ const steps = [
             Or browse our stores to find one first.
           </p>
         </div>
-        <div class="flex gap-[12px] shrink-0">
+        <div class="flex flex-col sm:flex-row gap-[12px] w-full sm:w-auto shrink-0">
           <Link href="/stores"
-            class="px-6 py-3 rounded-[4px] border border-[#3d2f6e] text-white text-sm font-['Jost',sans-serif] font-semibold uppercase tracking-wide hover:border-[#c9a84c] transition-colors">
+            class="w-full sm:w-auto text-center px-6 py-3 rounded-[4px] border border-[#3d2f6e] text-white text-sm font-['Jost',sans-serif] font-semibold uppercase tracking-wide hover:border-[#c9a84c] transition-colors">
             Find a store
           </Link>
           <Link href="/sell"
-            class="px-6 py-3 rounded-[4px] text-sm font-['Jost',sans-serif] font-bold uppercase tracking-wide text-[#0d0b14]"
+            class="w-full sm:w-auto text-center px-6 py-3 rounded-[4px] text-sm font-['Jost',sans-serif] font-bold uppercase tracking-wide text-[#0d0b14]"
             style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
             Sell to us
           </Link>

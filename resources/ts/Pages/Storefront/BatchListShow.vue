@@ -197,7 +197,7 @@ const generalMotion = {
             <p
               class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative text-[48px] text-white">
               {{ store.name }} Card List</p>
-            <div class="content-stretch flex gap-[12px] items-center relative shrink-0">
+            <div class="content-stretch flex flex-wrap gap-[12px] items-center relative shrink-0">
               <div
                 class="bg-[rgba(123,79,233,0.1)] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0">
                 <div aria-hidden
