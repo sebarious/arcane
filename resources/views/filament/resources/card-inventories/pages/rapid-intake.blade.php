@@ -5,12 +5,25 @@
 
     <script>
         // Fired by RapidIntake::pollPhoneScans() whenever a phone scan adds a row —
-        // scrolls the newest one into view so you don't have to keep scrolling the
-        // desktop page down manually while scanning card after card on your phone.
+        // scrolls the newest one into view and focuses its quantity field, so you
+        // don't have to keep scrolling the desktop page down or clicking in
+        // manually while scanning card after card on your phone. Quantity (not
+        // the search field) because the number is already resolved by this
+        // point — quantity is the one thing left worth adjusting before the
+        // next scan.
         window.addEventListener('rapid-intake-row-added', () => {
             requestAnimationFrame(() => {
                 const items = document.querySelectorAll('.fi-fo-repeater-item');
-                items[items.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const last = items[items.length - 1];
+                if (! last) return;
+
+                last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                const quantityInput = last.querySelector('input[id$=".quantity"]');
+                // preventScroll — focus shouldn't fight the smooth scroll above by
+                // jumping the viewport straight to the field.
+                quantityInput?.focus({ preventScroll: true });
+                quantityInput?.select();
             });
         });
     </script>
