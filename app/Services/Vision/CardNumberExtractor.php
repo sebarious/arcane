@@ -9,19 +9,31 @@ class CardNumberExtractor
     // so real prefixed numbers (e.g. "TG01/TG30") keep their prefix.
     private const KNOWN_PREFIXES = ['TG', 'GG', 'SV', 'RC'];
 
-    // Promo-era cards (Scarlet & Violet Promos, Mega Evolutions Promos, Sword &
-    // Shield Promos, ...) don't carry a numerator/denominator at all — just a
-    // short prefix next to a bare number, either spaced ("MEP 028") or glued
-    // ("SWSH235"). Values are the prefix PulseAPI's own card_number actually
-    // uses, confirmed against existing card_inventory rows — "SVI" is a common
+    // Promo-era cards (Scarlet & Violet, Mega Evolutions, Sword & Shield, Sun &
+    // Moon, XY, Black & White, Diamond & Pearl, HeartGold SoulSilver, ...) don't
+    // carry a numerator/denominator at all — just a short prefix next to a bare
+    // number, either spaced ("MEP 028") or glued ("SWSH235").
+    //
+    // Values are [PulseAPI's actual stored prefix, zero-pad width] — confirmed
+    // live against PulseAPI, not assumed: padding is NOT uniform across eras.
+    // SWSH/SVP/MEP pad to 3 digits (e.g. "SWSH041"); XY/BW/DP/HGSS pad to only 2
+    // (e.g. "XY01", "DP07", "HGSS04" — "XY122" is left alone, already 3 digits);
+    // SM (Sun & Moon) isn't padded at all (e.g. "SM48", "SM82"), and PulseAPI
+    // stores it under "SM", not "SMP" — despite that being the more intuitive
+    // guess (and this codebase's previous assumption). "SVI" is a common
     // print/OCR read for what PulseAPI stores as "SVP".
     private const PROMO_PREFIXES = [
-        'SWSHP' => 'SWSH',
-        'SWSH'  => 'SWSH',
-        'SVP'   => 'SVP',
-        'SVI'   => 'SVP',
-        'MEP'   => 'MEP',
-        'SMP'   => 'SMP',
+        'SWSHP' => ['SWSH', 3],
+        'SWSH'  => ['SWSH', 3],
+        'SVP'   => ['SVP', 3],
+        'SVI'   => ['SVP', 3],
+        'MEP'   => ['MEP', 3],
+        'SMP'   => ['SM', 0],
+        'SM'    => ['SM', 0],
+        'HGSS'  => ['HGSS', 2],
+        'XY'    => ['XY', 2],
+        'BW'    => ['BW', 2],
+        'DP'    => ['DP', 2],
     ];
 
     /**
@@ -84,9 +96,10 @@ class CardNumberExtractor
 
     /**
      * Promo numbers have no slash at all, so this only runs once both slash-based
-     * passes above have failed. PulseAPI stores these zero-padded to 3 digits
-     * (e.g. "MEP022") regardless of how many digits are actually printed/read,
-     * so this pads to match rather than passing through whatever OCR saw.
+     * passes above have failed. PulseAPI zero-pads these to a fixed width per
+     * era (see PROMO_PREFIXES) regardless of how many digits are actually
+     * printed/read, so this pads to match rather than passing through whatever
+     * OCR saw.
      *
      * `fullTextAnnotation.text` is the *whole card's* OCR text with a real
      * newline between every detected line (HP, attack costs, illustrator
@@ -108,9 +121,11 @@ class CardNumberExtractor
             return null;
         }
 
-        $last   = end($matches);
-        $prefix = self::PROMO_PREFIXES[strtoupper($last[1])];
+        $last = end($matches);
+        [$prefix, $padWidth] = self::PROMO_PREFIXES[strtoupper($last[1])];
 
-        return $prefix.str_pad($last[2], 3, '0', STR_PAD_LEFT);
+        $number = $padWidth > 0 ? str_pad($last[2], $padWidth, '0', STR_PAD_LEFT) : $last[2];
+
+        return $prefix.$number;
     }
 }

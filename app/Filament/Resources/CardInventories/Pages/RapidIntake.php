@@ -166,6 +166,11 @@ class RapidIntake extends Page implements HasForms
             ->title($added === 1 ? '1 card added from phone' : "{$added} cards added from phone")
             ->success()
             ->send();
+
+        // Scrolls the browser to the newly-added row (see the view) — someone
+        // scanning card after card on their phone shouldn't have to keep
+        // scrolling the desktop page down manually to see what just landed.
+        $this->dispatch('rapid-intake-row-added');
     }
 
     public function form(Schema $schema): Schema
