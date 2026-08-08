@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BatchQrSheetController;
+use App\Http\Controllers\Debug\ErrorPagePreviewController;
 use App\Http\Controllers\Debug\QrSheetPreviewController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImageController;
@@ -43,6 +44,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['web', 'auth'])
     ->get('/debug/qr-sheet/{batch}', QrSheetPreviewController::class)
     ->name('debug.qr-sheet');
+
+Route::middleware(['web', 'auth'])
+    ->get('/debug/errors/{status}', ErrorPagePreviewController::class)
+    ->name('debug.errors');
 
 Route::get('/', HomeController::class)->name('home');
 

@@ -4,7 +4,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Spatie\Permission\Middleware\RoleMiddleware;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -30,4 +32,23 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Branded 403/404/500/503 pages instead of Laravel's defaults — see
+        // resources/ts/Pages/Errors/Error.vue. Left alone in local/testing so
+        // Ignition's debug page (with the actual stack trace) still shows —
+        // use Debug\ErrorPagePreviewController's routes to preview the design
+        // without needing to trigger a real error or flip APP_ENV.
+        $exceptions->respond(function (SymfonyResponse $response, Throwable $exception, Request $request) {
+            if ($request->is('api/*')) {
+                return $response;
+            }
+
+            if (! app()->environment(['local', 'testing']) && in_array($response->getStatusCode(), [403, 404, 500, 503], true)) {
+                return Inertia::render('Errors/Error', ['status' => $response->getStatusCode()])
+                    ->toResponse($request)
+                    ->setStatusCode($response->getStatusCode());
+            }
+
+            return $response;
+        });
     })->create();

@@ -257,11 +257,15 @@ class BatchGenerator
      * plus every config value that fed into the search. Stored on disk (not the batches
      * row) since the pool alone can run to hundreds/thousands of rows.
      *
-     * This snapshot is downloadable by the public, so cost_pence — what we actually
-     * paid for each card — is stripped before writing. It has no bearing on the
-     * replay anyway: candidate selection is decided by value_pence/market_value_pence
-     * (see CandidateSelector::select()), cost_pence is only ever summed into
-     * total_cost for our own invoice accounting, which BatchVerifier never checks.
+     * Stored on the `local` disk (storage/app/private) — genuinely private,
+     * nothing currently serves it to the public. cost_pence is kept as-is:
+     * CandidateSelector's profitability gate is now judged against cost (see
+     * select()), so a redacted cost_pence here would make BatchVerifier's
+     * replay compute total_cost=0 for every attempt and reject everything —
+     * verification would always fail, not just look different. If a public
+     * "download the snapshot" feature is ever built, redact cost_pence at
+     * *that* output boundary instead of here, so this stored copy — the one
+     * BatchVerifier's replay actually depends on for correctness — stays intact.
      *
      * Also records original_assignment — the winning selection's card IDs, in final
      * pack order, exactly as generated. BatchVerifier checks a replay against *this*,
@@ -285,10 +289,8 @@ class BatchGenerator
     ): string {
         $path = "verification-snapshots/{$batch->id}.json";
 
-        $redactedPool = array_map(fn (array $card) => [...$card, 'cost_pence' => null], $poolData);
-
         Storage::disk('local')->put($path, json_encode([
-            'pool' => $redactedPool,
+            'pool' => $poolData,
             'band_distribution' => $bandDistribution,
             'tier_distribution' => $tierDistribution,
             'duplicate_limits' => $duplicateLimits,

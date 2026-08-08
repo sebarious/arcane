@@ -217,7 +217,7 @@ class CandidateSelector
                 $selectedIds = [...$selectedIds, ...array_column($take, 'id')];
             }
 
-            return $this->topUpToNeeded($selected, $selectedIds, $pool, $needed, $rng);
+            return $rng->shuffle($this->topUpToNeeded($selected, $selectedIds, $pool, $needed, $rng));
         }
 
         $selected = [];
@@ -280,7 +280,7 @@ class CandidateSelector
             }
         }
 
-        return $this->topUpToNeeded($selected, $selectedIds, $pool, $needed, $rng);
+        return $rng->shuffle($this->topUpToNeeded($selected, $selectedIds, $pool, $needed, $rng));
     }
 
     /**
@@ -308,6 +308,15 @@ class CandidateSelector
      * rather than swinging with whatever random cards happen to be in stock.
      * Ties are broken by $rng's shuffle order, so the pick stays fair and
      * deterministic without a second source of randomness.
+     *
+     * Each step only considers product_ids not already picked in this tier,
+     * falling back to repeats only once every distinct product here is used —
+     * pure distance-to-midpoint alone would happily grab every available copy
+     * of whichever card is the single best match, since identically-priced
+     * duplicates are indistinguishable to that metric. duplicate_limits still
+     * caps how many copies exist in $pool to begin with; this is what stops
+     * the search from *choosing* to spend that whole allowance on one card
+     * when the tier had other, equally-valid options.
      */
     private function selectBalancedForTier(array $pool, int $needed, int $midpoint, SeededRandom $rng): array
     {
@@ -317,13 +326,17 @@ class CandidateSelector
 
         $remaining = array_values($rng->shuffle($pool));
         $selected = [];
+        $usedProductIds = [];
         $runningTotal = 0;
 
         for ($n = 1; $n <= $needed && ! empty($remaining); $n++) {
+            $fresh = array_values(array_filter($remaining, fn ($c) => ! in_array($c['product_id'], $usedProductIds, true)));
+            $candidates = $fresh ?: $remaining;
+
             $bestIndex = 0;
             $bestDistance = null;
 
-            foreach ($remaining as $index => $card) {
+            foreach ($candidates as $index => $card) {
                 $price = (int) ($card['market_value_pence'] ?? 0);
                 $averageIfPicked = ($runningTotal + $price) / $n;
                 $distance = abs($averageIfPicked - $midpoint);
@@ -334,11 +347,11 @@ class CandidateSelector
                 }
             }
 
-            $chosen = $remaining[$bestIndex];
+            $chosen = $candidates[$bestIndex];
             $selected[] = $chosen;
+            $usedProductIds[] = $chosen['product_id'];
             $runningTotal += (int) ($chosen['market_value_pence'] ?? 0);
-            unset($remaining[$bestIndex]);
-            $remaining = array_values($remaining);
+            $remaining = array_values(array_filter($remaining, fn ($c) => $c['id'] !== $chosen['id']));
         }
 
         return $selected;
