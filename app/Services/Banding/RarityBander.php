@@ -8,18 +8,18 @@ class RarityBander
      * Default thresholds in pence. The upper bound of each band is exclusive
      * of the next band's lower bound.
      *
-     *   common:    £0.75 – £5.99
-     *   rare:      £6.00 – £11.99
-     *   super:     £12.00 – £49.99
-     *   legendary: £50.00 – £199.99
-     *   mythic:    £200.00 – £599.99
+     *   common:    £0.75 – £3.99
+     *   rare:      £4.00 – £9.99
+     *   super:     £10.00 – £49.99
+     *   legendary: £50.00 – £149.99
+     *   mythic:    £150.00 – £399.99
      */
     public const DEFAULT_THRESHOLDS = [
-        'common'    => ['min' => 75,    'max' => 599],
-        'rare'      => ['min' => 600,   'max' => 1099],
-        'super'     => ['min' => 1100,  'max' => 4999],
-        'legendary' => ['min' => 5000,  'max' => 19999],
-        'mythic'    => ['min' => 20000,  'max' => 59999],
+        'common'    => ['min' => 75,    'max' => 399],
+        'rare'      => ['min' => 400,   'max' => 999],
+        'super'     => ['min' => 1000,  'max' => 4999],
+        'legendary' => ['min' => 5000,  'max' => 14999],
+        'mythic'    => ['min' => 15000,  'max' => 39999],
     ];
 
     /** @param array<string, array{min:int,max:int}>|null $thresholds */

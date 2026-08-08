@@ -11,6 +11,7 @@ use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Intake\PhoneScanController;
 use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\Pages\AffiliateProgramController;
+use App\Http\Controllers\Pages\ApiDocsController;
 use App\Http\Controllers\Pages\PrivacyPolicyController;
 use App\Http\Controllers\Pages\TermsController;
 use App\Http\Controllers\Pages\VerifiedController;
@@ -79,6 +80,7 @@ Route::get('/sell/verify-affiliate-code', AffiliateCodeController::class)
 
 Route::get('/affiliate-program', AffiliateProgramController::class)->name('pages.affiliate-program');
 Route::get('/verified', VerifiedController::class)->name('pages.verified');
+Route::get('/api-docs', ApiDocsController::class)->name('pages.api-docs');
 Route::get('/terms', TermsController::class)->name('pages.terms');
 Route::get('/privacy', PrivacyPolicyController::class)->name('pages.privacy');
 

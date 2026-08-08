@@ -81,6 +81,7 @@ const columns = [
     title: 'Program',
     links: [
       { label: 'Affiliate Program', href: '/affiliate-program' },
+      { label: 'API Documentation', href: '/api-docs' },
     ],
   },
   {

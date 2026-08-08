@@ -21,7 +21,7 @@
         </div>
         <div>
           <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Common</div>
-          <div class="text-2xl font-black text-white">£1–£6</div>
+          <div class="text-2xl font-black text-white">£1–£4</div>
         </div>
       </div>
 
@@ -33,7 +33,7 @@
         </div>
         <div>
           <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Rare</div>
-          <div class="text-2xl font-black text-white">£6–£11</div>
+          <div class="text-2xl font-black text-white">£4–£10</div>
         </div>
       </div>
 
@@ -45,7 +45,7 @@
         </div>
         <div>
           <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Super</div>
-          <div class="text-2xl font-black text-white">£11–£50</div>
+          <div class="text-2xl font-black text-white">£10–£50</div>
         </div>
       </div>
 
@@ -57,7 +57,7 @@
         </div>
         <div>
           <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Legendary</div>
-          <div class="text-2xl font-black text-white">£50–£200</div>
+          <div class="text-2xl font-black text-white">£50-£150</div>
         </div>
       </div>
 
@@ -69,7 +69,7 @@
         </div>
         <div>
           <div class="price-name text-sm font-bold uppercase tracking-wider mb-1">Mythic</div>
-          <div class="text-2xl font-black text-white">£200+</div>
+          <div class="text-2xl font-black text-white">£150-£400</div>
         </div>
       </div>
 
@@ -212,20 +212,20 @@
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
-              <span class="text-white/50">36 <span class="text-white/80">· 14.4%</span></span>
+              <span class="text-white/50">36 <span class="text-white/80">· 8%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-rare" style="width:14.4%"></div>
+              <div class="h-full rounded-full bar-rare" style="width:8%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-common"></span>Common</span>
-              <span class="text-white/50">200 <span class="text-white/80">· 80.0%</span></span>
+              <span class="text-white/50">200 <span class="text-white/80">· 86.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-common" style="width:80.0%"></div>
+              <div class="h-full rounded-full bar-common" style="width:86.4%"></div>
             </div>
           </div>
         </div>
@@ -280,30 +280,30 @@
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-super"></span>Super</span>
-              <span class="text-white/50">15 <span class="text-white/80">· 3.0%</span></span>
+              <span class="text-white/50">15 <span class="text-white/80">· 2.4%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-super" style="width:3.0%"></div>
+              <div class="h-full rounded-full bar-super" style="width:2.4%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
-              <span class="text-white/50">73 <span class="text-white/80">· 14.6%</span></span>
+              <span class="text-white/50">73 <span class="text-white/80">· 8.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-rare" style="width:14.6%"></div>
+              <div class="h-full rounded-full bar-rare" style="width:8%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-common"></span>Common</span>
-              <span class="text-white/50">400 <span class="text-white/80">· 80.0%</span></span>
+              <span class="text-white/50">400 <span class="text-white/80">· 87.2%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-common" style="width:80.0%"></div>
+              <div class="h-full rounded-full bar-common" style="width:87.2%"></div>
             </div>
           </div>
         </div>
