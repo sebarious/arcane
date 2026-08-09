@@ -248,8 +248,6 @@
     VAT is accounted for on the margin and cannot be reclaimed.
   </p>
   @endif
-
-  <p class="footer-brand">Arcane &middot; All cards authenticated &middot; All packs sealed fresh</p>
 </body>
 
 </html>
