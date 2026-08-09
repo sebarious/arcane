@@ -59,9 +59,16 @@ class CardRowResolver
      *         several different Pokémon across different sets, but a set code
      *         match narrows straight to the real one when exactly one candidate
      *         matches it, same as if only one had turned up in the first place.
+     * @param  bool  $excludeRareVariants  Phone-scan-only (see PhoneScanController)
+     *         — drops Play!/stamped/jumbo candidates before anything else runs, so
+     *         they can't force an otherwise-ordinary card into "choose variant" and
+     *         stall continuous scanning. Left off for the desktop flows, where
+     *         going to "Fill in manually"/"Fetch card data" for one of these rare
+     *         variants is a rare, deliberate, one-at-a-time action rather than
+     *         something slowing down a batch.
      * @return 'resolved'|'ambiguous'|'not_found'
      */
-    public function applySearchResolution(array &$rows, int|string $key, float $buyPercentage, ?string $ocrSetCode = null): string
+    public function applySearchResolution(array &$rows, int|string $key, float $buyPercentage, ?string $ocrSetCode = null, bool $excludeRareVariants = false): string
     {
         $row = $rows[$key];
 
@@ -69,6 +76,13 @@ class CardRowResolver
             (string) ($row['card_name'] ?? ''),
             (string) ($row['search_number'] ?? ''),
         );
+
+        if ($excludeRareVariants) {
+            $candidates = array_values(array_filter(
+                $candidates,
+                fn (array $c) => ! PulseApiCardMapper::isRareVariant($c),
+            ));
+        }
 
         if (empty($candidates)) {
             return 'not_found';

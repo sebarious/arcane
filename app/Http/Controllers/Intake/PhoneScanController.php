@@ -84,7 +84,7 @@ class PhoneScanController extends Controller
         $rows = [0 => $resolver->emptyRow()];
         $rows[0]['search_number'] = $number;
 
-        $outcome = $resolver->applySearchResolution($rows, 0, $buyPercentage, $scan['setCode']);
+        $outcome = $resolver->applySearchResolution($rows, 0, $buyPercentage, $scan['setCode'], excludeRareVariants: true);
 
         $cardName = null;
         if ($outcome === 'resolved') {

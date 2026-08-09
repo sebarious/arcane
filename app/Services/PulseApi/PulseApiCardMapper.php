@@ -18,6 +18,18 @@ class PulseApiCardMapper
         'rarity_band', 'synced_at',
     ];
 
+    /**
+     * Phone-scan-only noise filter (see CardRowResolver::applySearchResolution
+     * and PhoneScanController::frame) — Play! Pokémon prize-pack reprints,
+     * stamped tournament promos, and jumbo oversized cards show up often
+     * enough as an extra candidate on an otherwise perfectly ordinary card to
+     * force "choose variant" and stall continuous phone scanning, but are rare
+     * enough in real stock that excluding them from auto-resolution is the
+     * right tradeoff. A card that's genuinely one of these just comes back
+     * "not found" (set aside) instead — see PulseApiCardMapper::isRareVariant.
+     */
+    private const RARE_VARIANT_KEYWORDS = ['Play!', 'Stamp', 'Jumbo'];
+
     // PulseAPI's Card object has no explicit game/TCG field — the only signal is the
     // set_id, which for non-Pokémon games carries a namespaced prefix (Lorcana "lor-",
     // One Piece "op-"); plain Pokémon set codes (sv3pt5, gym2, swshp, ...) have none.
@@ -270,6 +282,22 @@ class PulseApiCardMapper
         $folder = strtoupper($m[1]);
 
         return self::IMAGE_FOLDER_CODE_OVERRIDES[$folder] ?? $folder;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes  Already mapped via toInventoryAttributes().
+     */
+    public static function isRareVariant(array $attributes): bool
+    {
+        $haystack = strtolower(($attributes['material'] ?? '').' '.($attributes['promo_info'] ?? ''));
+
+        foreach (self::RARE_VARIANT_KEYWORDS as $keyword) {
+            if (str_contains($haystack, strtolower($keyword))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
