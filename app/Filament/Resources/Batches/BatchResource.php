@@ -358,10 +358,8 @@ class BatchResource extends Resource
 
     /**
      * Third and final step, once the invoice sendInvoiceAction() raised has
-     * been marked paid (via InvoiceResource's own edit page — deliberately
-     * still a manual human check, not automated) — see BatchGenerator::publish().
-     * Visible as soon as it's awaiting payment so the next step is obvious,
-     * but stays disabled (with an explanation) until that invoice really is paid.
+     * been sent — see BatchGenerator::publish(). Visible as soon as the batch
+     * is awaiting payment; can be used before the invoice is marked paid.
      */
     public static function publishAction(): Action
     {
@@ -370,10 +368,6 @@ class BatchResource extends Resource
             ->icon(Heroicon::OutlinedRocketLaunch)
             ->color('success')
             ->visible(fn (Batch $record) => $record->status === 'awaiting_payment')
-            ->disabled(fn (Batch $record) => $record->invoice?->status !== 'paid')
-            ->tooltip(fn (Batch $record) => $record->invoice?->status !== 'paid'
-                ? 'Mark the invoice as paid first (Invoices → this batch\'s invoice → Status).'
-                : null)
             ->requiresConfirmation()
             ->modalHeading('Put this batch live')
             ->modalDescription('Publishes it to the storefront — there\'s no way to undo this from here.')

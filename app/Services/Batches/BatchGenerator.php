@@ -280,19 +280,12 @@ class BatchGenerator
 
     /**
      * Third and final step: marks the batch 'committed' — public on the
-     * storefront. Requires the invoice sendInvoice() raised to already be
-     * marked paid (see InvoiceResource's own status field/edit page — that's
-     * still a manual, human "yes, the money's in" check, deliberately not
-     * automated here), so a batch can never go live ahead of payment.
+     * storefront. Can be published ahead of the invoice being marked paid.
      */
     public function publish(Batch $batch): void
     {
         if ($batch->status !== 'awaiting_payment') {
             throw new \RuntimeException("Batch {$batch->id} is not awaiting payment.");
-        }
-
-        if ($batch->invoice?->status !== 'paid') {
-            throw new \RuntimeException("Batch {$batch->id}'s invoice hasn't been marked paid yet.");
         }
 
         $batch->update([
