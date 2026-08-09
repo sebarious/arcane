@@ -13,7 +13,10 @@ const userName = computed(() => page.props?.auth?.user?.name);
 // client relies on it detecting the missing X-Inertia header and falling
 // back to a full navigation — a plain form sidesteps that entirely and just
 // always does a real page load, which is what leaving the SPA needs anyway.
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+const csrfToken =
+  typeof document !== 'undefined'
+    ? (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '')
+    : '';
 </script>
 
 <template>
