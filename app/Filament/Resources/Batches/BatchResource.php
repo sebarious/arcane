@@ -6,8 +6,8 @@ use App\Enums\BatchType;
 use App\Enums\Game;
 use App\Filament\Exports\BatchSalesExporter;
 use App\Jobs\GenerateBatchJob;
+use App\Jobs\GenerateBatchQrSheetJob;
 use App\Models\Batch;
-use App\Models\Store;
 use App\Services\Batches\BatchDeleter;
 use App\Services\Batches\BatchDesign;
 use App\Services\Batches\BatchGenerator;
@@ -15,6 +15,7 @@ use App\Services\Batches\BatchMerger;
 use App\Support\Money;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -29,6 +30,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use UnitEnum;
 
 class BatchResource extends Resource
@@ -299,6 +301,7 @@ class BatchResource extends Resource
             ->recordActions([
                 EditAction::make(),
                 static::retryAction(),
+                static::regenerateQrSheetAction(),
                 static::deleteBatchAction(),
             ])
             ->checkIfRecordIsSelectableUsing(
@@ -308,6 +311,19 @@ class BatchResource extends Resource
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     ExportBulkAction::make()->exporter(BatchSalesExporter::class),
+                    BulkAction::make('regenerateQrSheets')
+                        ->label('Regenerate QR sheets')
+                        ->icon(Heroicon::OutlinedArrowPath)
+                        ->requiresConfirmation()
+                        ->modalHeading('Regenerate QR sheets')
+                        ->modalDescription('Re-queues QR sheet generation for every selected batch — use this to recover batches whose sheet failed to generate.')
+                        ->action(function (Collection $records) {
+                            $records->each(fn (Batch $batch) => GenerateBatchQrSheetJob::dispatch($batch->id));
+                            Notification::make()
+                                ->title('QR sheet regeneration queued for '.$records->count().' batch(es)')
+                                ->success()
+                                ->send();
+                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -388,6 +404,32 @@ class BatchResource extends Resource
             ->url(fn (Batch $record) => route('batches.qr-sheet', $record))
             ->openUrlInNewTab()
             ->visible(fn (Batch $record) => in_array($record->status, ['awaiting_payment', 'committed'], true));
+    }
+
+    /**
+     * Manual recovery for GenerateBatchQrSheetJob — the sheet is otherwise only
+     * regenerated as a side effect of visiting the qrSheetAction() link ten
+     * minutes after batch creation, which isn't obvious or fast to reach for
+     * when several batches have failed at once.
+     */
+    public static function regenerateQrSheetAction(): Action
+    {
+        return Action::make('regenerateQrSheet')
+            ->label('Regenerate QR sheet')
+            ->icon(Heroicon::OutlinedArrowPath)
+            ->color('gray')
+            ->visible(fn (Batch $record) => $record->packs()->exists()
+                && in_array($record->status, ['awaiting_payment', 'committed', 'dispatched', 'completed'], true))
+            ->requiresConfirmation()
+            ->modalHeading('Regenerate QR sheet')
+            ->modalDescription('Re-queues QR sheet generation for this batch. Use this if the sheet failed to generate, or needs refreshing after a card change.')
+            ->action(function (Batch $record) {
+                GenerateBatchQrSheetJob::dispatch($record->id);
+                Notification::make()
+                    ->title('QR sheet regeneration queued')
+                    ->success()
+                    ->send();
+            });
     }
 
     public static function verifyAction(): Action

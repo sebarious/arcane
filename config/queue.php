@@ -68,7 +68,11 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // Must stay above the longest job timeout in the app (GenerateBatchQrSheetJob
+            // is 300s) — otherwise Redis re-queues a duplicate of a still-running job,
+            // and the duplicate's reservation trips MaxAttemptsExceededException before
+            // it ever runs, permanently failing jobs that were actually still working.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 360),
             'block_for' => null,
             'after_commit' => false,
         ],
