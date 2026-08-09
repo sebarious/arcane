@@ -234,13 +234,32 @@ class PulseApiCardMapper
     }
 
     /**
+     * A handful of image folders are the full set name rather than the short
+     * code actually printed on the card — confirmed for White Flare / Black
+     * Bolt, whose shared "/086" numbering otherwise makes them indistinguishable
+     * to CardRowResolver's set-code disambiguation (searchCandidates alone
+     * returns both as candidates for the same number; without this, comparing
+     * against the OCR-read "WHT"/"BLK" never matches "WHITE-FLARE"/"BLACK-BOLT",
+     * so it silently falls back to "ambiguous" every time instead of narrowing
+     * to the one real match).
+     *
+     * @var array<string, string>
+     */
+    private const IMAGE_FOLDER_CODE_OVERRIDES = [
+        'WHITE-FLARE' => 'WHT',
+        'BLACK-BOLT'  => 'BLK',
+    ];
+
+    /**
      * Pulls the folder segment out of a card's image URL, e.g.
      * ".../cards/images/DRI/Crustle_186_182.webp" -> "DRI" — this happens to
      * match the official set code printed on modern cards, even though
      * PulseAPI's own `set_id` uses a different, internal scheme (e.g. "sv10"
      * for that same set). Confirmed against several real sets; not documented
      * by PulseAPI, so this is a best-effort match, not a guaranteed contract —
-     * callers should treat a null/mismatch as "no signal", not an error.
+     * callers should treat a null/mismatch as "no signal", not an error. A
+     * small number of folders don't follow this convention at all (spelled-out
+     * full names instead of a code) — see IMAGE_FOLDER_CODE_OVERRIDES.
      */
     public static function setCodeFromImageUrl(?string $imageUrl): ?string
     {
@@ -248,7 +267,9 @@ class PulseApiCardMapper
             return null;
         }
 
-        return strtoupper($m[1]);
+        $folder = strtoupper($m[1]);
+
+        return self::IMAGE_FOLDER_CODE_OVERRIDES[$folder] ?? $folder;
     }
 
     /**
