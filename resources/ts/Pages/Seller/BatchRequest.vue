@@ -89,6 +89,18 @@ const mergeableForStore = computed(() =>
   props.mergeableBatches.filter(b => b.store_id === form.store_id)
 );
 
+const hasMergeableBatches = computed(() => mergeableForStore.value.length > 0);
+
+// Covers switching to a store with nothing to merge after already ticking the
+// box for a different one — the checkbox becomes disabled, so this keeps
+// form state in sync with what's actually still selectable.
+watch(hasMergeableBatches, (has) => {
+  if (! has) {
+    form.wants_merge = false;
+    form.merge_request_batch_id = null;
+  }
+});
+
 const submit = () => {
   form.transform((data) => ({
     ...data,
@@ -142,18 +154,23 @@ const submit = () => {
 
         <!-- Merge option -->
         <div class="border border-[#3d2f6e] rounded-[8px] p-4">
-          <label class="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" v-model="form.wants_merge" class="mt-1 accent-[#c9a84c]" />
+          <label :class="['flex items-start gap-3', hasMergeableBatches ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']">
+            <input type="checkbox" v-model="form.wants_merge" :disabled="!hasMergeableBatches" class="mt-1 accent-[#c9a84c]" />
             <span class="font-['Jost',sans-serif] text-sm text-white">
               Merge one of my existing batches into this new one
               <span class="block text-xs text-[#71717a] mt-0.5 font-normal">
-                If one of your batches is running low, we can move its remaining packs into this
-                fresh one once it's generated — restores balanced pull odds instead of running two thin pools.
+                <template v-if="hasMergeableBatches">
+                  If one of your batches is running low, we can move its remaining packs into this
+                  fresh one once it's generated — restores balanced pull odds instead of running two thin pools.
+                </template>
+                <template v-else>
+                  No eligible batches for this store yet — nothing to merge in.
+                </template>
               </span>
             </span>
           </label>
 
-          <div v-if="form.wants_merge" class="mt-4">
+          <div v-if="form.wants_merge && hasMergeableBatches" class="mt-4">
             <label class="block font-['Jost',sans-serif] font-semibold text-xs uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">
               Batch to merge in
             </label>
@@ -164,9 +181,6 @@ const submit = () => {
                 {{ b.reference }} — {{ (b.type ?? '').toUpperCase() }}, {{ b.pack_count }} packs
               </option>
             </select>
-            <p v-if="mergeableForStore.length === 0" class="text-xs text-[#71717a] mt-2">
-              No eligible batches for this store yet.
-            </p>
           </div>
         </div>
 

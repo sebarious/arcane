@@ -333,7 +333,7 @@ const generalMotion = {
             </div>
           </div>
           <div
-            class="content-stretch grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-[24px] relative shrink-0 w-full">
+            class="content-stretch grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-[24px] relative shrink-0 w-full">
             <div v-for=" card in bands[band.key].cards "
               :key="( card.name || '' ) + ( card.number || '' ) + ( card.set || '' )"
               :class="['bg-[#13101e]', `drop-shadow-[0px_0px_8px_${band.colors.shadow}]`, 'flex-[1_0_0]', 'min-w-px', 'relative', 'rounded-[8px]']">
