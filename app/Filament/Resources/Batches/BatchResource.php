@@ -10,6 +10,7 @@ use App\Models\Batch;
 use App\Models\Store;
 use App\Services\Batches\BatchDeleter;
 use App\Services\Batches\BatchDesign;
+use App\Services\Batches\BatchGenerator;
 use App\Services\Batches\BatchMerger;
 use App\Support\Money;
 use BackedEnum;
@@ -245,6 +246,8 @@ class BatchResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state) => match ($state) {
                         'draft' => 'Draft (not generated)',
+                        'pending_review' => 'Pending review',
+                        'awaiting_payment' => 'Awaiting payment',
                         'committed' => 'Live (in store)',
                         'dispatched' => 'Dispatched',
                         'completed' => 'Completed',
@@ -253,6 +256,8 @@ class BatchResource extends Resource
                     })
                     ->color(fn (string $state) => match ($state) {
                         'draft' => 'gray',
+                        'pending_review' => 'warning',
+                        'awaiting_payment' => 'info',
                         'committed' => 'success',
                         'dispatched' => 'warning',
                         'completed' => 'info',
@@ -325,6 +330,62 @@ class BatchResource extends Resource
             });
     }
 
+    /**
+     * Second step: raises the invoice and emails the seller — see
+     * BatchGenerator::sendInvoice(). Doesn't touch the storefront; that's
+     * publishAction()'s job, once the invoice this raises has actually been
+     * paid.
+     */
+    public static function sendInvoiceAction(): Action
+    {
+        return Action::make('sendInvoice')
+            ->label('Send invoice')
+            ->icon(Heroicon::OutlinedPaperAirplane)
+            ->color('warning')
+            ->visible(fn (Batch $record) => $record->status === 'pending_review')
+            ->requiresConfirmation()
+            ->modalHeading('Send invoice')
+            ->modalDescription('Generates the invoice and emails it to the seller. The batch stays off the storefront until it\'s marked paid and put live.')
+            ->action(function (Batch $record) {
+                app(BatchGenerator::class)->sendInvoice($record);
+                Notification::make()
+                    ->title('Invoice sent')
+                    ->body('Emailed to the seller — mark it paid on the invoice, then put the batch live.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * Third and final step, once the invoice sendInvoiceAction() raised has
+     * been marked paid (via InvoiceResource's own edit page — deliberately
+     * still a manual human check, not automated) — see BatchGenerator::publish().
+     * Visible as soon as it's awaiting payment so the next step is obvious,
+     * but stays disabled (with an explanation) until that invoice really is paid.
+     */
+    public static function publishAction(): Action
+    {
+        return Action::make('publish')
+            ->label('Put it live')
+            ->icon(Heroicon::OutlinedRocketLaunch)
+            ->color('success')
+            ->visible(fn (Batch $record) => $record->status === 'awaiting_payment')
+            ->disabled(fn (Batch $record) => $record->invoice?->status !== 'paid')
+            ->tooltip(fn (Batch $record) => $record->invoice?->status !== 'paid'
+                ? 'Mark the invoice as paid first (Invoices → this batch\'s invoice → Status).'
+                : null)
+            ->requiresConfirmation()
+            ->modalHeading('Put this batch live')
+            ->modalDescription('Publishes it to the storefront — there\'s no way to undo this from here.')
+            ->action(function (Batch $record) {
+                app(BatchGenerator::class)->publish($record);
+                Notification::make()
+                    ->title('Batch is live')
+                    ->success()
+                    ->send();
+            });
+    }
+
     public static function qrSheetAction(): Action
     {
         return Action::make('qrSheet')
@@ -332,7 +393,7 @@ class BatchResource extends Resource
             ->icon(Heroicon::OutlinedQrCode)
             ->url(fn (Batch $record) => route('batches.qr-sheet', $record))
             ->openUrlInNewTab()
-            ->visible(fn (Batch $record) => $record->status === 'committed');
+            ->visible(fn (Batch $record) => in_array($record->status, ['awaiting_payment', 'committed'], true));
     }
 
     public static function verifyAction(): Action

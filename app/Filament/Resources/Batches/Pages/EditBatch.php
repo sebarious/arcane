@@ -13,6 +13,8 @@ class EditBatch extends EditRecord
     {
         return [
             BatchResource::generateAction(),
+            BatchResource::sendInvoiceAction(),
+            BatchResource::publishAction(),
             BatchResource::qrSheetAction(),
             BatchResource::verifyAction(),
             BatchResource::mergeIntoAction(),

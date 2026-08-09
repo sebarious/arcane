@@ -210,8 +210,16 @@ class BatchGenerator
             CardInventory::whereIn('id', $cards->pluck('id'))
                 ->update(['margin_pence' => $perCardMargin]);
 
+            // Lands as 'pending_review', not 'committed' — cards are picked and
+            // allocated, but nothing customer/seller-facing happens yet (no
+            // invoice, no email, no storefront visibility). Three explicit
+            // steps take it live from here — see sendInvoice() and publish()
+            // below — so it can be checked over first (the QR sheet and
+            // verification page both already work at this stage, see
+            // BatchResource::qrSheetAction/verifyAction) and the seller isn't
+            // billed, let alone live, until a human's actually looked at it.
             $batch->update([
-                'status' => 'committed',
+                'status' => 'pending_review',
                 'total_cost_pence' => $totalCost,         // real cost (for accounting)
                 'total_market_value_pence' => $totalMarket,       // real market (for reporting)
                 'sale_price_pence' => $targetSale,
@@ -219,36 +227,78 @@ class BatchGenerator
                 'margin_scheme_vat_pence' => $vatOnMargin,
                 'failure_reason' => null,
                 'failed_at' => null,
-                'committed_at' => now(),
                 'top_card_1_id' => $topCards->get(0)?->id,
                 'top_card_2_id' => $topCards->get(1)?->id,
                 'verification_revealed_at' => now(),
                 'verification_snapshot_path' => $snapshotPath,
             ]);
+        });
+    }
 
+    /**
+     * Second step: generates the invoice, offsets any existing store credit
+     * against it, emails it to the seller, and dispatches the QR sheet job —
+     * physical pack labels don't depend on payment, so there's no reason to
+     * hold them back until publish() while the seller's still paying. Doesn't
+     * touch the storefront. Moves the batch to 'awaiting_payment'; publish()
+     * is the explicit third step once it's actually been paid.
+     */
+    public function sendInvoice(Batch $batch): void
+    {
+        if ($batch->status !== 'pending_review') {
+            throw new \RuntimeException("Batch {$batch->id} is not pending review.");
+        }
+
+        DB::transaction(function () use ($batch) {
             $invoice = Invoice::create([
                 'number' => Invoice::nextNumber(),
                 'store_id' => $batch->store_id,
                 'batch_id' => $batch->id,
-                'total_pence' => $targetSale,
-                'internal_cost_pence' => $totalCost,
-                'internal_margin_pence' => $marginAtCost,
-                'internal_margin_vat_pence' => $vatOnMargin,
+                'total_pence' => $batch->sale_price_pence,
+                'internal_cost_pence' => $batch->total_cost_pence,
+                'internal_margin_pence' => $batch->margin_pence,
+                'internal_margin_vat_pence' => $batch->margin_scheme_vat_pence,
                 'status' => 'sent',
                 'issued_on' => now()->toDateString(),
                 'due_on' => now()->addHours(48)->toDateString(),
             ]);
 
-            $batch->update(['invoice_id' => $invoice->id]);
+            $batch->update([
+                'invoice_id' => $invoice->id,
+                'status' => 'awaiting_payment',
+            ]);
 
             // Auto-offset the invoice with any credit this store already has in its
             // wallet (e.g. from appraised affiliate sell submissions), up to the
             // invoice's value — leftover credit, if any, carries forward untouched.
             $this->creditService->deductForInvoice($batch->store, $invoice);
 
-            GenerateBatchQrSheetJob::dispatch($batch->id)->afterCommit();
             SendInvoiceEmailJob::dispatch($invoice->id)->afterCommit();
+            GenerateBatchQrSheetJob::dispatch($batch->id)->afterCommit();
         });
+    }
+
+    /**
+     * Third and final step: marks the batch 'committed' — public on the
+     * storefront. Requires the invoice sendInvoice() raised to already be
+     * marked paid (see InvoiceResource's own status field/edit page — that's
+     * still a manual, human "yes, the money's in" check, deliberately not
+     * automated here), so a batch can never go live ahead of payment.
+     */
+    public function publish(Batch $batch): void
+    {
+        if ($batch->status !== 'awaiting_payment') {
+            throw new \RuntimeException("Batch {$batch->id} is not awaiting payment.");
+        }
+
+        if ($batch->invoice?->status !== 'paid') {
+            throw new \RuntimeException("Batch {$batch->id}'s invoice hasn't been marked paid yet.");
+        }
+
+        $batch->update([
+            'status' => 'committed',
+            'committed_at' => now(),
+        ]);
     }
 
     /**
