@@ -72,7 +72,9 @@ class PickingSheetGenerator
                 'card_name' => $card->card_name,
                 'set_name' => $card->set_name,
                 'card_number' => $card->card_number,
-                'rarity' => $card->rarity,
+                // Our own band (common/rare/super/legendary/mythic), not PulseAPI's
+                // printed rarity — matches what staff actually use day to day.
+                'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : null,
                 'pack_sequence' => $card->pack?->sequence_no,
             ]);
     }
