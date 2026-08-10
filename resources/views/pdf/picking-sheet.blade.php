@@ -95,6 +95,7 @@
           <th>Card</th>
           <th>Set</th>
           <th>Number</th>
+          <th>Rarity</th>
           <th>Pack #</th>
         </tr>
       </thead>
@@ -105,6 +106,7 @@
           <td>{{ $card['card_name'] }}</td>
           <td class="muted">{{ $card['set_name'] }}</td>
           <td class="muted">{{ $card['card_number'] }}</td>
+          <td class="muted">{{ $card['rarity'] }}</td>
           <td>{{ $card['pack_sequence'] }}</td>
         </tr>
         @endforeach

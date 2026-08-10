@@ -72,6 +72,7 @@ class PickingSheetGenerator
                 'card_name' => $card->card_name,
                 'set_name' => $card->set_name,
                 'card_number' => $card->card_number,
+                'rarity' => $card->rarity,
                 'pack_sequence' => $card->pack?->sequence_no,
             ]);
     }
