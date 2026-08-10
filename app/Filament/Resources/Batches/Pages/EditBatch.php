@@ -11,20 +11,23 @@ class EditBatch extends EditRecord
 
     protected function getHeaderActions(): array
     {
+        // Icon-only — with generate/invoice/publish/warehouse/QR/picking/verify/
+        // merge/delete all potentially visible at once, labelled buttons no
+        // longer fit on screen. Each keeps a tooltip so it's still discoverable.
         return [
-            BatchResource::generateAction(),
-            BatchResource::sendInvoiceAction(),
-            BatchResource::publishAction(),
-            BatchResource::sendToWarehouseAction(),
-            BatchResource::qrSheetAction(),
-            BatchResource::regenerateQrSheetAction(),
-            BatchResource::pickingSheetAction(),
-            BatchResource::verifyAction(),
-            BatchResource::mergeIntoAction(),
+            BatchResource::generateAction()->iconButton()->tooltip('Generate cards'),
+            BatchResource::sendInvoiceAction()->iconButton()->tooltip('Send invoice'),
+            BatchResource::publishAction()->iconButton()->tooltip('Put it live'),
+            BatchResource::sendToWarehouseAction()->iconButton()->tooltip('Send to warehouse'),
+            BatchResource::qrSheetAction()->iconButton()->tooltip('QR sheet'),
+            BatchResource::regenerateQrSheetAction()->iconButton()->tooltip('Regenerate QR sheet'),
+            BatchResource::pickingSheetAction()->iconButton()->tooltip('Picking sheet'),
+            BatchResource::verifyAction()->iconButton()->tooltip('Verification page'),
+            BatchResource::mergeIntoAction()->iconButton()->tooltip('Merge into…'),
             // Redirect after delete — this is the record's own edit page, so it 404s
             // once the batch is gone. The list-page row action (same deleteBatchAction())
             // doesn't need this since it just refreshes the table in place.
-            BatchResource::deleteBatchAction()->successRedirectUrl(BatchResource::getUrl('index')),
+            BatchResource::deleteBatchAction()->iconButton()->tooltip('Delete batch')->successRedirectUrl(BatchResource::getUrl('index')),
         ];
     }
 }

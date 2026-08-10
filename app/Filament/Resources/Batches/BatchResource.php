@@ -302,11 +302,11 @@ class BatchResource extends Resource
                     }),
             ])
             ->recordActions([
-                EditAction::make(),
-                static::retryAction(),
+                EditAction::make()->iconButton()->tooltip('Edit'),
+                static::retryAction()->iconButton()->tooltip('Retry'),
                 static::sendToWarehouseAction()->iconButton()->tooltip('Send to warehouse'),
-                static::regenerateQrSheetAction(),
-                static::deleteBatchAction(),
+                static::regenerateQrSheetAction()->iconButton()->tooltip('Regenerate QR sheet'),
+                static::deleteBatchAction()->iconButton()->tooltip('Delete batch'),
             ])
             ->checkIfRecordIsSelectableUsing(
                 fn (Batch $record) => ! $record->packs()->where('status', 'sold')->exists(),
