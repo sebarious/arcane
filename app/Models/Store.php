@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\ApiMode;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 class Store extends Model
 {
@@ -31,31 +31,55 @@ class Store extends Model
         'api_access_granted',
         'api_enabled',
         'daily_request_limit',
+        'api_mode',
+        'mark_as_sold_enabled',
     ];
 
     protected $casts = [
         'public_page_enabled' => 'boolean',
-        'api_access_granted'  => 'boolean',
-        'api_enabled'         => 'boolean',
+        'api_access_granted' => 'boolean',
+        'api_enabled' => 'boolean',
         'daily_request_limit' => 'integer',
-        'platforms'           => 'array',
-        'social_links'        => 'array',
+        'platforms' => 'array',
+        'social_links' => 'array',
+        'api_mode' => ApiMode::class,
+        'mark_as_sold_enabled' => 'boolean',
     ];
 
-    public function user()      { return $this->belongsTo(User::class); }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
-    public function batches()   { return $this->hasMany(Batch::class); }
+    public function batches()
+    {
+        return $this->hasMany(Batch::class);
+    }
 
-    public function invoices()  { return $this->hasMany(Invoice::class); }
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
 
-    public function creditTransactions() { return $this->hasMany(StoreCreditTransaction::class); }
+    public function creditTransactions()
+    {
+        return $this->hasMany(StoreCreditTransaction::class);
+    }
+
+    public function apiRequestLogs()
+    {
+        return $this->hasMany(ApiRequestLog::class);
+    }
 
     public function getLogoAttribute(): ?string
     {
         return $this->attributes['logo'] ? route('image.show', ['path' => $this->attributes['logo']]) : null;
     }
 
-    public function getRouteKeyName(): string { return 'slug'; }
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     protected static function booted(): void
     {

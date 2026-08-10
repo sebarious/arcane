@@ -17,7 +17,7 @@ class PackSaleController extends Controller
         /** @var Store $store */
         $store = $request->attributes->get('api_store');
 
-        $batch = Batch::where('reference', $reference)->where('store_id', $store->id)->first();
+        $batch = Batch::visibleToStoreApi($store)->where('reference', $reference)->first();
 
         if (! $batch) {
             return response()->json(['message' => 'Batch not found.'], 404);

@@ -1,5 +1,12 @@
 <?php
 
+use App\Http\Middleware\AuthenticateStoreApiToken;
+use App\Http\Middleware\EnforceStoreDailyApiLimit;
+use App\Http\Middleware\EnsureMarkAsSoldEnabled;
+use App\Http\Middleware\EnsureSellerStoreIsPublic;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\LogStoreApiRequest;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,16 +23,21 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
+    ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command('arcane:prune-api-logs')->daily();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
+            HandleInertiaRequests::class,
         ]);
         $middleware->alias([
             // existing aliases...
             'role' => RoleMiddleware::class,
-            'store.live' => \App\Http\Middleware\EnsureSellerStoreIsPublic::class,
-            'store.api' => \App\Http\Middleware\AuthenticateStoreApiToken::class,
-            'store.api.daily-limit' => \App\Http\Middleware\EnforceStoreDailyApiLimit::class,
+            'store.live' => EnsureSellerStoreIsPublic::class,
+            'store.api' => AuthenticateStoreApiToken::class,
+            'store.api.daily-limit' => EnforceStoreDailyApiLimit::class,
+            'store.api.mark-sold' => EnsureMarkAsSoldEnabled::class,
+            'store.api.log' => LogStoreApiRequest::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

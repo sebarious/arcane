@@ -8,6 +8,23 @@ defineProps<{ rateLimitPerMinute: number }>();
 const endpoints = [
   {
     method: 'GET',
+    path: '/api/v1/batches',
+    title: 'List your batches',
+    description: 'References of every active batch belonging to your store — usually the first call an integration makes, then used to feed the other two endpoints below.',
+    curl: `curl "https://arcanepacks.com/api/v1/batches" \\
+  -H "Authorization: Bearer $ARCANE_API_TOKEN"`,
+    response: `{
+  "data": [
+    { "reference": "ARC-2026-0001", "status": "committed" },
+    { "reference": "ARC-2026-0004", "status": "committed" }
+  ]
+}`,
+    errors: [
+      { code: '401', body: '{ "message": "Invalid or missing API token." }' },
+    ],
+  },
+  {
+    method: 'GET',
     path: '/api/v1/batches/{reference}',
     title: 'Get an active batch\'s packs',
     description: 'Every pack in one of your batches, along with its card and sale status. Only works for batches that are currently active (committed and not merged away) — a batch reference that\'s still a draft, or was merged into another batch, returns a 409.',
@@ -64,6 +81,7 @@ const endpoints = [
 }`,
     errors: [
       { code: '401', body: '{ "message": "Invalid or missing API token." }' },
+      { code: '403', body: '{ "message": "The mark-as-sold endpoint has not been enabled for this store yet." }' },
       { code: '404', body: '{ "message": "Batch not found." }' },
       { code: '404', body: '{ "message": "Pack not found in this batch." }' },
     ],
@@ -92,10 +110,27 @@ const endpoints = [
         API <span class="text-[#c9a84c]">documentation</span>
       </p>
       <p class="font-['Jost',sans-serif] font-normal text-[#a3a3a3] text-[18px] mt-[16px] max-w-2xl leading-relaxed">
-        A small REST API for sellers to pull an active batch's packs and mark cards
+        A small REST API for sellers to pull their batches and packs and mark cards
         sold from their own tools — a till, a scanner, a spreadsheet macro, whatever
-        you've already got. Two endpoints, plain JSON, token authentication.
+        you've already got. Three endpoints, plain JSON, token authentication.
       </p>
+    </div>
+
+    <!-- Test vs live -->
+    <div class="px-8 lg:px-[64px] pb-[40px] max-w-4xl mx-auto">
+      <div class="bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[12px] p-6">
+        <p class="font-['Cinzel',sans-serif] font-bold text-[19px] text-white mb-[10px]">Test vs live mode</p>
+        <p class="font-['Jost',sans-serif] text-sm text-[#a3a3a3] leading-relaxed">
+          Every new integration starts in <span class="text-white font-semibold">test mode</span> — every
+          endpoint returns a sandbox batch instead of your real inventory, so you can build and test
+          against realistic data without touching anything real. Every response carries an
+          <span class="font-mono text-white">X-Api-Mode</span> header telling you which mode you're in.
+          Once we've reviewed your integration, we switch you to
+          <span class="text-white font-semibold">live mode</span> and you start seeing your real batches.
+          The <span class="font-mono text-white">sold</span> endpoint has its own separate approval step
+          on top of that — see its errors below.
+        </p>
+      </div>
     </div>
 
     <!-- Authentication -->

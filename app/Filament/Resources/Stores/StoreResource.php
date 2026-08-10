@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Stores;
 
+use App\Enums\ApiMode;
+use App\Filament\Resources\Stores\RelationManagers\ApiRequestLogsRelationManager;
 use App\Filament\Resources\Stores\RelationManagers\CreditTransactionsRelationManager;
 use App\Models\Store;
 use App\Models\User;
@@ -219,7 +221,16 @@ class StoreResource extends Resource
                 ->schema([
                     Forms\Components\Toggle::make('api_access_granted')
                         ->label('Allow this seller to use the API')
-                        ->helperText('Unlocks the API access area on their dashboard, where they can turn the API on for their own store and grab their token. Turning this off immediately blocks both endpoints, even if they\'d switched it on themselves.')
+                        ->helperText('Unlocks the API access area on their dashboard, where they can turn the API on for their own store and grab their token. Turning this off immediately blocks every endpoint, even if they\'d switched it on themselves.')
+                        ->default(false),
+                    Forms\Components\Placeholder::make('api_mode_display')
+                        ->label('Mode')
+                        ->content(fn (?Store $record) => $record?->api_mode?->label() ?? ApiMode::Test->label())
+                        ->helperText('Use the "Approve → go live" button above to switch this once you\'ve reviewed their integration in the API logs below.')
+                        ->visibleOn('edit'),
+                    Forms\Components\Toggle::make('mark_as_sold_enabled')
+                        ->label('Allow markAsSold')
+                        ->helperText('Separate approval gate from the toggle above — turn this on once you\'ve reviewed their integration in the API logs below. Reading batch/pack data doesn\'t need it.')
                         ->default(false),
                     Forms\Components\TextInput::make('daily_request_limit')
                         ->label('Daily request limit')
@@ -296,6 +307,12 @@ class StoreResource extends Resource
                     ->label('API')
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('api_mode')
+                    ->label('API mode')
+                    ->badge()
+                    ->formatStateUsing(fn (?ApiMode $state) => $state?->label() ?? ApiMode::Test->label())
+                    ->color(fn (?ApiMode $state) => $state === ApiMode::Live ? 'success' : 'gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('d M Y')->sortable()->toggleable(),
             ])
@@ -310,6 +327,7 @@ class StoreResource extends Resource
             ->recordActions([
                 static::viewLiveAction(),
                 static::addCreditAction(),
+                static::toggleApiModeAction(),
                 EditAction::make(),
             ])
             ->toolbarActions([
@@ -375,10 +393,40 @@ class StoreResource extends Resource
             ->openUrlInNewTab();
     }
 
+    /**
+     * Flips a store between ApiMode::Test (sandbox data, the default) and
+     * ApiMode::Live (their real batches) — the actual "approve their
+     * integration" step, meant to be used after reading through the API logs
+     * relation manager below. Only relevant once api_access_granted is on.
+     */
+    public static function toggleApiModeAction(): Action
+    {
+        return Action::make('toggleApiMode')
+            ->label(fn (Store $record) => $record->api_mode === ApiMode::Live ? 'Revert to test mode' : 'Approve → go live')
+            ->icon(fn (Store $record) => $record->api_mode === ApiMode::Live ? Heroicon::OutlinedArrowUturnLeft : Heroicon::OutlinedCheckBadge)
+            ->color(fn (Store $record) => $record->api_mode === ApiMode::Live ? 'warning' : 'success')
+            ->visible(fn (Store $record) => $record->api_access_granted)
+            ->requiresConfirmation()
+            ->modalHeading(fn (Store $record) => $record->api_mode === ApiMode::Live ? 'Revert to test mode' : 'Approve API integration')
+            ->modalDescription(fn (Store $record) => $record->api_mode === ApiMode::Live
+                ? 'Switches this store\'s API back to sandbox data. Their real batches stop being reachable via the API until you approve them again.'
+                : 'Switches this store\'s API from sandbox data to their real batches. Only do this once you\'ve reviewed their integration in the API logs below.')
+            ->action(function (Store $record) {
+                $newMode = $record->api_mode === ApiMode::Live ? ApiMode::Test : ApiMode::Live;
+                $record->update(['api_mode' => $newMode]);
+
+                Notification::make()
+                    ->title($newMode === ApiMode::Live ? 'API integration approved — now live' : 'Reverted to test mode')
+                    ->success()
+                    ->send();
+            });
+    }
+
     public static function getRelations(): array
     {
         return [
             CreditTransactionsRelationManager::class,
+            ApiRequestLogsRelationManager::class,
         ];
     }
 

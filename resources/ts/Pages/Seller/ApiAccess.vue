@@ -18,6 +18,12 @@ interface ApiAccess {
   access_granted: boolean;
   enabled: boolean;
   token: string | null;
+  mode: 'test' | 'live';
+  mark_as_sold_enabled: boolean;
+}
+
+interface Sandbox {
+  reference: string;
 }
 
 interface ApiLimits {
@@ -39,6 +45,7 @@ interface Props {
   stores: StoreOption[];
   store: StoreInfo;
   api: ApiAccess;
+  sandbox: Sandbox | null;
   limits: ApiLimits;
   usage: ApiUsage;
 }
@@ -106,6 +113,14 @@ function regenerateToken() {
   });
 }
 
+function resetSandbox() {
+  busy.value = true;
+  router.post(`/seller/api-access/${props.store.slug}/sandbox/reset`, {}, {
+    preserveScroll: true,
+    onFinish: () => { busy.value = false; },
+  });
+}
+
 function copyToken() {
   if (!props.api.token) return;
   navigator.clipboard.writeText(props.api.token);
@@ -139,9 +154,15 @@ function copyToken() {
 
       <template v-else>
         <div class="flex items-center justify-between gap-4">
-          <p class="font-['Jost',sans-serif] text-sm text-[#a3a3a3] max-w-lg">
-            Use your token to pull an active batch's packs and mark cards sold from your own tools.
-          </p>
+          <div class="flex items-center gap-3">
+            <p class="font-['Jost',sans-serif] text-sm text-[#a3a3a3] max-w-lg">
+              Use your token to pull your batches, list their packs, and mark cards sold from your own tools.
+            </p>
+            <span class="shrink-0 px-2.5 py-1 rounded-[4px] text-[10px] font-['Jost',sans-serif] font-bold uppercase tracking-wide"
+              :class="api.mode === 'live' ? 'bg-[rgba(34,197,94,0.12)] text-[#22c55e]' : 'bg-[rgba(201,168,76,0.12)] text-[#c9a84c]'">
+              {{ api.mode === 'live' ? 'Live' : 'Test mode' }}
+            </span>
+          </div>
           <button type="button" @click="toggleEnabled" :disabled="busy"
             class="shrink-0 px-4 py-2 rounded-[4px] text-xs font-['Jost',sans-serif] font-semibold uppercase tracking-wide border transition-colors disabled:opacity-50"
             :class="api.enabled
@@ -151,7 +172,29 @@ function copyToken() {
           </button>
         </div>
 
+        <p v-if="api.mode === 'test'" class="mt-3 font-['Jost',sans-serif] text-xs text-[#a3a3a3] leading-relaxed">
+          You're in test mode — every endpoint returns a sandbox batch instead of your real inventory, so
+          you can build and test your integration safely. Once we've reviewed it, we'll switch you to live.
+        </p>
+
         <div v-if="api.enabled" class="mt-5">
+          <div v-if="sandbox" class="mb-5 bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="font-['Jost',sans-serif] text-xs text-[rgba(255,255,255,0.35)] uppercase tracking-wide mb-1">Sandbox batch</p>
+                <p class="font-mono text-sm text-white">{{ sandbox.reference }}</p>
+              </div>
+              <button type="button" @click="resetSandbox" :disabled="busy"
+                class="shrink-0 text-xs font-['Jost',sans-serif] font-semibold uppercase px-3 py-1.5 rounded-[4px] border border-[#3d2f6e] text-white hover:border-[#c9a84c] transition-colors disabled:opacity-50">
+                Reset packs
+              </button>
+            </div>
+            <p class="font-['Jost',sans-serif] text-xs text-[#71717a] mt-2">
+              Use this reference with the endpoints below. "Reset packs" marks every card unsold again so
+              you can retest from scratch.
+            </p>
+          </div>
+
           <p class="font-['Jost',sans-serif] text-xs text-[rgba(255,255,255,0.35)] uppercase tracking-wide mb-2">API token</p>
           <div class="flex items-center gap-3 bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] px-4 py-3">
             <p class="font-mono text-sm text-white break-all flex-1 min-w-0">
@@ -177,9 +220,15 @@ function copyToken() {
               Send your token as <span class="font-mono text-white">Authorization: Bearer &lt;token&gt;</span>.
             </p>
             <div class="mt-3 flex flex-col gap-2 font-mono text-xs">
+              <p class="text-[#a3a3a3]"><span class="text-[#22c55e]">GET</span>&nbsp;&nbsp;/api/v1/batches</p>
               <p class="text-[#a3a3a3]"><span class="text-[#22c55e]">GET</span>&nbsp;&nbsp;/api/v1/batches/{reference}</p>
               <p class="text-[#a3a3a3]"><span class="text-[#c9a84c]">POST</span>&nbsp;/api/v1/batches/{reference}/packs/{id}/sold</p>
             </div>
+            <p v-if="!api.mark_as_sold_enabled" class="font-['Jost',sans-serif] text-xs text-[#a3a3a3] leading-relaxed mt-3">
+              The <span class="font-mono text-white">sold</span> endpoint isn't switched on for your store yet —
+              we enable it once we've reviewed your integration. The two <span class="font-mono text-white">GET</span>
+              endpoints work already.
+            </p>
           </div>
 
           <div class="mt-6 pt-5 border-t border-[rgba(220,193,117,0.1)]">

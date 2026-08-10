@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\ApiMode;
 use App\Enums\BatchType;
 use App\Enums\Game;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Batch extends Model
@@ -24,6 +26,7 @@ class Batch extends Model
         // Not verification_seed/verification_hash/verification_committed_at — those are
         // only ever set directly in booted()'s creating hook below, never mass-assigned.
         'verification_revealed_at', 'verification_snapshot_path',
+        'is_test',
     ];
 
     protected $casts = [
@@ -35,6 +38,7 @@ class Batch extends Model
         'verification_revealed_at' => 'datetime',
         'type' => BatchType::class,
         'game' => Game::class,
+        'is_test' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -46,6 +50,32 @@ class Batch extends Model
             $batch->verification_hash = hash('sha256', $seed);
             $batch->verification_committed_at = now();
         });
+
+        // Sandbox fixture batches (see App\Services\Api\SandboxBatchProvisioner)
+        // stay invisible everywhere else in the app by default — reporting,
+        // exports, the storefront, admin listings — without every one of those
+        // call sites needing to remember to filter them out. Use
+        // withoutGlobalScope('excludeTestBatches') to reach them explicitly.
+        static::addGlobalScope('excludeTestBatches', function (Builder $query) {
+            $query->where('is_test', false);
+        });
+    }
+
+    /**
+     * The batches a store's partner API should see for a given request — real,
+     * committed batches while live, or just its one sandbox batch while in
+     * test mode. Centralised here so BatchListController, BatchPacksController,
+     * and PackSaleController can't drift apart on the visibility rule.
+     */
+    public function scopeVisibleToStoreApi(Builder $query, Store $store): Builder
+    {
+        if ($store->api_mode === ApiMode::Live) {
+            return $query->where('store_id', $store->id);
+        }
+
+        return $query->withoutGlobalScope('excludeTestBatches')
+            ->where('store_id', $store->id)
+            ->where('is_test', true);
     }
 
     public function isVerificationRevealed(): bool

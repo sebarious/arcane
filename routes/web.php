@@ -116,6 +116,7 @@ Route::middleware(['web', 'auth', 'role:seller'])
             Route::get('/api-access', [ApiAccessController::class, 'show'])->name('api-access.show');
             Route::post('/api-access/{store}', [ApiAccessController::class, 'toggle'])->name('api-access.toggle');
             Route::post('/api-access/{store}/regenerate', [ApiAccessController::class, 'regenerate'])->name('api-access.regenerate');
+            Route::post('/api-access/{store}/sandbox/reset', [ApiAccessController::class, 'regenerateSandbox'])->name('api-access.sandbox.reset');
             Route::get('/scan', [ScanStationController::class, 'show'])->name('scan');
             Route::post('/scan', [ScanStationController::class, 'scan'])->name('scan.submit');
         });
