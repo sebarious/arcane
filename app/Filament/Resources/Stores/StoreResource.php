@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Stores;
 
 use App\Enums\ApiMode;
-use App\Filament\Resources\Stores\RelationManagers\ApiRequestLogsRelationManager;
 use App\Filament\Resources\Stores\RelationManagers\CreditTransactionsRelationManager;
 use App\Models\Store;
 use App\Models\User;
@@ -226,11 +225,11 @@ class StoreResource extends Resource
                     Forms\Components\Placeholder::make('api_mode_display')
                         ->label('Mode')
                         ->content(fn (?Store $record) => $record?->api_mode?->label() ?? ApiMode::Test->label())
-                        ->helperText('Use the "Approve → go live" button above to switch this once you\'ve reviewed their integration in the API logs below.')
+                        ->helperText('Use the "Approve → go live" button above to switch this once you\'ve reviewed their integration on the API logs page (filter by this store).')
                         ->visibleOn('edit'),
                     Forms\Components\Toggle::make('mark_as_sold_enabled')
                         ->label('Allow markAsSold')
-                        ->helperText('Separate approval gate from the toggle above — turn this on once you\'ve reviewed their integration in the API logs below. Reading batch/pack data doesn\'t need it.')
+                        ->helperText('Separate approval gate from the toggle above — turn this on once you\'ve reviewed their integration on the API logs page (filter by this store). Reading batch/pack data doesn\'t need it.')
                         ->default(false),
                     Forms\Components\TextInput::make('daily_request_limit')
                         ->label('Daily request limit')
@@ -396,8 +395,9 @@ class StoreResource extends Resource
     /**
      * Flips a store between ApiMode::Test (sandbox data, the default) and
      * ApiMode::Live (their real batches) — the actual "approve their
-     * integration" step, meant to be used after reading through the API logs
-     * relation manager below. Only relevant once api_access_granted is on.
+     * integration" step, meant to be used after reviewing them on the API
+     * logs page (App\Filament\Resources\ApiRequestLogs\ApiRequestLogResource).
+     * Only relevant once api_access_granted is on.
      */
     public static function toggleApiModeAction(): Action
     {
@@ -410,7 +410,7 @@ class StoreResource extends Resource
             ->modalHeading(fn (Store $record) => $record->api_mode === ApiMode::Live ? 'Revert to test mode' : 'Approve API integration')
             ->modalDescription(fn (Store $record) => $record->api_mode === ApiMode::Live
                 ? 'Switches this store\'s API back to sandbox data. Their real batches stop being reachable via the API until you approve them again.'
-                : 'Switches this store\'s API from sandbox data to their real batches. Only do this once you\'ve reviewed their integration in the API logs below.')
+                : 'Switches this store\'s API from sandbox data to their real batches. Only do this once you\'ve reviewed their integration on the API logs page.')
             ->action(function (Store $record) {
                 $newMode = $record->api_mode === ApiMode::Live ? ApiMode::Test : ApiMode::Live;
                 $record->update(['api_mode' => $newMode]);
@@ -426,7 +426,6 @@ class StoreResource extends Resource
     {
         return [
             CreditTransactionsRelationManager::class,
-            ApiRequestLogsRelationManager::class,
         ];
     }
 
