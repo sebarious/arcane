@@ -105,7 +105,7 @@
               </div>
 
               <div class="meta">
-                <span class="name">{{ \Illuminate\Support\Str::limit($row['name'], 14, '') }}</span><br>@if (!empty($row['number']))<span class="muted">{{ $row['number'] }}</span><br>@endif<span class="muted">Band: {{ ucfirst($row['band'] ?: 'n/a') }}</span><br><span class="muted">{{ $row['set'] }}</span>
+                <strong>#{{ $row['sequence'] }}</strong> <span class="name">{{ \Illuminate\Support\Str::limit($row['name'], 10, '') }}</span><br>@if (!empty($row['number']))<span class="muted">{{ $row['number'] }}</span><br>@endif<span class="muted">Band: {{ ucfirst($row['band'] ?: 'n/a') }}</span><br><span class="muted">{{ \Illuminate\Support\Str::limit($row['set'], 14, '') }}</span>
               </div>
             </div>
           </td>

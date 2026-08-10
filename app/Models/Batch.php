@@ -14,7 +14,7 @@ class Batch extends Model
         'reference', 'store_id', 'status', 'pack_count',
         'total_cost_pence', 'total_market_value_pence',
         'sale_price_pence', 'margin_pence', 'margin_scheme_vat_pence',
-        'invoice_id', 'qr_sheet_pdf_path',
+        'invoice_id', 'qr_sheet_pdf_path', 'picking_sheet_pdf_path',
         'committed_at', 'dispatched_at',
         'type', 'game',
         'failure_reason',

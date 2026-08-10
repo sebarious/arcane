@@ -1,13 +1,13 @@
 <?php
+
 namespace App\Filament\Resources\CardInventories\Pages;
 
 use App\Filament\Exports\SoldCardExporter;
 use App\Filament\Resources\CardInventories\CardInventoryResource;
 use Filament\Actions\Action;
-use Filament\Actions\CreateAction;
 use Filament\Actions\ExportAction;
-use Filament\Support\Icons\Heroicon;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListCardInventories extends ListRecords
@@ -17,12 +17,12 @@ class ListCardInventories extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            // Rapid Intake is the only way cards enter inventory — no "Add single card".
             Action::make('rapidIntake')
                 ->label('Rapid intake')
                 ->icon(Heroicon::OutlinedBolt)
                 ->url(CardInventoryResource::getUrl('rapid'))
                 ->color('primary'),
-            CreateAction::make()->label('Add single card'),
             // Exports everything matching the current table filters/search, further
             // narrowed by the date range picked here — e.g. Status = Sold on the table
             // filter, plus a quarter's start/end date right in the export modal.

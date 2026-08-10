@@ -15,8 +15,10 @@ class EditBatch extends EditRecord
             BatchResource::generateAction(),
             BatchResource::sendInvoiceAction(),
             BatchResource::publishAction(),
+            BatchResource::sendToWarehouseAction(),
             BatchResource::qrSheetAction(),
             BatchResource::regenerateQrSheetAction(),
+            BatchResource::pickingSheetAction(),
             BatchResource::verifyAction(),
             BatchResource::mergeIntoAction(),
             // Redirect after delete — this is the record's own edit page, so it 404s

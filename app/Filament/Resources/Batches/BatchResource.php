@@ -7,6 +7,8 @@ use App\Enums\Game;
 use App\Filament\Exports\BatchSalesExporter;
 use App\Jobs\GenerateBatchJob;
 use App\Jobs\GenerateBatchQrSheetJob;
+use App\Jobs\GeneratePickingSheetJob;
+use App\Jobs\SendBatchWarehousePacketJob;
 use App\Models\Batch;
 use App\Services\Batches\BatchDeleter;
 use App\Services\Batches\BatchDesign;
@@ -31,6 +33,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Bus;
 use UnitEnum;
 
 class BatchResource extends Resource
@@ -301,6 +304,7 @@ class BatchResource extends Resource
             ->recordActions([
                 EditAction::make(),
                 static::retryAction(),
+                static::sendToWarehouseAction()->iconButton()->tooltip('Send to warehouse'),
                 static::regenerateQrSheetAction(),
                 static::deleteBatchAction(),
             ])
@@ -316,7 +320,7 @@ class BatchResource extends Resource
                         ->icon(Heroicon::OutlinedArrowPath)
                         ->requiresConfirmation()
                         ->modalHeading('Regenerate QR sheets')
-                        ->modalDescription('Re-queues QR sheet generation for every selected batch — use this to recover batches whose sheet failed to generate.')
+                        ->modalDescription('Re-queues QR sheet generation for every selected batch — use this to recover batches whose sheet failed to generate. Doesn\'t mark anything picked; use "Send to warehouse" per batch to actually fulfil an order.')
                         ->action(function (Collection $records) {
                             $records->each(fn (Batch $batch) => GenerateBatchQrSheetJob::dispatch($batch->id));
                             Notification::make()
@@ -422,11 +426,56 @@ class BatchResource extends Resource
                 && in_array($record->status, ['awaiting_payment', 'committed', 'dispatched', 'completed'], true))
             ->requiresConfirmation()
             ->modalHeading('Regenerate QR sheet')
-            ->modalDescription('Re-queues QR sheet generation for this batch. Use this if the sheet failed to generate, or needs refreshing after a card change.')
+            ->modalDescription('Re-queues QR sheet generation for this batch. Use this if the sheet failed to generate, or needs refreshing after a card change. This does not mark any cards as picked or touch the picking sheet — if you\'re fulfilling this order, use "Send to warehouse" instead so the cards you pull stop counting toward other orders\' box positions.')
             ->action(function (Batch $record) {
                 GenerateBatchQrSheetJob::dispatch($record->id);
                 Notification::make()
                     ->title('QR sheet regeneration queued')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /** Direct download link for the most recently generated picking sheet — see PickingSheetController. */
+    public static function pickingSheetAction(): Action
+    {
+        return Action::make('pickingSheet')
+            ->label('Picking sheet')
+            ->icon(Heroicon::OutlinedClipboardDocumentList)
+            ->color('gray')
+            ->url(fn (Batch $record) => route('batches.picking-sheet', $record))
+            ->openUrlInNewTab()
+            ->visible(fn (Batch $record) => filled($record->picking_sheet_pdf_path));
+    }
+
+    /**
+     * The one-click fulfilment trigger: regenerates the QR sheet, generates a
+     * picking sheet for whatever this batch still has left to pick (chaos
+     * storage — see PickingSheetGenerator), then emails both PDFs to whoever
+     * clicked it. Chained so the email step only runs once both PDFs exist.
+     */
+    public static function sendToWarehouseAction(): Action
+    {
+        return Action::make('sendToWarehouse')
+            ->label('Send to warehouse')
+            ->icon(Heroicon::OutlinedTruck)
+            ->color('primary')
+            ->visible(fn (Batch $record) => $record->packs()->exists())
+            ->requiresConfirmation()
+            ->modalHeading('Send to warehouse')
+            ->modalDescription('Generates a fresh QR sheet and a picking sheet for anything not yet picked, then emails both to you as PDFs. Cards printed on the picking sheet are marked picked and won\'t appear on a future one.')
+            ->action(function (Batch $record) {
+                $user = auth()->user();
+
+                Bus::chain([
+                    new GenerateBatchQrSheetJob($record->id),
+                    new GeneratePickingSheetJob($record->id),
+                    new SendBatchWarehousePacketJob($record->id, $user->email),
+                ])->dispatch();
+
+                Notification::make()
+                    ->title('Sending to warehouse')
+                    ->body("Generating the QR and picking sheets — they'll land in your inbox ({$user->email}) shortly.")
                     ->success()
                     ->send();
             });

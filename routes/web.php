@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ImpersonateController;
+use App\Http\Controllers\Admin\PickingSheetController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -59,6 +60,10 @@ Route::middleware(['web', 'auth'])->get('/dashboard', function () {
 Route::middleware(['web', 'auth'])  // tighten with an 'admin' gate later
     ->get('/admin/batches/{batch}/qr-sheet', BatchQrSheetController::class)
     ->name('batches.qr-sheet');
+
+Route::middleware(['web', 'auth'])
+    ->get('/admin/batches/{batch}/picking-sheet', PickingSheetController::class)
+    ->name('batches.picking-sheet');
 
 Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])

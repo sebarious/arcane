@@ -17,7 +17,8 @@ class GenerateBatchQrSheetJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 300; // 5 minutes
-    public int $tries   = 1;
+
+    public int $tries = 1;
 
     public function __construct(public int $batchId) {}
 
@@ -27,36 +28,36 @@ class GenerateBatchQrSheetJob implements ShouldQueue
 
         $rows = $batch->packs()
             ->with('card')
+            // Pack number order, not alphabetical — the picking sheet already tells
+            // staff which pack number a card belongs to (PickingSheetGenerator), so
+            // this sheet just needs to be a direct pack-number lookup, not something
+            // to search by name.
+            ->orderBy('sequence_no')
             ->get()
-            // Physical cards are stored by set, then alphabetically by name within
-            // that set — sort the sheet to match, so it reads as a picking list
-            // rather than the batch's (effectively random) pack-assignment order.
-            ->sortBy(fn ($pack) => strtolower(($pack->card?->set_name ?? '').'|'.($pack->card?->card_name ?? '')))
-            ->values()
             ->map(function ($pack) {
-                $inv   = $pack->card;
+                $inv = $pack->card;
                 $token = $inv?->qr_token;
 
                 $qrPng = null;
                 if ($token) {
                     $url = route('qr.scan', ['token' => $token]);
                     $png = QrCode::format('png')->size(56)->margin(0)->generate($url);
-                    $qrPng = 'data:image/png;base64,' . base64_encode($png);
+                    $qrPng = 'data:image/png;base64,'.base64_encode($png);
                 }
 
                 return [
                     'sequence' => $pack->sequence_no,
-                    'name'     => $inv?->card_name ?? 'Unknown',
-                    'set'      => $inv?->set_name ?? '',
-                    'number'   => $inv?->card_number ?? '',
-                    'band'     => $inv?->rarity_band ?? '',
-                    'qr_png'   => $qrPng,
+                    'name' => $inv?->card_name ?? 'Unknown',
+                    'set' => $inv?->set_name ?? '',
+                    'number' => $inv?->card_number ?? '',
+                    'band' => $inv?->rarity_band ?? '',
+                    'qr_png' => $qrPng,
                 ];
             });
 
         $pdf = Pdf::loadView('pdf.batch-qr-sheet', [
             'batch' => $batch,
-            'rows'  => $rows,
+            'rows' => $rows,
         ])->setPaper('a4', 'portrait');
 
         $path = "qr-sheets/{$batch->reference}.pdf";

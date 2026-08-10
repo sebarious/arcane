@@ -19,6 +19,7 @@ use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\ImageEntry;
@@ -32,7 +33,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class RapidIntake extends Page implements HasForms
@@ -51,6 +51,7 @@ class RapidIntake extends Page implements HasForms
     // Debounce state for the live camera scanner — avoids re-adding the same row
     // over and over while a card is held in front of the camera between capture ticks.
     public ?string $lastScannedNumber = null;
+
     public ?int $lastScannedAt = null;
 
     // Some mobile browsers hand the canvas a rotated raw camera buffer — once
@@ -61,17 +62,22 @@ class RapidIntake extends Page implements HasForms
     // "Scan with phone" — a phone opens a camera-only page (see PhoneScanController)
     // scoped to this token, and pollPhoneScans() merges what it finds in here.
     public ?string $scanSessionToken = null;
+
     public int $scanSessionLastId = 0;
 
     public function mount(): void
     {
         $this->form->fill([
-            'acquired_at'     => now()->toDateString(),
-            'acquired_from'   => '',
-            'acquisition_lot' => 'LOT-'.now()->format('Y-md').'-'.strtoupper(Str::random(4)),
-            'rows'            => [$this->emptyRow()],
-            'bulk_add_count'  => '10',
-            'buy_percentage'  => (string) self::defaultBuyPercentage(),
+            'acquired_at' => now()->toDateString(),
+            'acquired_from' => '',
+            // Chaos storage: everything intaken on the same calendar day shares one
+            // box/lot by default (see PickingSheetGenerator) — no random suffix, so
+            // reopening Rapid Intake later the same day lands on the same lot. Still
+            // editable below for a deliberate second lot the same day.
+            'acquisition_lot' => 'LOT-'.now()->format('Y-m-d'),
+            'rows' => [$this->emptyRow()],
+            'bulk_add_count' => '10',
+            'buy_percentage' => (string) self::defaultBuyPercentage(),
         ]);
     }
 
@@ -99,7 +105,7 @@ class RapidIntake extends Page implements HasForms
             return;
         }
 
-        $this->scanSessionToken  = app(ScanSession::class)->create($this->buyPercentage());
+        $this->scanSessionToken = app(ScanSession::class)->create($this->buyPercentage());
         $this->scanSessionLastId = 0;
     }
 
@@ -109,7 +115,7 @@ class RapidIntake extends Page implements HasForms
             app(ScanSession::class)->forget($this->scanSessionToken);
         }
 
-        $this->scanSessionToken  = null;
+        $this->scanSessionToken = null;
         $this->scanSessionLastId = 0;
 
         // Close the modal in the same request — otherwise, if it's still open, the
@@ -133,6 +139,7 @@ class RapidIntake extends Page implements HasForms
 
         if (! $sessions->exists($this->scanSessionToken)) {
             $this->scanSessionToken = null;
+
             return;
         }
 
@@ -141,7 +148,7 @@ class RapidIntake extends Page implements HasForms
             return;
         }
 
-        $rows  = $this->data['rows'] ?? [];
+        $rows = $this->data['rows'] ?? [];
         $added = 0;
 
         foreach ($entries as $id => $row) {
@@ -186,8 +193,9 @@ class RapidIntake extends Page implements HasForms
                             ->label('Source')
                             ->placeholder('e.g. Cardiff Card Show 2026-06'),
                         TextInput::make('acquisition_lot')
-                            ->label('Lot reference')
-                            ->required(),
+                            ->label('LOT number')
+                            ->required()
+                            ->helperText('Defaults to one lot per day — change it if this is a separate box.'),
                         Select::make('buy_percentage')
                             ->label('Buy %')
                             ->options(
@@ -210,7 +218,7 @@ class RapidIntake extends Page implements HasForms
                         'price before saving.'
                     )
                     ->schema([
-                        \Filament\Forms\Components\ViewField::make('scanner')
+                        ViewField::make('scanner')
                             ->label('')
                             ->view('filament.resources.card-inventories.pages.rapid-intake-scanner')
                             ->dehydrated(false)
@@ -220,7 +228,7 @@ class RapidIntake extends Page implements HasForms
                             Select::make('bulk_add_count')
                                 ->label('')
                                 ->options([
-                                    '1'  => '1 card',
+                                    '1' => '1 card',
                                     '10' => '10 cards',
                                     '20' => '20 cards',
                                     '30' => '30 cards',
@@ -237,10 +245,10 @@ class RapidIntake extends Page implements HasForms
                                     ->color('gray')
                                     ->action(function () {
                                         $count = (int) ($this->data['bulk_add_count'] ?? 1);
-                                        $rows  = $this->data['rows'] ?? [];
+                                        $rows = $this->data['rows'] ?? [];
 
                                         $available = self::MAX_ITEMS - count($rows);
-                                        $toAdd     = max(0, min($count, $available));
+                                        $toAdd = max(0, min($count, $available));
 
                                         if ($toAdd <= 0) {
                                             Notification::make()
@@ -248,6 +256,7 @@ class RapidIntake extends Page implements HasForms
                                                 ->body('You can have up to '.self::MAX_ITEMS.' cards per intake.')
                                                 ->warning()
                                                 ->send();
+
                                             return;
                                         }
 
@@ -386,6 +395,7 @@ class RapidIntake extends Page implements HasForms
 
         if (collect($rows)->every(fn ($row) => blank($row['card_name'] ?? null) && blank($row['search_number'] ?? null))) {
             Notification::make()->title('Nothing to fetch')->body('Type a card name or number first.')->warning()->send();
+
             return;
         }
 
@@ -396,20 +406,21 @@ class RapidIntake extends Page implements HasForms
         $knownIds = collect($rows)->pluck('product_id')->filter()->unique()->values();
         $resolvedById = $knownIds->isNotEmpty() ? $this->resolveProductIds($knownIds)[0] : [];
 
-        $resolver      = app(CardRowResolver::class);
+        $resolver = app(CardRowResolver::class);
         $buyPercentage = $this->buyPercentage();
 
-        $resolvedCount   = 0;
-        $ambiguousCount  = 0;
-        $missingCount    = 0;
+        $resolvedCount = 0;
+        $ambiguousCount = 0;
+        $missingCount = 0;
 
         foreach ($rows as $i => $row) {
-            $productId  = $row['product_id'] ?? null;
+            $productId = $row['product_id'] ?? null;
             $attributes = $productId ? ($resolvedById[$productId] ?? null) : null;
 
             if ($attributes) {
                 $resolver->applyResolvedAttributes($rows, $i, $attributes, $buyPercentage);
                 $resolvedCount++;
+
                 continue;
             }
 
@@ -418,7 +429,7 @@ class RapidIntake extends Page implements HasForms
             }
 
             match ($resolver->applySearchResolution($rows, $i, $buyPercentage)) {
-                'resolved'  => $resolvedCount++,
+                'resolved' => $resolvedCount++,
                 'ambiguous' => $ambiguousCount++,
                 'not_found' => $missingCount++,
             };
@@ -428,8 +439,12 @@ class RapidIntake extends Page implements HasForms
         $this->form->fill($this->data);
 
         $notes = [];
-        if ($ambiguousCount > 0) $notes[] = "{$ambiguousCount} row(s) have multiple matches — use the list icon to choose";
-        if ($missingCount > 0)   $notes[] = "{$missingCount} row(s) couldn't be found — use the ✎ button";
+        if ($ambiguousCount > 0) {
+            $notes[] = "{$ambiguousCount} row(s) have multiple matches — use the list icon to choose";
+        }
+        if ($missingCount > 0) {
+            $notes[] = "{$missingCount} row(s) couldn't be found — use the ✎ button";
+        }
 
         Notification::make()
             ->title('Card data fetched')
@@ -511,8 +526,8 @@ class RapidIntake extends Page implements HasForms
         }
 
         return [
-            'status'    => $outcome,
-            'number'    => $number,
+            'status' => $outcome,
+            'number' => $number,
             'card_name' => $cardName,
         ];
     }
@@ -525,7 +540,7 @@ class RapidIntake extends Page implements HasForms
      */
     public function recalculateAllCosts(): void
     {
-        $rows          = $this->data['rows'] ?? [];
+        $rows = $this->data['rows'] ?? [];
         $buyPercentage = (float) ($this->data['buy_percentage'] ?? self::defaultBuyPercentage());
 
         $updated = 0;
@@ -563,7 +578,7 @@ class RapidIntake extends Page implements HasForms
      */
     protected function resolveProductIds(Collection $productIds): array
     {
-        $resolved   = [];
+        $resolved = [];
         $needsFetch = [];
 
         foreach ($productIds as $productId) {
@@ -612,16 +627,19 @@ class RapidIntake extends Page implements HasForms
             ->tooltip('Try fetching this card again.')
             ->visible(function (array $arguments) {
                 $row = $this->data['rows'][$arguments['item']] ?? [];
+
                 return blank(self::decodeResolved($row['resolved'] ?? null));
             })
             ->action(function (array $arguments) {
                 $itemKey = $arguments['item'];
-                $rows    = $this->data['rows'];
-                if (! isset($rows[$itemKey])) return;
+                $rows = $this->data['rows'];
+                if (! isset($rows[$itemKey])) {
+                    return;
+                }
 
-                $row       = $rows[$itemKey];
+                $row = $rows[$itemKey];
                 $productId = $row['product_id'] ?? null;
-                $resolver  = app(CardRowResolver::class);
+                $resolver = app(CardRowResolver::class);
                 $buyPercentage = $this->buyPercentage();
 
                 if ($productId) {
@@ -635,6 +653,7 @@ class RapidIntake extends Page implements HasForms
                         $this->data['rows'] = $rows;
                         $this->form->fill($this->data);
                         Notification::make()->title('Card resolved')->success()->send();
+
                         return;
                     }
                 }
@@ -644,7 +663,7 @@ class RapidIntake extends Page implements HasForms
                 $this->form->fill($this->data);
 
                 match ($outcome) {
-                    'resolved'  => Notification::make()->title('Card resolved')->success()->send(),
+                    'resolved' => Notification::make()->title('Card resolved')->success()->send(),
                     'ambiguous' => Notification::make()
                         ->title('Multiple matches found')
                         ->body('Use the list icon on this row to choose the right one.')
@@ -671,11 +690,12 @@ class RapidIntake extends Page implements HasForms
             ->tooltip('Multiple matches found — pick the right one.')
             ->visible(function (array $arguments) {
                 $row = $this->data['rows'][$arguments['item']] ?? [];
+
                 return blank(self::decodeResolved($row['resolved'] ?? null))
                     && filled(self::decodeResolved($row['candidates'] ?? null));
             })
             ->schema(function (array $arguments) {
-                $row        = $this->data['rows'][$arguments['item']] ?? [];
+                $row = $this->data['rows'][$arguments['item']] ?? [];
                 $candidates = self::decodeResolved($row['candidates'] ?? null) ?? [];
 
                 return [
@@ -691,12 +711,16 @@ class RapidIntake extends Page implements HasForms
             ->modalDescription('This name/number matched more than one print — pick the one you actually have.')
             ->action(function (array $data, array $arguments) {
                 $itemKey = $arguments['item'];
-                $rows    = $this->data['rows'];
-                if (! isset($rows[$itemKey])) return;
+                $rows = $this->data['rows'];
+                if (! isset($rows[$itemKey])) {
+                    return;
+                }
 
                 $candidates = self::decodeResolved($rows[$itemKey]['candidates'] ?? null) ?? [];
-                $chosen     = collect($candidates)->firstWhere('product_id', $data['product_id']);
-                if (! $chosen) return;
+                $chosen = collect($candidates)->firstWhere('product_id', $data['product_id']);
+                if (! $chosen) {
+                    return;
+                }
 
                 app(CardRowResolver::class)->applyResolvedAttributes($rows, $itemKey, $chosen, $this->buyPercentage());
 
@@ -717,13 +741,15 @@ class RapidIntake extends Page implements HasForms
             ->tooltip('PulseAPI lookup failed for this card — enter the details by hand.')
             ->visible(function (array $arguments) {
                 $row = $this->data['rows'][$arguments['item']] ?? [];
+
                 return blank(self::decodeResolved($row['resolved'] ?? null));
             })
             ->fillForm(function (array $arguments) {
                 $row = $this->data['rows'][$arguments['item']] ?? [];
+
                 return [
-                    'card_name'           => $row['card_name'] ?? null,
-                    'card_number'         => $row['search_number'] ?? null,
+                    'card_name' => $row['card_name'] ?? null,
+                    'card_number' => $row['search_number'] ?? null,
                     'market_value_pounds' => $row['market_value_pounds'] ?? null,
                 ];
             })
@@ -744,23 +770,25 @@ class RapidIntake extends Page implements HasForms
             ->action(function (array $data, array $arguments) {
                 $itemKey = $arguments['item'];
                 $rows = $this->data['rows'];
-                if (! isset($rows[$itemKey])) return;
+                if (! isset($rows[$itemKey])) {
+                    return;
+                }
 
                 $marketPence = filled($data['market_value_pounds'] ?? null)
                     ? Money::toPence($data['market_value_pounds'])
                     : null;
 
                 $resolved = [
-                    'product_id'              => $rows[$itemKey]['product_id'] ?? null,
-                    'card_name'               => $data['card_name'],
-                    'set_name'                => $data['set_name'] ?? null,
-                    'card_number'             => $data['card_number'] ?? null,
-                    'rarity'                  => $data['rarity'] ?? null,
-                    'image_url'               => $data['image_url'] ?? null,
-                    'market_value_pence'      => $marketPence,
+                    'product_id' => $rows[$itemKey]['product_id'] ?? null,
+                    'card_name' => $data['card_name'],
+                    'set_name' => $data['set_name'] ?? null,
+                    'card_number' => $data['card_number'] ?? null,
+                    'rarity' => $data['rarity'] ?? null,
+                    'image_url' => $data['image_url'] ?? null,
+                    'market_value_pence' => $marketPence,
                     // Neither field is PulseAPI's — this was hand-typed, never synced from them.
                     'market_value_updated_at' => null,
-                    'synced_at'               => null,
+                    'synced_at' => null,
                 ];
 
                 $rows[$itemKey]['resolved'] = json_encode($resolved);
@@ -776,7 +804,7 @@ class RapidIntake extends Page implements HasForms
     public function save(): void
     {
         $state = $this->form->getState();
-        $rows  = $state['rows'] ?? [];
+        $rows = $state['rows'] ?? [];
 
         $created = 0;
         $skipped = 0;
@@ -788,14 +816,15 @@ class RapidIntake extends Page implements HasForms
                 $resolved = self::decodeResolved($row['resolved'] ?? null);
                 if (! $resolved) {
                     $skipped++;
+
                     continue;
                 }
 
-                $quantity  = (int) ($row['quantity'] ?? 1);
+                $quantity = (int) ($row['quantity'] ?? 1);
                 $costPence = Money::toPence($row['cost_pounds']);
 
                 // Honor a manual override of the fetched market price, if the user edited it.
-                $override    = $row['market_value_pounds'] ?? null;
+                $override = $row['market_value_pounds'] ?? null;
                 $marketPence = ($override !== null && $override !== '')
                     ? Money::toPence($override)
                     : $resolved['market_value_pence'];
@@ -803,7 +832,7 @@ class RapidIntake extends Page implements HasForms
                 $attributes = [
                     ...$resolved,
                     'market_value_pence' => $marketPence,
-                    'rarity_band'        => (new RarityBander())->bandFor($marketPence),
+                    'rarity_band' => (new RarityBander)->bandFor($marketPence),
                 ];
 
                 // If the price actually changed from what was fetched, that's us setting it —
@@ -815,13 +844,13 @@ class RapidIntake extends Page implements HasForms
                 for ($i = 0; $i < $quantity; $i++) {
                     CardInventory::create([
                         ...$attributes,
-                        'condition'       => 'NM',
-                        'cost_pence'      => $costPence,
-                        'acquired_at'     => $state['acquired_at'],
-                        'acquired_from'   => $state['acquired_from'] ?: null,
+                        'condition' => 'NM',
+                        'cost_pence' => $costPence,
+                        'acquired_at' => $state['acquired_at'],
+                        'acquired_from' => $state['acquired_from'] ?: null,
                         'acquisition_lot' => $state['acquisition_lot'] ?: null,
-                        'status'          => 'in_stock',
-                        'game'            => Game::Pokemon->value,
+                        'status' => 'in_stock',
+                        'game' => Game::Pokemon->value,
                     ]);
                     $created++;
                 }
@@ -834,6 +863,7 @@ class RapidIntake extends Page implements HasForms
                 ->body('Click "Fetch card data" first, then save.')
                 ->danger()
                 ->send();
+
             return;
         }
 

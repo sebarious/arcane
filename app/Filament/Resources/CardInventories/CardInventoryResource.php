@@ -2,11 +2,11 @@
 
 namespace App\Filament\Resources\CardInventories;
 
+use App\Enums\Game;
 use App\Filament\Exports\SoldCardExporter;
-use App\Filament\Resources\CardInventories\Pages;
 use App\Models\CardInventory;
-use App\Services\PulseApi\PulseApiCardMapper;
 use App\Services\Pricing\PulseApiPriceProvider;
+use App\Services\PulseApi\PulseApiCardMapper;
 use App\Support\Money;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -18,13 +18,13 @@ use Filament\Forms;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Schemas\Components\Section;
-use App\Enums\Game;
-
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use UnitEnum;
 
 class CardInventoryResource extends Resource
@@ -38,6 +38,7 @@ class CardInventoryResource extends Resource
     protected static ?int $navigationSort = 20;
 
     protected static ?string $modelLabel = 'Inventory';
+
     protected static ?string $pluralModelLabel = 'Inventory';
 
     public static function form(Schema $schema): Schema
@@ -70,8 +71,7 @@ class CardInventoryResource extends Resource
                         ->step(0.01)
                         ->prefix('£')
                         ->required()
-                        ->afterStateHydrated(fn ($component, $record) =>
-                            $record && $component->state($record->cost_pence / 100)),
+                        ->afterStateHydrated(fn ($component, $record) => $record && $component->state($record->cost_pence / 100)),
 
                     Forms\Components\DatePicker::make('acquired_at')
                         ->required()
@@ -83,9 +83,9 @@ class CardInventoryResource extends Resource
                         ->maxLength(255),
 
                     Forms\Components\TextInput::make('acquisition_lot')
-                        ->label('Lot reference')
-                        ->placeholder('e.g. LOT-2026-014')
-                        ->helperText('Group multi-card purchases together'),
+                        ->label('LOT number')
+                        ->placeholder('e.g. LOT-2026-08-10')
+                        ->helperText('Which box this card physically lives in — only change this if you\'re correcting a mis-scanned lot from Rapid Intake.'),
                 ]),
 
             Section::make('Valuation & status')
@@ -97,8 +97,7 @@ class CardInventoryResource extends Resource
                         ->step(0.01)
                         ->prefix('£')
                         ->helperText('Leave as-is to keep the current value, or type a new one to override it.')
-                        ->afterStateHydrated(fn ($component, $record) =>
-                            $record?->market_value_pence !== null
+                        ->afterStateHydrated(fn ($component, $record) => $record?->market_value_pence !== null
                                 && $component->state($record->market_value_pence / 100)),
 
                     TextEntry::make('synced_at')
@@ -112,20 +111,20 @@ class CardInventoryResource extends Resource
 
                     Forms\Components\Select::make('rarity_band')
                         ->options([
-                            'common'    => 'Common',
-                            'rare'      => 'Rare',
-                            'super'     => 'Super',
+                            'common' => 'Common',
+                            'rare' => 'Rare',
+                            'super' => 'Super',
                             'legendary' => 'Legendary',
-                            'mythic'    => 'Mythic',
+                            'mythic' => 'Mythic',
                         ]),
 
                     Forms\Components\Select::make('status')
                         ->options([
-                            'in_stock'    => 'In stock',
-                            'allocated'   => 'Allocated',
-                            'dispatched'  => 'Dispatched',
-                            'sold'        => 'Sold',
-                            'returned'    => 'Returned',
+                            'in_stock' => 'In stock',
+                            'allocated' => 'Allocated',
+                            'dispatched' => 'Dispatched',
+                            'sold' => 'Sold',
+                            'returned' => 'Returned',
                             'written_off' => 'Written off',
                         ])
                         ->required()
@@ -153,6 +152,7 @@ class CardInventoryResource extends Resource
                         if (is_string($state)) {
                             return Game::from($state)->label();
                         }
+
                         return (string) $state;
                     })
                     ->toggleable(),
@@ -161,8 +161,7 @@ class CardInventoryResource extends Resource
                     ->label('Card')
                     ->searchable()
                     ->sortable()
-                    ->description(fn (CardInventory $r) =>
-                        "{$r->set_name} · {$r->card_number}"),
+                    ->description(fn (CardInventory $r) => "{$r->set_name} · {$r->card_number}"),
 
                 Tables\Columns\TextColumn::make('cost_pence')
                     ->label('Cost')
@@ -195,43 +194,43 @@ class CardInventoryResource extends Resource
                 Tables\Columns\TextColumn::make('rarity_band')
                     ->label('Rarity')
                     ->badge()
-                    ->formatStateUsing(fn(?string $state) => match ($state) {
-                        'common'    => 'Common',
-                        'rare'      => 'Rare',
-                        'super'     => 'Super',
+                    ->formatStateUsing(fn (?string $state) => match ($state) {
+                        'common' => 'Common',
+                        'rare' => 'Rare',
+                        'super' => 'Super',
                         'legendary' => 'Legendary',
-                        'mythic'    => 'Mythic',
-                        default     => 'Unknown',
+                        'mythic' => 'Mythic',
+                        default => 'Unknown',
                     })
-                    ->color(fn(?string $state) => match ($state) {
-                        'common'    => 'gray',
-                        'rare'      => 'info',
-                        'super'     => 'primary',
+                    ->color(fn (?string $state) => match ($state) {
+                        'common' => 'gray',
+                        'rare' => 'info',
+                        'super' => 'primary',
                         'legendary' => 'warning',
-                        'mythic'    => 'danger',
-                        default     => 'gray',
+                        'mythic' => 'danger',
+                        default => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn(string $state) => match ($state) {
-                        'in_stock'   => 'In stock',
-                        'allocated'  => 'In batch',
+                    ->formatStateUsing(fn (string $state) => match ($state) {
+                        'in_stock' => 'In stock',
+                        'allocated' => 'In batch',
                         'dispatched' => 'With store',
-                        'sold'       => 'Sold',
-                        'returned'   => 'Returned',
+                        'sold' => 'Sold',
+                        'returned' => 'Returned',
                         'written_off' => 'Written off',
-                        default      => ucfirst(str_replace('_', ' ', $state)),
+                        default => ucfirst(str_replace('_', ' ', $state)),
                     })
-                    ->color(fn(string $state) => match ($state) {
-                        'in_stock'   => 'success',
-                        'allocated'  => 'info',
+                    ->color(fn (string $state) => match ($state) {
+                        'in_stock' => 'success',
+                        'allocated' => 'info',
                         'dispatched' => 'warning',
-                        'sold'       => 'gray',
-                        'returned'   => 'warning',
+                        'sold' => 'gray',
+                        'returned' => 'warning',
                         'written_off' => 'danger',
-                        default      => 'gray',
+                        default => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('acquisition_lot')
@@ -246,19 +245,19 @@ class CardInventoryResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('rarity_band')
                     ->options([
-                        'common'    => 'Common',
-                        'rare'      => 'Rare',
-                        'super'     => 'Super',
+                        'common' => 'Common',
+                        'rare' => 'Rare',
+                        'super' => 'Super',
                         'legendary' => 'Legendary',
-                        'mythic'    => 'Mythic',
+                        'mythic' => 'Mythic',
                     ]),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'in_stock'    => 'In stock',
-                        'allocated'   => 'Allocated',
-                        'dispatched'  => 'Dispatched',
-                        'sold'        => 'Sold',
-                        'returned'    => 'Returned',
+                        'in_stock' => 'In stock',
+                        'allocated' => 'Allocated',
+                        'dispatched' => 'Dispatched',
+                        'sold' => 'Sold',
+                        'returned' => 'Returned',
                         'written_off' => 'Written off',
                     ])
                     ->default('in_stock'),
@@ -274,7 +273,7 @@ class CardInventoryResource extends Resource
                         Forms\Components\DatePicker::make('sold_from'),
                         Forms\Components\DatePicker::make('sold_until'),
                     ])
-                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
+                    ->query(function (Builder $query, array $data) {
                         return $query
                             ->when($data['sold_from'] ?? null, fn ($q, $date) => $q->whereDate('delisted_at', '>=', $date))
                             ->when($data['sold_until'] ?? null, fn ($q, $date) => $q->whereDate('delisted_at', '<=', $date));
@@ -306,20 +305,25 @@ class CardInventoryResource extends Resource
             ->defaultSort('created_at', 'desc');
     }
 
-    public static function timestampDisplay(?\Illuminate\Support\Carbon $timestamp): string
+    public static function timestampDisplay(?Carbon $timestamp): string
     {
         return $timestamp
             ? $timestamp->diffForHumans().' ('.$timestamp->format('d M Y, H:i').')'
             : 'Never';
     }
 
+    // Rapid Intake is the only way cards enter inventory — no 'create' page/route.
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListCardInventories::route('/'),
-            'create' => Pages\CreateCardInventory::route('/create'),
-            'edit'   => Pages\EditCardInventory::route('/{record}/edit'),
-            'rapid'  => Pages\RapidIntake::route('/rapid'),
+            'index' => Pages\ListCardInventories::route('/'),
+            'edit' => Pages\EditCardInventory::route('/{record}/edit'),
+            'rapid' => Pages\RapidIntake::route('/rapid'),
         ];
     }
 }
