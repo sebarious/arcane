@@ -40,23 +40,43 @@ class PickingSheetGenerator
                 ->lockForUpdate()
                 ->get();
 
-            if ($targets->isEmpty()) {
-                return collect();
-            }
-
-            $sheet = $targets
-                ->groupBy(fn (CardInventory $card) => $card->acquisition_lot ?? '(no lot recorded)')
-                ->sortKeys()
-                ->map(fn (Collection $lotTargets, string $lot) => [
-                    'lot' => $lot,
-                    'cards' => $this->positionsFor($lot, $lotTargets),
-                ])
-                ->values();
-
-            CardInventory::whereIn('id', $targets->pluck('id'))->update(['picked_at' => now()]);
-
-            return $sheet;
+            return $this->pickTargets($targets);
         });
+    }
+
+    /**
+     * The shared core: given a specific, already-loaded set of cards to pick
+     * (any source — a batch's packs, a kiosk order's basket, ...), groups them
+     * by lot, computes each one's current chaos-storage position, and stamps
+     * picked_at on all of them. This is what keeps batch picking sheets and
+     * kiosk order fulfilment from ever computing position differently.
+     *
+     * Must be called from inside a DB::transaction() the caller controls,
+     * after locking the target rows (see generate() above) — the box-position
+     * query below takes its own lock too, but that only means anything nested
+     * inside an already-open transaction.
+     *
+     * @param  Collection<int, CardInventory>  $targets
+     * @return Collection<int, array{lot: string, cards: Collection}>
+     */
+    public function pickTargets(Collection $targets): Collection
+    {
+        if ($targets->isEmpty()) {
+            return collect();
+        }
+
+        $sheet = $targets
+            ->groupBy(fn (CardInventory $card) => $card->acquisition_lot ?? '(no lot recorded)')
+            ->sortKeys()
+            ->map(fn (Collection $lotTargets, string $lot) => [
+                'lot' => $lot,
+                'cards' => $this->positionsFor($lot, $lotTargets),
+            ])
+            ->values();
+
+        CardInventory::whereIn('id', $targets->pluck('id'))->update(['picked_at' => now()]);
+
+        return $sheet;
     }
 
     private function positionsFor(string $lot, Collection $targets): Collection
@@ -68,6 +88,7 @@ class PickingSheetGenerator
             ->sortBy(fn (CardInventory $card) => $card->chaosSortKey())
             ->values()
             ->map(fn (CardInventory $card, int $index) => [
+                'card_inventory_id' => $card->id,
                 'position' => ($rawPosition[$card->id] ?? 0) - $index,
                 'card_name' => $card->card_name,
                 'set_name' => $card->set_name,

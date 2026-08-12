@@ -6,12 +6,19 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BatchQrSheetController;
+use App\Http\Controllers\Catalogue\PageController as CataloguePageController;
 use App\Http\Controllers\Debug\ErrorPagePreviewController;
 use App\Http\Controllers\Debug\QrSheetPreviewController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Intake\PhoneScanController;
 use App\Http\Controllers\InvoicePdfController;
+use App\Http\Controllers\Kiosk\BasketController;
+use App\Http\Controllers\Kiosk\BrowseController;
+use App\Http\Controllers\Kiosk\CheckoutController;
+use App\Http\Controllers\Kiosk\OrderStatusController;
+use App\Http\Controllers\Kiosk\PageController as KioskPageController;
+use App\Http\Controllers\Kiosk\SearchController as KioskSearchController;
 use App\Http\Controllers\Pages\AffiliateProgramController;
 use App\Http\Controllers\Pages\ApiDocsController;
 use App\Http\Controllers\Pages\PrivacyPolicyController;
@@ -41,6 +48,7 @@ use App\Http\Controllers\Storefront\BatchVerifyController;
 use App\Http\Controllers\Storefront\CardListIndexController;
 use App\Http\Controllers\Storefront\StoreIndexController;
 use App\Http\Controllers\Storefront\StoreShowController;
+use App\Http\Controllers\Webhooks\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth'])
@@ -92,6 +100,10 @@ Route::get('/sell/verify-affiliate-code', AffiliateCodeController::class)
 
 Route::get('/affiliate-program', AffiliateProgramController::class)->name('pages.affiliate-program');
 Route::get('/verified', VerifiedController::class)->name('pages.verified');
+// Public, read-only stock browsing for customers' own phones — reuses the
+// kiosk's search/browse endpoints (Kiosk\SearchController/BrowseController),
+// which never mutate anything, so there's no basket/reservation involved.
+Route::get('/catalogue', CataloguePageController::class)->name('pages.catalogue');
 Route::get('/api-docs', ApiDocsController::class)->name('pages.api-docs');
 Route::get('/terms', TermsController::class)->name('pages.terms');
 Route::get('/privacy', PrivacyPolicyController::class)->name('pages.privacy');
@@ -99,6 +111,36 @@ Route::get('/privacy', PrivacyPolicyController::class)->name('pages.privacy');
 Route::get('/image/{path}', [ImageController::class, 'show'])
     ->where('path', '.*')
     ->name('image.show');
+
+// Fully public, no auth — a walk-up tablet on the shop floor. Session-scoped
+// basket (see Kiosk\BasketController), no user account involved.
+Route::prefix('kiosk')->name('kiosk.')->group(function () {
+    Route::get('/', KioskPageController::class)->name('index');
+    Route::get('/search', KioskSearchController::class)
+        ->middleware('throttle:60,1')
+        ->name('search');
+    Route::get('/browse', BrowseController::class)
+        ->middleware('throttle:60,1')
+        ->name('browse');
+    Route::get('/basket', [BasketController::class, 'index'])->name('basket.index');
+    Route::post('/basket', [BasketController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('basket.store');
+    Route::delete('/basket/{cardInventoryId}', [BasketController::class, 'destroy'])
+        ->whereNumber('cardInventoryId')
+        ->name('basket.destroy');
+    Route::delete('/basket', [BasketController::class, 'clear'])->name('basket.clear');
+    Route::post('/checkout', [CheckoutController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('checkout');
+    Route::get('/orders/{order}/status', OrderStatusController::class)
+        ->middleware('throttle:60,1')
+        ->name('orders.status');
+});
+
+// No CSRF (see bootstrap/app.php) and no auth — authenticity comes from the
+// Stripe-Signature header, verified inside the controller.
+Route::post('/webhooks/stripe', StripeWebhookController::class)->name('webhooks.stripe');
 
 Route::middleware(['web', 'auth', 'role:seller'])
     ->prefix('seller')

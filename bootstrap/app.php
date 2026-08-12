@@ -25,10 +25,19 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('arcane:prune-api-logs')->daily();
+        // Keeps kiosk prices (110% of market value) reasonably fresh without
+        // relying on BatchGenerator happening to run — see config/kiosk.php.
+        $schedule->command('arcane:refresh-prices')->daily();
+        $schedule->command('arcane:expire-kiosk-orders')->everyFifteenMinutes();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             HandleInertiaRequests::class,
+        ]);
+        // Authenticity comes from the Stripe-Signature header (verified inside
+        // StripeWebhookController), not a CSRF token Stripe has no way to send.
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/stripe',
         ]);
         $middleware->alias([
             // existing aliases...
@@ -41,14 +50,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // kiosk/* and webhooks/* are JSON-only too — without this, a
+        // ValidationException there (e.g. a bad /kiosk/browse param) redirects
+        // instead of returning JSON, since Laravel's own expectsJson() check
+        // gets overridden by the branded-error-page logic below regardless of
+        // what Accept header the client actually sent.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->is('kiosk/*') || $request->is('webhooks/*'),
         );
 
         // Branded 403/404/500/503 pages instead of Laravel's defaults — see
         // resources/ts/Pages/Errors/Error.vue.
         $exceptions->respond(function (SymfonyResponse $response, Throwable $exception, Request $request) {
-            if ($request->is('api/*')) {
+            if ($request->is('api/*') || $request->is('kiosk/*') || $request->is('webhooks/*')) {
                 return $response;
             }
 

@@ -53,6 +53,20 @@ return [
     // Plain API key, not a service account — this org's Cloud org policy blocks
     // downloadable service account keys (iam.disableServiceAccountKeyCreation),
     // but that doesn't affect a project-level API key, which is a separate credential type.
+    // Kiosk checkout (in-store singles) — server-driven Stripe Terminal
+    // integration: our backend tells a pre-registered smart reader to process
+    // a PaymentIntent via the Stripe API, and Stripe webhooks the result back.
+    // No client-side Stripe.js/publishable key involved at all.
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        // The physical reader (Stripe Reader S700/S710, BBPOS WisePOS E, or
+        // Verifone) registered to the Stripe dashboard and assigned to this
+        // Location — see App\Http\Controllers\Kiosk\CheckoutController.
+        'terminal_location_id' => env('STRIPE_TERMINAL_LOCATION_ID'),
+        'terminal_reader_id' => env('STRIPE_TERMINAL_READER_ID'),
+    ],
+
     'google_vision' => [
         'key' => env('GOOGLE_VISION_API_KEY'),
         // Logs each frame's raw OCR text plus the extracted number/set code —

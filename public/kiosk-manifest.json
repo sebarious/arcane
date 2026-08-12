@@ -1,0 +1,19 @@
+{
+  "name": "Arcane Kiosk",
+  "short_name": "Arcane Kiosk",
+  "description": "Search, basket, and pay for in-store singles",
+  "start_url": "/kiosk",
+  "scope": "/kiosk",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d0b14",
+  "theme_color": "#0d0b14",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "1075x1158",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
