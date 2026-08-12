@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthenticateStoreApiToken;
 use App\Http\Middleware\EnforceStoreDailyApiLimit;
+use App\Http\Middleware\EnsureKioskConfigured;
 use App\Http\Middleware\EnsureMarkAsSoldEnabled;
 use App\Http\Middleware\EnsureSellerStoreIsPublic;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -47,22 +48,30 @@ return Application::configure(basePath: dirname(__DIR__))
             'store.api.daily-limit' => EnforceStoreDailyApiLimit::class,
             'store.api.mark-sold' => EnsureMarkAsSoldEnabled::class,
             'store.api.log' => LogStoreApiRequest::class,
+            'kiosk.enabled' => EnsureKioskConfigured::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // kiosk/* and webhooks/* are JSON-only too — without this, a
-        // ValidationException there (e.g. a bad /kiosk/browse param) redirects
-        // instead of returning JSON, since Laravel's own expectsJson() check
-        // gets overridden by the branded-error-page logic below regardless of
-        // what Accept header the client actually sent.
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->is('kiosk/*') || $request->is('webhooks/*'),
-        );
+        // api/* and webhooks/* are always JSON — nothing browses there
+        // expecting HTML. kiosk/* is mixed: the page itself
+        // (GET /kiosk) is a normal browser navigation and should 404 the same
+        // branded way any other invalid URL on the site does (so a disabled
+        // kiosk doesn't stand out as different from a plain 404), but its API
+        // calls (search/basket/checkout, all sent with Accept: application/json)
+        // need real JSON — without expectsJson() here, a ValidationException on
+        // e.g. /kiosk/browse would redirect instead of returning JSON, since
+        // Laravel's own detection gets overridden by the branded-error-page
+        // logic below regardless of what Accept header the client actually sent.
+        $isJsonOnly = fn (Request $request) => $request->is('api/*')
+            || $request->is('webhooks/*')
+            || ($request->is('kiosk/*') && $request->expectsJson());
+
+        $exceptions->shouldRenderJsonWhen($isJsonOnly);
 
         // Branded 403/404/500/503 pages instead of Laravel's defaults — see
         // resources/ts/Pages/Errors/Error.vue.
-        $exceptions->respond(function (SymfonyResponse $response, Throwable $exception, Request $request) {
-            if ($request->is('api/*') || $request->is('kiosk/*') || $request->is('webhooks/*')) {
+        $exceptions->respond(function (SymfonyResponse $response, Throwable $exception, Request $request) use ($isJsonOnly) {
+            if ($isJsonOnly($request)) {
                 return $response;
             }
 

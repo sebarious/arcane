@@ -113,8 +113,9 @@ Route::get('/image/{path}', [ImageController::class, 'show'])
     ->name('image.show');
 
 // Fully public, no auth — a walk-up tablet on the shop floor. Session-scoped
-// basket (see Kiosk\BasketController), no user account involved.
-Route::prefix('kiosk')->name('kiosk.')->group(function () {
+// basket (see Kiosk\BasketController), no user account involved. Gated
+// behind Stripe actually being configured — see EnsureKioskConfigured.
+Route::prefix('kiosk')->name('kiosk.')->middleware('kiosk.enabled')->group(function () {
     Route::get('/', KioskPageController::class)->name('index');
     Route::get('/search', KioskSearchController::class)
         ->middleware('throttle:60,1')
