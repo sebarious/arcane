@@ -113,30 +113,37 @@ Route::get('/image/{path}', [ImageController::class, 'show'])
     ->name('image.show');
 
 // Fully public, no auth — a walk-up tablet on the shop floor. Session-scoped
-// basket (see Kiosk\BasketController), no user account involved. Gated
-// behind Stripe actually being configured — see EnsureKioskConfigured.
-Route::prefix('kiosk')->name('kiosk.')->middleware('kiosk.enabled')->group(function () {
-    Route::get('/', KioskPageController::class)->name('index');
+// basket (see Kiosk\BasketController), no user account involved.
+Route::prefix('kiosk')->name('kiosk.')->group(function () {
+    // Shared with /catalogue (Catalogue/Index.vue calls these same URLs) —
+    // pure stock lookups, nothing to do with checkout, so these must stay
+    // reachable regardless of whether Stripe is configured.
     Route::get('/search', KioskSearchController::class)
         ->middleware('throttle:60,1')
         ->name('search');
     Route::get('/browse', BrowseController::class)
         ->middleware('throttle:60,1')
         ->name('browse');
-    Route::get('/basket', [BasketController::class, 'index'])->name('basket.index');
-    Route::post('/basket', [BasketController::class, 'store'])
-        ->middleware('throttle:30,1')
-        ->name('basket.store');
-    Route::delete('/basket/{cardInventoryId}', [BasketController::class, 'destroy'])
-        ->whereNumber('cardInventoryId')
-        ->name('basket.destroy');
-    Route::delete('/basket', [BasketController::class, 'clear'])->name('basket.clear');
-    Route::post('/checkout', [CheckoutController::class, 'store'])
-        ->middleware('throttle:10,1')
-        ->name('checkout');
-    Route::get('/orders/{order}/status', OrderStatusController::class)
-        ->middleware('throttle:60,1')
-        ->name('orders.status');
+
+    // The actual kiosk checkout flow — gated behind Stripe actually being
+    // configured, see EnsureKioskConfigured.
+    Route::middleware('kiosk.enabled')->group(function () {
+        Route::get('/', KioskPageController::class)->name('index');
+        Route::get('/basket', [BasketController::class, 'index'])->name('basket.index');
+        Route::post('/basket', [BasketController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('basket.store');
+        Route::delete('/basket/{cardInventoryId}', [BasketController::class, 'destroy'])
+            ->whereNumber('cardInventoryId')
+            ->name('basket.destroy');
+        Route::delete('/basket', [BasketController::class, 'clear'])->name('basket.clear');
+        Route::post('/checkout', [CheckoutController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('checkout');
+        Route::get('/orders/{order}/status', OrderStatusController::class)
+            ->middleware('throttle:60,1')
+            ->name('orders.status');
+    });
 });
 
 // No CSRF (see bootstrap/app.php) and no auth — authenticity comes from the
