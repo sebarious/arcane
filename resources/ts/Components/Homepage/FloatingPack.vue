@@ -17,7 +17,7 @@
           <!-- BACK: revealed card -->
           <div :style="backCard1">
             <img :src="CARD_IMAGES[0]" alt="Pokémon card" class="w-full h-full object-cover select-none"
-              draggable="false" loading="lazy" />
+              draggable="false" />
 
             <div
               class="absolute bottom-0 left-0 right-0 h-[50%] bg-gradient-to-t from-black/100 to-transparent pointer-events-none">
@@ -39,7 +39,7 @@
           <!-- BACK: revealed card -->
           <div :style="backCard2" class="back-card">
             <img :src="CARD_IMAGES[1]" alt="Pokémon card" class="w-full h-full object-cover select-none"
-              draggable="false" loading="lazy" />
+              draggable="false" />
 
             <div
               class="absolute bottom-0 left-0 right-0 h-[50%] bg-gradient-to-t from-black/100 to-transparent pointer-events-none">
@@ -61,7 +61,7 @@
           <!-- FRONT: pack -->
           <div :style="sharedFaceStyle">
             <img :src="arcanePack" alt="Arcane Mystery Pack" class="w-full h-full object-cover select-none"
-              draggable="false" loading="lazy" />
+              draggable="false" fetchpriority="high" />
           </div>
         </div>
       </div>
