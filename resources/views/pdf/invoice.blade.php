@@ -129,10 +129,31 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
+
+    .watermark {
+      position: fixed;
+      top: 90mm;
+      left: 15mm;
+      width: 180mm;
+      text-align: center;
+      transform: rotate(-30deg);
+      font-size: 100px;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      color: #1f7a4d;
+      opacity: 0.16;
+      z-index: -1;
+    }
   </style>
 </head>
 
 <body>
+  {{-- Only ever reflects the invoice's state at download time — if it's
+  downloaded again after being marked paid, the watermark appears; a copy
+  downloaded while still unpaid never has one baked in. --}}
+  @if($invoice->status === 'paid')
+  <div class="watermark">PAID</div>
+  @endif
   <div class="brand-bar">
     <table>
       <tr>
