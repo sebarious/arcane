@@ -2,13 +2,18 @@
   <ClientOnly>
     <div class="absolute inset-0 overflow-hidden">
       <div class="absolute inset-0 bg-[#06060b]" />
-      <div v-for="( b, i) in blobs" :key="i" v-motion="blobMotion( b, i )" class="absolute" :style="{
+      <div v-for="( b, i) in blobs" :key="i" class="absolute hero-blob" :style="{
         width: b.size + 'px',
         height: b.size + 'px',
         top: b.top,
         left: b.left,
         background: b.color,
         filter: `blur(${b.blur}px)`,
+        animationDuration: b.dur * 1000 + 'ms',
+        animationDelay: i * 1500 + 'ms',
+        '--blob-x1': b.xPath[1] + 'px', '--blob-y1': b.yPath[1] + 'px',
+        '--blob-x2': b.xPath[2] + 'px', '--blob-y2': b.yPath[2] + 'px',
+        '--blob-x3': b.xPath[3] + 'px', '--blob-y3': b.yPath[3] + 'px',
       }" />
       <div class="absolute inset-0 bg-[#06060b]/60" />
       <div class="absolute inset-0" :style="{
@@ -40,17 +45,25 @@ const blobs = [
   // ...rest
 ];
 
-const blobMotion = ( b: ( typeof blobs )[number], i: number ) => ( {
-  initial: { x: 0, y: 0, borderRadius: '50%' },
-  enter: {
-    x: b.xPath,
-    y: b.yPath,
-    transition: {
-      duration: b.dur * 1000,
-      repeat: Infinity,
-      easing: 'easeInOut',
-      delay: i * 1500,
-    },
-  },
-} );
+
 </script>
+
+<style scoped>
+/* Was a @vueuse/motion per-frame JS tween of x/y, running forever — see the
+   same reasoning in Orbs.vue/FloatingRings.vue. The path is data-driven per
+   blob, so the waypoints are passed in as CSS custom properties rather than
+   hardcoded, in case more blobs are added to the array later. */
+.hero-blob {
+  border-radius: 50%;
+  animation-name: hero-blob-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes hero-blob-drift {
+  0%, 100% { transform: translate( 0, 0 ); }
+  25% { transform: translate( var( --blob-x1 ), var( --blob-y1 ) ); }
+  50% { transform: translate( var( --blob-x2 ), var( --blob-y2 ) ); }
+  75% { transform: translate( var( --blob-x3 ), var( --blob-y3 ) ); }
+}
+</style>

@@ -1,6 +1,6 @@
 <template>
   <section class="py-4 border-y border-[#DCC175]/10 overflow-hidden">
-    <div v-motion="motionOptions" class="flex gap-12 whitespace-nowrap">
+    <div class="flex gap-12 whitespace-nowrap ticker-track">
       <span v-for="( item, i) in doubled" :key="i"
         class="text-[10px] tracking-[0.35em] uppercase text-[#DCC175] flex items-center gap-12"
         :style="{ fontFamily: 'Jost, sans-serif' }">
@@ -16,16 +16,17 @@ import { computed } from 'vue';
 import { tickerItems } from './data';
 
 const doubled = computed( () => [...tickerItems, ...tickerItems] );
-
-const motionOptions = {
-  initial: { x: '0%' },
-  enter: {
-    x: '-50%',
-    transition: {
-      duration: 20000,
-      repeat: Infinity,
-      easing: 'linear',
-    },
-  },
-};
 </script>
+
+<style scoped>
+/* Was a @vueuse/motion per-frame JS tween — see FloatingRings.vue for why
+   that's worth avoiding for anything that runs forever. */
+.ticker-track {
+  animation: ticker-scroll 20s linear infinite;
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX( 0 ); }
+  to { transform: translateX( -50% ); }
+}
+</style>

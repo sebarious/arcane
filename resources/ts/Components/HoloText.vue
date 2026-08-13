@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <span v-motion="motionOptions" :class="['inline-block text-transparent bg-clip-text', className]" :style="baseStyle">
+    <span :class="['inline-block text-transparent bg-clip-text holo-text', className]" :style="baseStyle">
       <slot />
     </span>
   </ClientOnly>
@@ -22,18 +22,18 @@ const baseStyle = {
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
 };
-
-const motionOptions = {
-  initial: {
-    backgroundPosition: '0% 50%',
-  },
-  enter: {
-    backgroundPosition: '200% 50%',
-    transition: {
-      duration: 5000,
-      repeat: Infinity,
-      easing: 'linear',
-    },
-  },
-};
 </script>
+
+<style scoped>
+/* Was a @vueuse/motion per-frame JS tween — see FloatingRings.vue for why
+   that's worth avoiding for anything that runs forever, especially since
+   this renders more than once per page (e.g. LivePool also uses it). */
+.holo-text {
+  animation: holo-shimmer 5s linear infinite;
+}
+
+@keyframes holo-shimmer {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+</style>

@@ -23,13 +23,13 @@
     </div>
 
     <div class="overflow-hidden mb-4">
-      <div v-motion="row1Motion" class="flex">
+      <div class="flex pool-row">
         <PoolTile v-for="( card, i) in row1Doubled" :key="i" :pull="card" />
       </div>
     </div>
 
     <div class="overflow-hidden">
-      <div v-motion="row2Motion" class="flex">
+      <div class="flex pool-row pool-row-reverse">
         <PoolTile v-for="( card, i) in row2Doubled" :key="i" :pull="card" />
       </div>
     </div>
@@ -70,22 +70,6 @@ const headerMotion = {
   },
 };
 
-const row1Motion = {
-  initial: { x: '0%' },
-  enter: {
-    x: '-50%',
-    transition: { duration: 22000, repeat: Infinity, easing: 'linear' },
-  },
-};
-
-const row2Motion = {
-  initial: { x: '-50%' },
-  enter: {
-    x: '0%',
-    transition: { duration: 22000, repeat: Infinity, easing: 'linear' },
-  },
-};
-
 const linkMotion = {
   initial: { opacity: 0 },
   enter: {
@@ -94,3 +78,22 @@ const linkMotion = {
   },
 };
 </script>
+
+<style scoped>
+/* Was two @vueuse/motion per-frame JS tweens (repeat: Infinity) — see
+   FloatingRings.vue for why that's worth avoiding for anything that runs
+   forever. headerMotion/linkMotion above are one-shot entrance animations
+   (no repeat), so those are left as v-motion. */
+.pool-row {
+  animation: pool-row-scroll 22s linear infinite;
+}
+
+.pool-row-reverse {
+  animation-direction: reverse;
+}
+
+@keyframes pool-row-scroll {
+  from { transform: translateX( 0 ); }
+  to { transform: translateX( -50% ); }
+}
+</style>

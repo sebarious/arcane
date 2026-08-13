@@ -1,7 +1,7 @@
 <template>
   <ClientOnly>
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
-      <div v-for=" p in particles " :key="p.id" v-motion="particleMotion( p )" class="absolute"
+      <div v-for=" p in particles " :key="p.id" class="absolute sparkle-particle"
         :style="particleStyle( p )" />
     </div>
   </ClientOnly>
@@ -54,22 +54,33 @@ const particleStyle = ( p: Particle ) => ( {
   height: `${p.size}px`,
   background: p.color,
   borderRadius: p.shape === 'circle' ? '50%' : '2px',
-  rotate: p.shape === 'diamond' ? '45deg' : '0deg',
+  '--sparkle-rotate': p.shape === 'diamond' ? '45deg' : '0deg',
   boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
-} );
-
-const particleMotion = ( p: Particle ) => ( {
-  initial: { y: 0, opacity: 0, scale: 0 },
-  enter: {
-    y: -( 300 + Math.random() * 200 ),
-    opacity: [0, 0.9, 0.9, 0],
-    scale: [0, 1.2, 1, 0],
-    transition: {
-      duration: p.dur * 1000,
-      repeat: Infinity,
-      delay: p.delay * 1000,
-      easing: 'easeOut',
-    },
-  },
+  '--sparkle-rise': `-${300 + Math.random() * 200}px`,
+  animationDuration: p.dur * 1000 + 'ms',
+  animationDelay: p.delay * 1000 + 'ms',
 } );
 </script>
+
+<style scoped>
+/* 48 of these render per hero — each used to be an independent @vueuse/motion
+   per-frame JS tween (repeat: Infinity), which is a lot of main-thread work
+   to keep paying forever just for ambient decoration. CSS keyframes let the
+   compositor thread handle all 48 instead. Only the rise distance/duration/
+   delay vary per particle, so those are passed in as custom properties/
+   animation-* rather than needing a unique keyframe per particle. */
+.sparkle-particle {
+  transform: translateY( 0 ) scale( 0 ) rotate( var( --sparkle-rotate ) );
+  opacity: 0;
+  animation-name: sparkle-rise;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes sparkle-rise {
+  0% { transform: translateY( 0 ) scale( 0 ) rotate( var( --sparkle-rotate ) ); opacity: 0; }
+  33.333% { transform: translateY( calc( var( --sparkle-rise ) * 0.333 ) ) scale( 1.2 ) rotate( var( --sparkle-rotate ) ); opacity: 0.9; }
+  66.667% { transform: translateY( calc( var( --sparkle-rise ) * 0.667 ) ) scale( 1 ) rotate( var( --sparkle-rotate ) ); opacity: 0.9; }
+  100% { transform: translateY( var( --sparkle-rise ) ) scale( 0 ) rotate( var( --sparkle-rotate ) ); opacity: 0; }
+}
+</style>
