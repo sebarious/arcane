@@ -8,7 +8,7 @@
       }" />
 
       <!-- rotating outer aura -->
-      <div class="hidden md:absolute w-[380px] md:h-[380px] rounded-full border border-[#DCC175]/10" :style="ringStyle" />
+      <div class="hidden md:absolute w-[380px] md:h-[380px] rounded-full border border-[#DCC175]/10 pack-ring" />
 
       <!-- floating + tilt wrapper -->
       <div class="relative z-10 transition-transform duration-200 scale-50 md:scale-100" :style="wrapperStyle">
@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { CARD_IMAGES, arcanePack } from './data';
 import type { Pull } from '../../types';
 
@@ -164,19 +164,6 @@ const PACK_TIERS = [
 ] as const;
 
 const cardIndex = ref( 0 );
-const ringRotation = ref( 0 );
-
-let ringInterval: number | null = null;
-
-onMounted( () => {
-  ringInterval = window.setInterval( () => {
-    ringRotation.value += 1;
-  }, 16 );
-} );
-
-onUnmounted( () => {
-  if ( ringInterval !== null ) window.clearInterval( ringInterval );
-} );
 
 const currentCard = computed<string>( () => CARD_IMAGES[cardIndex.value] );
 
@@ -225,8 +212,22 @@ const backCard2 = computed<Record<string, string>>( () => ( {
   transform: 'translateY(-50%) rotate(12deg)',
 } ) );
 
-const ringStyle = computed<Record<string, string>>( () => ( {
-  transform: `rotate(${ringRotation.value}deg)`,
-  transition: 'transform 16ms linear',
-} ) );
 </script>
+
+<style scoped>
+/* Was a setInterval(..., 16) incrementing a reactive ref every tick — meaning
+   a full Vue reactivity + render + patch cycle roughly 60 times a second,
+   forever, for as long as the homepage stayed open. That's far heavier than
+   a plain style write and was a major, continuous drag on the main thread
+   (main suspect for input lag like the mobile menu taking seconds to
+   respond to a tap). A CSS keyframe animation gets the same visual spin
+   without any of that recurring JS/Vue work. */
+.pack-ring {
+  animation: pack-ring-spin 5.76s linear infinite;
+}
+
+@keyframes pack-ring-spin {
+  from { transform: rotate( 0deg ); }
+  to { transform: rotate( 360deg ); }
+}
+</style>

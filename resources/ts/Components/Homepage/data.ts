@@ -1,12 +1,12 @@
 // src/data.ts
-import arcanePack from '@/Assets/Arcane_pack.png';
+import arcanePack from '@/Assets/Arcane_pack.webp';
 import arcaneLogo from '@/Assets/Link___Arcane.png';
-import imgVictini from '@/Assets/svp-208.png';
-import imgBubbleMew from '@/Assets/sv4pt5-232.png';
-import imgPikachu from '@/Assets/Pikachu.png';
-import imgLugia from '@/Assets/Lugia.png';
-import imgMew from '@/Assets/Mew.png';
-import imgRayquaza from '@/Assets/Rayquaza.png';
+import imgVictini from '@/Assets/svp-208.webp';
+import imgBubbleMew from '@/Assets/sv4pt5-232.webp';
+import imgPikachu from '@/Assets/Pikachu.webp';
+import imgLugia from '@/Assets/Lugia.webp';
+import imgMew from '@/Assets/Mew.webp';
+import imgRayquaza from '@/Assets/Rayquaza.webp';
 
 export const pulls = [
   { name: 'Charizard ex', set: 'Obsidian Flames', grade: 'PSA 9', rarity: 'Ultra', value: '£85', img: imgVictini },

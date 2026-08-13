@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import arcanePack from '@/Assets/Arcane_pack.png';
+import arcanePack from '@/Assets/Arcane_pack.webp';
 
 const props = defineProps<{
   topCardImage1?: string | null;
