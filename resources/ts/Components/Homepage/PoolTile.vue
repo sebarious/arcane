@@ -12,10 +12,10 @@
     </div>
     <div class="flex flex-col justify-center flex-1 min-w-0 relative z-10">
       <div>
-        <h4 class="text-sm text-white leading-snug mb-0.5 truncate"
+        <h3 class="text-sm text-white leading-snug mb-0.5 truncate"
           :style="{ fontFamily: 'Cinzel, serif', fontWeight: 600 }">
           {{ pull.card.name}}
-        </h4>
+        </h3>
         <p class="text-[10px] text-[#DCC175] truncate mb-1" :style="{ fontFamily: 'Jost, sans-serif' }">
           {{ pull.card.set }}
         </p>

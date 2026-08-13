@@ -16,9 +16,9 @@
 
     <!-- Info below card -->
     <div class="px-3 mt-2 transition-opacity duration-300" :class="active ? 'opacity-100' : 'opacity-50'">
-      <h4 class="text-base text-white leading-snug mb-0.5" :style="{ fontFamily: 'Cinzel, serif', fontWeight: 700 }">
+      <h3 class="text-base text-white leading-snug mb-0.5" :style="{ fontFamily: 'Cinzel, serif', fontWeight: 700 }">
         {{ pull.card.name }}
-      </h4>
+      </h3>
       <p class="text-[10px] tracking-[0.18em] uppercase mb-3" :style="{
         fontFamily: 'Jost, sans-serif',
         color: 'rgba(255,255,255,0.35)',

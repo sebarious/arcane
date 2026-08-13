@@ -22,7 +22,7 @@
         </div>
 
         <!-- Heading: One Card. Infinite Chase. -->
-        <div class="mb-8 text-[42px] md:text-[64px]" :style="{
+        <h1 class="mb-8 text-[42px] md:text-[64px]" :style="{
           fontFamily: 'Cinzel, serif',
           fontWeight: 900,
           lineHeight: 1.05,
@@ -33,7 +33,7 @@
           <div class="overflow-hidden whitespace-nowrap">
             <SplitWords text="Love Every Pull." :delay="0.5" :style="infiniteChaseStyle" />
           </div>
-        </div>
+        </h1>
 
         <!-- Subtext -->
         <p class="text-sm md:text-base leading-relaxed mb-10 max-w-md" :style="{

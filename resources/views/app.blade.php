@@ -18,7 +18,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://pokepulse-static.s3.eu-west-2.amazonaws.com">
-    @php($fontsHref = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cinzel:wght@400;500;600;700;900&family=Jost:wght@300;400;500;600&display=swap')
+    @php($fontsHref = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cinzel:wght@400;500;600;700;900&family=Jost:wght@300;400;500;600&display=optional')
     <link rel="preload" as="style" href="{{ $fontsHref }}">
     <link rel="stylesheet" href="{{ $fontsHref }}" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="{{ $fontsHref }}"></noscript>
