@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Storefront;
 
-use App\Enums\Game;
 use App\Http\Controllers\Controller;
 use App\Models\Pack;
 use App\Models\Store;
@@ -17,10 +16,10 @@ class StoreShowController extends Controller
         }
 
         // Batches for this store that are live — merged batches are excluded, since
-        // their remaining stock has moved into another batch's pool.
+        // their remaining stock has moved into another batch's pool. A batch stays
+        // visible for an hour after selling out — see Batch::scopeVisibleOnStorefront.
         $batches = $store->batches()
-            ->whereIn('status', ['committed', 'dispatched'])
-            ->whereNull('merged_into_batch_id')
+            ->visibleOnStorefront()
             ->orderByDesc('created_at')
             ->get(['id', 'reference', 'type', 'game', 'pack_count', 'created_at']);
 
@@ -37,26 +36,27 @@ class StoreShowController extends Controller
             ->whereIn('status', ['committed', 'dispatched', 'completed'])
             ->with(['packs.card'])
             ->get()
-            ->flatMap(fn($batch) => $batch->packs)
-            ->filter(fn($pack) => $pack->status === 'sold' && $pack->card)
-            ->sortByDesc(fn($pack) => $pack->sold_at ?? $pack->card->delisted_at ?? $pack->updated_at)
+            ->flatMap(fn ($batch) => $batch->packs)
+            ->filter(fn ($pack) => $pack->status === 'sold' && $pack->card)
+            ->sortByDesc(fn ($pack) => $pack->sold_at ?? $pack->card->delisted_at ?? $pack->updated_at)
             ->take(20)
             ->map(function ($pack) {
                 $inv = $pack->card;
+
                 return [
-                    'id'       => $pack->id,
+                    'id' => $pack->id,
                     'sequence' => $pack->sequence_no,
-                    'sold_at'  => $pack->sold_at?->toIso8601String() ?? $inv?->delisted_at?->toIso8601String(),
-                    'batch'    => [
-                        'id'        => $pack->batch_id,
+                    'sold_at' => $pack->sold_at?->toIso8601String() ?? $inv?->delisted_at?->toIso8601String(),
+                    'batch' => [
+                        'id' => $pack->batch_id,
                         'reference' => $pack->batch?->reference,
                     ],
                     'card' => $inv ? [
-                        'name'   => $inv->card_name,
-                        'set'    => $inv->set_name,
+                        'name' => $inv->card_name,
+                        'set' => $inv->set_name,
                         'number' => $inv->card_number,
-                        'image'  => $inv->image_url,
-                        'band'   => $inv->rarity_band,
+                        'image' => $inv->image_url,
+                        'band' => $inv->rarity_band,
                     ] : null,
                 ];
             })
@@ -71,29 +71,29 @@ class StoreShowController extends Controller
             ->count();
 
         return Inertia::render('Storefront/StoreShow', [
-            'store'   => [
-                'id'             => $store->id,
-                'slug'           => $store->slug,
+            'store' => [
+                'id' => $store->id,
+                'slug' => $store->slug,
                 'affiliate_code' => $store->affiliate_code,
-                'name'        => $store->name,
-                'city'        => $store->city,
-                'postcode'    => $store->postcode,
-                'location'    => $store->location,
+                'name' => $store->name,
+                'city' => $store->city,
+                'postcode' => $store->postcode,
+                'location' => $store->location,
                 'description' => $store->description,
-                'platforms'   => $store->platforms,
-                'logo'        => $store->logo,
+                'platforms' => $store->platforms,
+                'logo' => $store->logo,
                 'social_links' => $store->social_links,
-                'created_at'  => $store->created_at?->format('M Y'),
+                'created_at' => $store->created_at?->format('M Y'),
                 'total_batches' => $store->batches()->count(),
                 'total_packs_remaining' => $totalActivePacks - $soldPackCount,
                 'total_pull_count' => $totalNumberOfPulls,
             ],
             'batches' => $batches->map(function ($batch) {
                 return [
-                    'id'        => $batch->id,
+                    'id' => $batch->id,
                     'reference' => $batch->reference,
-                    'type'      => $batch->type?->value,
-                    'game'       => $batch->game?->value,
+                    'type' => $batch->type?->value,
+                    'game' => $batch->game?->value,
                     'game_label' => $batch->game ? $batch->game->label() : null,
                     'created_at' => $batch->created_at?->format('M Y'),
                     'pack_count' => $batch->pack_count,

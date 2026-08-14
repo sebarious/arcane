@@ -30,6 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // relying on BatchGenerator happening to run — see config/kiosk.php.
         $schedule->command('arcane:refresh-prices')->daily();
         $schedule->command('arcane:expire-kiosk-orders')->everyFifteenMinutes();
+        // The 1-hour storefront grace period (Batch::scopeVisibleOnStorefront)
+        // is measured from the stamped emptied_at, not from this cron tick, so
+        // this only needs to run often enough that the stamp itself lands promptly.
+        $schedule->command('arcane:mark-empty-batches')->everyFifteenMinutes();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

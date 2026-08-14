@@ -13,8 +13,7 @@ class CardListIndexController extends Controller
         // Same visibility rule as /stores — a batch only shows up here if the
         // store it belongs to is actually browsable on the public storefront.
         $batches = Batch::query()
-            ->whereIn('status', ['committed', 'dispatched'])
-            ->whereNull('merged_into_batch_id')
+            ->visibleOnStorefront()
             ->whereHas('store', function ($query) {
                 $query->where('public_page_enabled', true)->where('status', 'active');
             })
@@ -31,15 +30,15 @@ class CardListIndexController extends Controller
 
         return Inertia::render('Storefront/CardListIndex', [
             'batches' => $batches->map(fn (Batch $batch) => [
-                'id'              => $batch->id,
-                'reference'       => $batch->reference,
-                'type'            => $batch->type?->value,
-                'type_label'      => $batch->type?->label(),
-                'game'            => $batch->game?->value,
-                'game_label'      => $batch->game?->label(),
-                'pack_count'      => $batch->pack_count,
+                'id' => $batch->id,
+                'reference' => $batch->reference,
+                'type' => $batch->type?->value,
+                'type_label' => $batch->type?->label(),
+                'game' => $batch->game?->value,
+                'game_label' => $batch->game?->label(),
+                'pack_count' => $batch->pack_count,
                 'remaining_packs' => $batch->pack_count - $batch->sold_packs_count,
-                'store'           => [
+                'store' => [
                     'slug' => $batch->store->slug,
                     'name' => $batch->store->name,
                     'logo' => $batch->store->logo,

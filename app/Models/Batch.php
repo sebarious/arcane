@@ -15,7 +15,7 @@ class Batch extends Model
         'total_cost_pence', 'total_market_value_pence',
         'sale_price_pence', 'margin_pence', 'margin_scheme_vat_pence',
         'invoice_id', 'qr_sheet_pdf_path', 'picking_sheet_pdf_path',
-        'committed_at', 'dispatched_at',
+        'committed_at', 'dispatched_at', 'emptied_at',
         'type', 'game',
         'failure_reason',
         'failed_at',
@@ -32,6 +32,7 @@ class Batch extends Model
     protected $casts = [
         'committed_at' => 'datetime',
         'dispatched_at' => 'datetime',
+        'emptied_at' => 'datetime',
         'failed_at' => 'datetime',
         'merged_at' => 'datetime',
         'verification_committed_at' => 'datetime',
@@ -76,6 +77,27 @@ class Batch extends Model
         return $query->withoutGlobalScope('excludeTestBatches')
             ->where('store_id', $store->id)
             ->where('is_test', true);
+    }
+
+    /**
+     * The batches that should actually show up on the public storefront — the
+     * Card Lists page and a store's own profile page. Centralised here so
+     * those two can't drift apart on the visibility rule, same reasoning as
+     * scopeVisibleToStoreApi above.
+     *
+     * A batch stays visible for an hour after it sells out (emptied_at gets
+     * stamped by arcane:mark-empty-batches, not computed here) rather than
+     * disappearing the instant its last pack sells — mid-sellout is exactly
+     * when someone's most likely to be looking at it.
+     */
+    public function scopeVisibleOnStorefront(Builder $query): Builder
+    {
+        return $query->whereIn('status', ['committed', 'dispatched'])
+            ->whereNull('merged_into_batch_id')
+            ->where(function (Builder $query) {
+                $query->whereNull('emptied_at')
+                    ->orWhere('emptied_at', '>', now()->subHour());
+            });
     }
 
     public function isVerificationRevealed(): bool
