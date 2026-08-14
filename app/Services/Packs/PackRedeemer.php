@@ -14,11 +14,16 @@ class PackRedeemer
             ->first();
     }
 
-    /** Marks the card/pack sold. No-op if already sold — safe to call on a rescan. */
-    public function redeem(CardInventory $card, ?int $byUserId): void
+    /**
+     * Marks the card/pack sold. No-op if already sold — safe to call on a
+     * rescan. Returns whether this call actually redeemed it (false means it
+     * was already sold beforehand), so callers can tell a fresh confirmation
+     * apart from a repeat scan.
+     */
+    public function redeem(CardInventory $card, ?int $byUserId): bool
     {
         if ($card->status === 'sold') {
-            return;
+            return false;
         }
 
         DB::transaction(function () use ($card, $byUserId) {
@@ -33,5 +38,7 @@ class PackRedeemer
                 'sold_at' => now(),
             ]);
         });
+
+        return true;
     }
 }

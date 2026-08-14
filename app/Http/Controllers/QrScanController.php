@@ -23,11 +23,18 @@ class QrScanController extends Controller
             return response()->view('qr.invalid', [], 404);
         }
 
-        $redeemer->redeem($card, $request->user()?->id);
+        $newlyRedeemed = $redeemer->redeem($card, $request->user()?->id);
 
-        return redirect()->route('stores.lists.show', [
-            'store' => $store->slug,
-            'batch' => $batch->id,
-        ]);
+        return redirect()
+            ->route('stores.lists.show', [
+                'store' => $store->slug,
+                'batch' => $batch->id,
+            ])
+            ->with(
+                $newlyRedeemed ? 'success' : 'status',
+                $newlyRedeemed
+                    ? "Pull confirmed! You got {$card->card_name} — enjoy the chase."
+                    : 'This card was already confirmed sold — nothing new to do here.',
+            );
     }
 }

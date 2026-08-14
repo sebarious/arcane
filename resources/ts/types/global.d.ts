@@ -29,7 +29,7 @@ export type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic'
  */
 export interface PageProps<T extends Record<string, unknown> = Record<string, unknown>> {
     auth: { user: User | null }
-    flash: { success?: string; error?: string }
+    flash: { success?: string; error?: string; status?: string }
     ziggy: { location: string; url: string }
     impersonating: boolean
     [key: string]: unknown
