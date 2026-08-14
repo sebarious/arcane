@@ -15,28 +15,31 @@ class PackRedeemer
     }
 
     /**
-     * Marks the card/pack sold. No-op if already sold — safe to call on a
-     * rescan. Returns whether this call actually redeemed the *card* (false
-     * means it was already sold beforehand), so callers can tell a fresh
-     * confirmation apart from a repeat scan.
+     * Marks the card/pack sold. No-op if both are already sold — safe to
+     * call on a rescan. Returns whether this call confirmed or repaired
+     * anything, so callers can tell "meaningfully handled just now" apart
+     * from "genuinely nothing to do."
      *
      * Checks the card and pack independently rather than short-circuiting on
      * the card alone: a card can end up marked sold while its pack didn't
      * (seen in production — cause not fully pinned down, but the two updates
-     * aren't always transactional at every call site). A rescan is the
-     * natural point to self-heal that drift, since it's already re-checking
-     * both rows anyway.
+     * aren't always transactional at every call site). A rescan that hits
+     * that drift still counts as confirming — the customer never actually
+     * saw a successful confirmation the first time, so a QR-scan caller
+     * should show them the same "you're good" message as a fresh scan, not
+     * "already sold" (which reads as someone else having claimed it).
      */
     public function redeem(CardInventory $card, ?int $byUserId): bool
     {
         $pack = $card->pack;
         $cardAlreadySold = $card->status === 'sold';
+        $packAlreadySold = ! $pack || $pack->status === 'sold';
 
-        if ($cardAlreadySold && (! $pack || $pack->status === 'sold')) {
+        if ($cardAlreadySold && $packAlreadySold) {
             return false;
         }
 
-        DB::transaction(function () use ($card, $pack, $byUserId, $cardAlreadySold) {
+        DB::transaction(function () use ($card, $pack, $byUserId, $cardAlreadySold, $packAlreadySold) {
             if (! $cardAlreadySold) {
                 $card->update([
                     'status' => 'sold',
@@ -45,7 +48,7 @@ class PackRedeemer
                 ]);
             }
 
-            if ($pack && $pack->status !== 'sold') {
+            if (! $packAlreadySold) {
                 $pack->update([
                     'status' => 'sold',
                     'sold_at' => now(),
@@ -53,6 +56,6 @@ class PackRedeemer
             }
         });
 
-        return ! $cardAlreadySold;
+        return true;
     }
 }

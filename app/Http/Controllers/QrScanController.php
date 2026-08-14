@@ -23,7 +23,10 @@ class QrScanController extends Controller
             return response()->view('qr.invalid', [], 404);
         }
 
-        $newlyRedeemed = $redeemer->redeem($card, $request->user()?->id);
+        // true whenever this scan confirmed or repaired anything (including
+        // a desynced card/pack pair — see PackRedeemer::redeem) — false only
+        // when the scan was a genuine, fully-consistent rescan.
+        $confirmed = $redeemer->redeem($card, $request->user()?->id);
 
         return redirect()
             ->route('stores.lists.show', [
@@ -31,8 +34,8 @@ class QrScanController extends Controller
                 'batch' => $batch->id,
             ])
             ->with(
-                $newlyRedeemed ? 'success' : 'status',
-                $newlyRedeemed
+                $confirmed ? 'success' : 'status',
+                $confirmed
                     ? "Pull confirmed! You got {$card->card_name} — enjoy the chase."
                     : 'This card was already confirmed sold — nothing new to do here.',
             );
