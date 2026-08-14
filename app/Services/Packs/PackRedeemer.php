@@ -16,29 +16,43 @@ class PackRedeemer
 
     /**
      * Marks the card/pack sold. No-op if already sold — safe to call on a
-     * rescan. Returns whether this call actually redeemed it (false means it
-     * was already sold beforehand), so callers can tell a fresh confirmation
-     * apart from a repeat scan.
+     * rescan. Returns whether this call actually redeemed the *card* (false
+     * means it was already sold beforehand), so callers can tell a fresh
+     * confirmation apart from a repeat scan.
+     *
+     * Checks the card and pack independently rather than short-circuiting on
+     * the card alone: a card can end up marked sold while its pack didn't
+     * (seen in production — cause not fully pinned down, but the two updates
+     * aren't always transactional at every call site). A rescan is the
+     * natural point to self-heal that drift, since it's already re-checking
+     * both rows anyway.
      */
     public function redeem(CardInventory $card, ?int $byUserId): bool
     {
-        if ($card->status === 'sold') {
+        $pack = $card->pack;
+        $cardAlreadySold = $card->status === 'sold';
+
+        if ($cardAlreadySold && (! $pack || $pack->status === 'sold')) {
             return false;
         }
 
-        DB::transaction(function () use ($card, $byUserId) {
-            $card->update([
-                'status' => 'sold',
-                'delisted_at' => now(),
-                'delisted_by_user_id' => $byUserId,
-            ]);
+        DB::transaction(function () use ($card, $pack, $byUserId, $cardAlreadySold) {
+            if (! $cardAlreadySold) {
+                $card->update([
+                    'status' => 'sold',
+                    'delisted_at' => now(),
+                    'delisted_by_user_id' => $byUserId,
+                ]);
+            }
 
-            $card->pack?->update([
-                'status' => 'sold',
-                'sold_at' => now(),
-            ]);
+            if ($pack && $pack->status !== 'sold') {
+                $pack->update([
+                    'status' => 'sold',
+                    'sold_at' => now(),
+                ]);
+            }
         });
 
-        return true;
+        return ! $cardAlreadySold;
     }
 }
