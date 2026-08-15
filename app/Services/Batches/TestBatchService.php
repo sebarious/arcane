@@ -73,10 +73,20 @@ class TestBatchService
         $duplicateLimits = config('banding.duplicate_limits', []);
         $thresholds = (new RarityBander)->thresholds();
 
-        // Read-only — no syncStale(), see class docblock.
-        $pool = CardInventory::available()
+        // Read-only — no syncStale(), see class docblock. Deliberately wider than
+        // CardInventory::available(): that scope requires pack_id IS NULL (real
+        // generation can't double-allocate a card), but this preview never
+        // allocates anything, so a card already sitting in a real batch is just
+        // as fair game as one that isn't — only 'sold' (and the rarer
+        // dispatched/returned/written_off statuses, which mean the card has
+        // left stock entirely) should be excluded. Widening the pool this way
+        // makes hitting the full 500-card Diamond spread far more likely,
+        // since most real stock is allocated to a live batch at any given time.
+        $pool = CardInventory::query()
+            ->whereIn('status', ['in_stock', 'allocated'])
             ->where('game', $game->value)
             ->whereNotNull('rarity_band')
+            ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()))
             ->orderBy('id')
             ->get();
 
