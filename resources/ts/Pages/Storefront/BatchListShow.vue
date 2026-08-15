@@ -36,6 +36,7 @@ interface BandCard {
   image: string | null
   band: Rarity | null
   sold: boolean
+  product_badges: string[]
 }
 
 interface BandInfo {
@@ -344,6 +345,18 @@ const generalMotion = {
                   <img v-if="card?.image" :loading="imageLoading( band.key )"
                     class="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[6px] size-full"
                     :alt="card?.name ?? ''" :src="card.image" />
+                  <div v-if="card?.product_badges?.length"
+                    class="absolute bottom-1.5 right-1.5 flex flex-col items-end gap-1">
+                    <span v-for=" badge in card.product_badges " :key="badge"
+                      class="px-1.5 py-0.5 rounded-[3px] text-[8px] font-bold uppercase tracking-[0.08em] text-white whitespace-nowrap"
+                      :style="{
+                        fontFamily: 'Jost, sans-serif',
+                        background: 'rgba(13,11,20,0.85)',
+                        border: '1px solid rgba(220,193,117,0.4)',
+                      }">
+                      {{ badge }}
+                    </span>
+                  </div>
                 </div>
                 <div
                   class="[word-break:break-word] content-stretch flex flex-col gap-[8px] items-start leading-[normal] relative shrink-0 w-full whitespace-nowrap">

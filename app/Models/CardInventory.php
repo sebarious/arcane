@@ -113,4 +113,25 @@ class CardInventory extends Model
     {
         return (int) ($this->market_value_pence ?? $this->cost_pence ?? 0);
     }
+
+    /**
+     * Storefront badges (e.g. "Pokémon Center", "Stamped") derived from
+     * substrings PulseAPI embeds in product_id — there's no dedicated field
+     * for these variants, so this is the one place that maps the raw string
+     * to a display label. A card can carry more than one.
+     */
+    public function getProductBadgesAttribute(): array
+    {
+        $badges = [];
+
+        if ($this->product_id && str_contains($this->product_id, 'Pokémon Center')) {
+            $badges[] = 'Pokémon Center';
+        }
+
+        if ($this->product_id && str_contains($this->product_id, 'Stamp')) {
+            $badges[] = 'Stamped';
+        }
+
+        return $badges;
+    }
 }

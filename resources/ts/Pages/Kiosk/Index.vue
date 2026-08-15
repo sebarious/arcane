@@ -24,6 +24,7 @@ interface SearchResult {
   rarity: string | null;
   image_url: string | null;
   price_pence: number;
+  product_badges: string[];
 }
 
 interface BasketItem {
@@ -498,8 +499,20 @@ async function clearBasket() {
       @click="previewCard = null">
       <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-sm w-full flex flex-col items-center"
         @click.stop>
-        <img v-if="previewCard.image_url" :src="previewCard.image_url"
-          class="max-h-[50vh] w-auto object-contain rounded-[8px] mb-5" />
+        <div v-if="previewCard.image_url" class="relative inline-block mb-5">
+          <img :src="previewCard.image_url" class="max-h-[50vh] w-auto object-contain rounded-[8px]" />
+          <div v-if="previewCard.product_badges?.length" class="absolute bottom-2 right-2 flex flex-col items-end gap-1">
+            <span v-for="badge in previewCard.product_badges" :key="badge"
+              class="px-1.5 py-0.5 rounded-[3px] text-[9px] font-bold uppercase tracking-[0.08em] text-white whitespace-nowrap"
+              :style="{
+                fontFamily: 'Jost, sans-serif',
+                background: 'rgba(13,11,20,0.85)',
+                border: '1px solid rgba(220,193,117,0.4)',
+              }">
+              {{ badge }}
+            </span>
+          </div>
+        </div>
         <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center">{{ previewCard.card_name }}</p>
         <p class="text-[#a3a3a3] text-[14px] text-center mt-1">{{ previewCard.set_name }} · {{ previewCard.rarity }}</p>
         <p class="text-[#c9a84c] text-[26px] font-bold mt-3">{{ formatPence(previewCard.price_pence) }}</p>

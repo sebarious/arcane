@@ -34,6 +34,7 @@ class KioskCheckoutService
             'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : null,
             'image_url' => $card->image_url,
             'price_pence' => $this->priceFor($card),
+            'product_badges' => $card->product_badges,
         ];
     }
 
