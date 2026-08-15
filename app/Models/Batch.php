@@ -26,7 +26,7 @@ class Batch extends Model
         // Not verification_seed/verification_hash/verification_committed_at — those are
         // only ever set directly in booted()'s creating hook below, never mass-assigned.
         'verification_revealed_at', 'verification_snapshot_path',
-        'is_test',
+        'is_test', 'demo_snapshot',
     ];
 
     protected $casts = [
@@ -40,7 +40,17 @@ class Batch extends Model
         'type' => BatchType::class,
         'game' => Game::class,
         'is_test' => 'boolean',
+        'demo_snapshot' => 'array',
     ];
+
+    /**
+     * Fixed reference for the singleton /test-batch demo Diamond batch (see
+     * TestBatchService) — doubles as its find-or-create idempotency key, and
+     * is distinct enough from both real references (ARC-{year}-%) and
+     * SandboxBatchProvisioner's ({store_id}-SANDBOX) that neither generator
+     * could ever collide with it.
+     */
+    public const TEST_BATCH_REFERENCE = 'ARC-DEMO-TESTBATCH';
 
     protected static function booted(): void
     {

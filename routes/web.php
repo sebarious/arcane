@@ -48,6 +48,7 @@ use App\Http\Controllers\Storefront\BatchVerifyController;
 use App\Http\Controllers\Storefront\CardListIndexController;
 use App\Http\Controllers\Storefront\StoreIndexController;
 use App\Http\Controllers\Storefront\StoreShowController;
+use App\Http\Controllers\TestBatchController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -207,6 +208,9 @@ Route::post('/rapid-intake-scan/{token}/frame', [PhoneScanController::class, 'fr
 
 Route::get('/stores', StoreIndexController::class)->name('stores.index');
 Route::get('/card-lists', CardListIndexController::class)->name('card-lists.index');
+// Must come before the {store:slug} wildcard below, or it'd be swallowed as
+// an attempted store-slug lookup instead of matching this static route.
+Route::get('/test-batch', TestBatchController::class)->name('test-batch.show');
 Route::get('/{store:slug}', StoreShowController::class)->name('stores.show');
 Route::get('/{store:slug}/{batch}', BatchListController::class)->name('stores.lists.show');
 Route::get('/{store:slug}/{batch}/verify', [BatchVerifyController::class, 'show'])->name('stores.lists.verify');

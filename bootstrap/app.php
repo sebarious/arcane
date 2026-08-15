@@ -34,6 +34,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // is measured from the stamped emptied_at, not from this cron tick, so
         // this only needs to run often enough that the stamp itself lands promptly.
         $schedule->command('arcane:mark-empty-batches')->everyFifteenMinutes();
+        // Rebuilds the /test-batch public preview from current live stock —
+        // see TestBatchService::refresh(). Runs read-only against
+        // CardInventory (no syncStale, no allocation); "every 7 days" per
+        // the product ask.
+        $schedule->command('arcane:refresh-test-batch')->weekly();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
