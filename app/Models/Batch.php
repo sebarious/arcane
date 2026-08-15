@@ -80,6 +80,30 @@ class Batch extends Model
     }
 
     /**
+     * The statuses a seller should be able to see at all — their own
+     * still-pending requests ('draft', created via BatchRequestController)
+     * plus anything actually published, but not the admin-internal
+     * 'pending_review'/'awaiting_payment' states a batch sits in while
+     * BatchGenerator's three-step publish flow is still in progress (see
+     * BatchGenerator::generate/sendInvoice/publish) — a seller shouldn't see
+     * a batch, let alone get billed-looking detail on one, before an admin
+     * has actually reviewed and committed it. Used by both
+     * scopeVisibleToSeller (listings) and isVisibleToSeller (direct-link
+     * access on an already-loaded model) so they can't drift apart.
+     */
+    private const SELLER_VISIBLE_STATUSES = ['draft', 'committed', 'dispatched', 'completed'];
+
+    public function scopeVisibleToSeller(Builder $query): Builder
+    {
+        return $query->whereIn('status', self::SELLER_VISIBLE_STATUSES);
+    }
+
+    public function isVisibleToSeller(): bool
+    {
+        return in_array($this->status, self::SELLER_VISIBLE_STATUSES, true);
+    }
+
+    /**
      * The batches that should actually show up on the public storefront — the
      * Card Lists page and a store's own profile page. Centralised here so
      * those two can't drift apart on the visibility rule, same reasoning as

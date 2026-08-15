@@ -17,6 +17,7 @@ class BatchesController extends Controller
         $status = $request->string('status')->toString();
 
         $batches = Batch::query()
+            ->visibleToSeller()
             ->whereIn('store_id', $stores->pluck('id'))
             ->when($status !== '', fn ($query) => $query->where('status', $status))
             ->orderByDesc('created_at')
@@ -35,22 +36,22 @@ class BatchesController extends Controller
                 $sold = $batch->packs()->where('status', 'sold')->count();
 
                 return [
-                    'id'         => $batch->id,
-                    'reference'  => $batch->reference,
-                    'store_id'   => $batch->store_id,
-                    'type'       => $batch->type?->value,
+                    'id' => $batch->id,
+                    'reference' => $batch->reference,
+                    'store_id' => $batch->store_id,
+                    'type' => $batch->type?->value,
                     'pack_count' => $batch->pack_count,
-                    'status'     => $batch->status,
-                    'is_merged'  => ! is_null($batch->merged_into_batch_id),
+                    'status' => $batch->status,
+                    'is_merged' => ! is_null($batch->merged_into_batch_id),
                     'created_at' => $batch->created_at?->toDateString(),
-                    'sold'       => $sold,
+                    'sold' => $sold,
                 ];
             });
 
         return Inertia::render('Seller/BatchesIndex', [
-            'batches'    => $batches,
+            'batches' => $batches,
             'storesById' => $stores->keyBy('id'),
-            'filters'    => ['status' => $status !== '' ? $status : null],
+            'filters' => ['status' => $status !== '' ? $status : null],
         ]);
     }
 
@@ -62,6 +63,12 @@ class BatchesController extends Controller
             abort(403);
         }
 
+        // Same rule as index() — a direct link to a batch that's still mid
+        // admin-review shouldn't work either, not just be absent from the list.
+        if (! $batch->isVisibleToSeller()) {
+            abort(404);
+        }
+
         $batch->load(['store', 'packs.card', 'invoice', 'mergedInto', 'mergeRequestBatch']);
 
         $bands = [];
@@ -70,13 +77,14 @@ class BatchesController extends Controller
 
             $bands[$band] = $bandPacks->map(function ($pack) {
                 $inv = $pack->card;
+
                 return [
                     'sequence' => $pack->sequence_no,
-                    'status'   => $pack->status,
-                    'name'     => $inv->card_name,
-                    'set'      => $inv->set_name,
-                    'number'   => $inv->card_number,
-                    'image'    => $inv->image_url,
+                    'status' => $pack->status,
+                    'name' => $inv->card_name,
+                    'set' => $inv->set_name,
+                    'number' => $inv->card_number,
+                    'image' => $inv->image_url,
                 ];
             })->values();
         }
@@ -85,27 +93,27 @@ class BatchesController extends Controller
 
         return Inertia::render('Seller/BatchShow', [
             'batch' => [
-                'id'        => $batch->id,
+                'id' => $batch->id,
                 'reference' => $batch->reference,
-                'type'      => $batch->type?->value,
-                'store'     => [
-                    'id'   => $batch->store->id,
+                'type' => $batch->type?->value,
+                'store' => [
+                    'id' => $batch->store->id,
                     'name' => $batch->store->name,
                 ],
-                'pack_count'               => $batch->pack_count,
-                'status'                   => $batch->status,
-                'created_at'               => $batch->created_at?->toDateString(),
-                'sold'                     => $sold,
-                'invoice'                  => $batch->invoice ? [
-                    'id'     => $batch->invoice->id,
+                'pack_count' => $batch->pack_count,
+                'status' => $batch->status,
+                'created_at' => $batch->created_at?->toDateString(),
+                'sold' => $sold,
+                'invoice' => $batch->invoice ? [
+                    'id' => $batch->invoice->id,
                     'number' => $batch->invoice->number,
                 ] : null,
                 'merged_into' => $batch->mergedInto ? [
-                    'id'        => $batch->mergedInto->id,
+                    'id' => $batch->mergedInto->id,
                     'reference' => $batch->mergedInto->reference,
                 ] : null,
                 'merge_request_batch' => $batch->mergeRequestBatch ? [
-                    'id'        => $batch->mergeRequestBatch->id,
+                    'id' => $batch->mergeRequestBatch->id,
                     'reference' => $batch->mergeRequestBatch->reference,
                 ] : null,
             ],
