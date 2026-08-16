@@ -8,6 +8,7 @@ use App\Filament\Exports\BatchSalesExporter;
 use App\Jobs\GenerateBatchJob;
 use App\Jobs\GenerateBatchQrSheetJob;
 use App\Jobs\GeneratePickingSheetJob;
+use App\Jobs\SendBatchShippedEmailJob;
 use App\Jobs\SendBatchWarehousePacketJob;
 use App\Models\Batch;
 use App\Services\Batches\BatchDeleter;
@@ -167,6 +168,21 @@ class BatchResource extends Resource
                         ->rows(3)
                         ->maxLength(2000),
                 ]),
+            Section::make('Shipping')
+                ->columns(2)
+                ->visible(fn (?Batch $record) => in_array($record?->status, ['dispatched', 'completed'], true))
+                ->schema([
+                    Forms\Components\Placeholder::make('dispatched_at_display')
+                        ->label('Shipped')
+                        ->content(fn (?Batch $record) => $record?->dispatched_at?->format('d M Y H:i') ?? '—'),
+                    Forms\Components\Placeholder::make('tracking_number_display')
+                        ->label('Tracking number')
+                        ->content(fn (?Batch $record) => $record?->tracking_number ?? '—'),
+                    Forms\Components\Placeholder::make('tracking_url_display')
+                        ->label('Tracking link')
+                        ->columnSpanFull()
+                        ->content(fn (?Batch $record) => $record?->tracking_url ?? '—'),
+                ]),
             Section::make('Margin analysis')
                 ->columns(2)
                 ->schema([
@@ -276,6 +292,14 @@ class BatchResource extends Resource
                     ->formatStateUsing(fn ($state, Batch $record) => $state
                         ? 'Merged → '.$record->mergedInto?->reference
                         : 'Active')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('tracking_number')
+                    ->label('Tracking')
+                    ->badge()
+                    ->color(fn ($state, Batch $record) => $record->dispatched_at ? 'success' : 'gray')
+                    ->formatStateUsing(fn ($state, Batch $record) => $record->dispatched_at
+                        ? ($state ?? 'Shipped')
+                        : 'Not shipped')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('failed_at')
                     ->label('Failed')
@@ -395,6 +419,57 @@ class BatchResource extends Resource
                 app(BatchGenerator::class)->publish($record);
                 Notification::make()
                     ->title('Batch is live')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * Records that a live batch has actually gone out the door — there was
+     * previously no way to mark this at all ('dispatched' existed as a status
+     * value and dispatched_at as a column, but nothing ever set either).
+     * Also serves as "update tracking" once already dispatched: reopening it
+     * pre-fills the existing values, preserves the original dispatched_at
+     * rather than bumping it, and re-sends the email — useful for fixing a
+     * wrong tracking link without losing the original ship date.
+     */
+    public static function markShippedAction(): Action
+    {
+        return Action::make('markShipped')
+            ->label('Mark as shipped')
+            ->icon(Heroicon::OutlinedMapPin)
+            ->color('success')
+            ->visible(fn (Batch $record) => in_array($record->status, ['committed', 'dispatched'], true))
+            ->modalHeading(fn (Batch $record) => $record->status === 'dispatched' ? 'Update tracking' : 'Mark as shipped')
+            ->modalDescription('Emails the seller with the tracking details below.')
+            ->fillForm(fn (Batch $record) => [
+                'tracking_number' => $record->tracking_number,
+                'tracking_url' => $record->tracking_url,
+            ])
+            ->schema([
+                Forms\Components\TextInput::make('tracking_number')
+                    ->label('Tracking number')
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('tracking_url')
+                    ->label('Tracking link')
+                    ->url()
+                    ->required()
+                    ->maxLength(2000)
+                    ->helperText('Included as the "Track your shipment" button in the email.'),
+            ])
+            ->action(function (Batch $record, array $data) {
+                $record->update([
+                    'status' => 'dispatched',
+                    'dispatched_at' => $record->dispatched_at ?? now(),
+                    'tracking_number' => $data['tracking_number'] ?: null,
+                    'tracking_url' => $data['tracking_url'],
+                ]);
+
+                SendBatchShippedEmailJob::dispatch($record->id);
+
+                Notification::make()
+                    ->title('Seller notified')
+                    ->body("Emailed {$record->store->contact_email} with tracking details.")
                     ->success()
                     ->send();
             });

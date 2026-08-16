@@ -16,6 +16,7 @@ class Batch extends Model
         'sale_price_pence', 'margin_pence', 'margin_scheme_vat_pence',
         'invoice_id', 'qr_sheet_pdf_path', 'picking_sheet_pdf_path',
         'committed_at', 'dispatched_at', 'emptied_at',
+        'tracking_number', 'tracking_url',
         'type', 'game',
         'failure_reason',
         'failed_at',
