@@ -114,6 +114,26 @@ class PulseApiCardMapper
     }
 
     /**
+     * PulseAPI sometimes returns image URLs with a raw (not percent-encoded) unicode
+     * filename segment — e.g. Chinese-exclusive sets' filenames contain the set's
+     * localized name, like ".../0309-09-pokémon-horizons.webp". PHP's FILTER_VALIDATE_URL
+     * rejects those outright, which Filament's ImageEntry/ImageColumn rely on internally
+     * to decide a state is a URL rather than a storage-disk path — an unencoded URL
+     * silently renders no thumbnail at all (though it still works if opened directly,
+     * since that's plain browser navigation, not subject to PHP's stricter validation).
+     * Encoding only the non-ASCII bytes (leaving normal URL syntax untouched) fixes this
+     * without changing what resource the URL actually points to.
+     */
+    protected static function encodeImageUrl(?string $url): ?string
+    {
+        if ($url === null) {
+            return null;
+        }
+
+        return preg_replace_callback('/[\x80-\xFF]/', fn (array $m) => rawurlencode($m[0]), $url);
+    }
+
+    /**
      * Map a PulseAPI Card payload to card_inventory attributes.
      *
      * @param  array<string, mixed>  $card
@@ -141,7 +161,7 @@ class PulseApiCardMapper
             'language' => $card['language'] ?? null,
             'illustrator' => $card['illustrator'] ?? null,
             'pokedex_number' => $card['pokedex_number'] ?? null,
-            'image_url' => $card['image_url'] ?? null,
+            'image_url' => self::encodeImageUrl($card['image_url'] ?? null),
             'slug' => $card['slug'] ?? null,
             'market_value_pence' => $marketPence,
             // PulseAPI's own timestamp — when THEY last calculated this price upstream.
