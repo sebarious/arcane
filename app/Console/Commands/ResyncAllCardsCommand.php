@@ -10,17 +10,18 @@ use Illuminate\Support\Arr;
 
 /**
  * A one-off, broader sibling to arcane:refresh-prices — that command only
- * touches in-stock rows whose price has aged past the TTL, which is right
- * for day-to-day upkeep but wrong after a RarityBander/config('banding')
+ * touches rows whose price has aged past the TTL, which is right for
+ * day-to-day upkeep but wrong after a RarityBander/config('banding')
  * change: every row's rarity_band was computed under the old thresholds,
- * regardless of stock status or sync recency, so this deliberately ignores
- * both filters and walks every card_inventory row with a product_id.
+ * regardless of sync recency, so this deliberately ignores the TTL and
+ * walks every in-stock card_inventory row with a product_id. Sold/allocated
+ * rows are left alone since their band/price is frozen at time of sale.
  */
 class ResyncAllCardsCommand extends Command
 {
     protected $signature = 'arcane:resync-all-cards {--chunk=50 : How many distinct product_ids to fetch from PulseAPI per request} {--dry-run : Report what would change without writing}';
 
-    protected $description = 'Resync price and rarity_band for every card_inventory row from PulseAPI — run after a rarity banding change so all cards reflect the new thresholds';
+    protected $description = 'Resync price and rarity_band for every in-stock card_inventory row from PulseAPI — run after a rarity banding change so all in-stock cards reflect the new thresholds';
 
     public function handle(PulseApiClient $client): int
     {
@@ -28,6 +29,7 @@ class ResyncAllCardsCommand extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         $productIds = CardInventory::query()
+            ->inStock()
             ->whereNotNull('product_id')
             ->distinct()
             ->pluck('product_id');
@@ -38,7 +40,7 @@ class ResyncAllCardsCommand extends Command
             return self::SUCCESS;
         }
 
-        $totalRows = CardInventory::query()->whereIn('product_id', $productIds)->count();
+        $totalRows = CardInventory::query()->inStock()->whereIn('product_id', $productIds)->count();
         $this->info(sprintf(
             '%s%d distinct card(s) across %d inventory row(s), in batches of %d…',
             $dryRun ? '[DRY RUN] ' : '',
@@ -57,7 +59,7 @@ class ResyncAllCardsCommand extends Command
 
             $cards = $client->batchGetCards($chunk->all());
 
-            $rows = CardInventory::query()->whereIn('product_id', $chunk->all())->get(['id', 'product_id', 'rarity_band']);
+            $rows = CardInventory::query()->inStock()->whereIn('product_id', $chunk->all())->get(['id', 'product_id', 'rarity_band']);
 
             foreach ($rows->groupBy('product_id') as $productId => $productRows) {
                 $card = $cards[$productId] ?? null;
