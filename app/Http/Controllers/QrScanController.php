@@ -23,6 +23,12 @@ class QrScanController extends Controller
             return response()->view('qr.invalid', [], 404);
         }
 
+        // Scanning before the batch has actually shipped should never
+        // consume a pack — see PackRedeemer::isEligibleForRedemption().
+        if (! $redeemer->isEligibleForRedemption($card)) {
+            return response()->view('qr.not-dispatched');
+        }
+
         // true whenever this scan confirmed or repaired anything (including
         // a desynced card/pack pair — see PackRedeemer::redeem) — false only
         // when the scan was a genuine, fully-consistent rescan.

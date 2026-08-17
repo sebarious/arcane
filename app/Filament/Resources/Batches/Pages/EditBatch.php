@@ -25,6 +25,7 @@ class EditBatch extends EditRecord
             BatchResource::pickingSheetAction()->iconButton()->tooltip('Picking sheet'),
             BatchResource::verifyAction()->iconButton()->tooltip('Verification page'),
             BatchResource::mergeIntoAction()->iconButton()->tooltip('Merge into…'),
+            BatchResource::swapCardAction()->iconButton()->tooltip('Swap a card…'),
             // Redirect after delete — this is the record's own edit page, so it 404s
             // once the batch is gone. The list-page row action (same deleteBatchAction())
             // doesn't need this since it just refreshes the table in place.

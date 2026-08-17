@@ -11,10 +11,13 @@ use App\Jobs\GeneratePickingSheetJob;
 use App\Jobs\SendBatchShippedEmailJob;
 use App\Jobs\SendBatchWarehousePacketJob;
 use App\Models\Batch;
+use App\Models\CardInventory;
+use App\Models\Pack;
 use App\Services\Batches\BatchDeleter;
 use App\Services\Batches\BatchDesign;
 use App\Services\Batches\BatchGenerator;
 use App\Services\Batches\BatchMerger;
+use App\Services\Batches\CardSwapper;
 use App\Support\Money;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -458,6 +461,39 @@ class BatchResource extends Resource
                     ->helperText('Included as the "Track your shipment" button in the email.'),
             ])
             ->action(function (Batch $record, array $data) {
+                // Only checked on the actual committed -> dispatched transition, not
+                // when this action is reopened later just to correct tracking info —
+                // by then some packs legitimately are sold (real customers scanning
+                // post-dispatch), so the same check would misfire.
+                if ($record->status === 'committed') {
+                    $soldCount = $record->packs()->where('status', 'sold')->count();
+
+                    if ($soldCount > 0) {
+                        Notification::make()
+                            ->title('Cannot mark as shipped')
+                            ->body("{$soldCount} pack(s) in this batch already show as sold — that shouldn't happen before dispatch. Investigate before shipping.")
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    $unassignedCount = $record->packs()
+                        ->where('status', 'sealed')
+                        ->whereDoesntHave('card')
+                        ->count();
+
+                    if ($unassignedCount > 0) {
+                        Notification::make()
+                            ->title('Cannot mark as shipped')
+                            ->body("{$unassignedCount} pack(s) have no card assigned — this batch isn't ready to ship.")
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+                }
+
                 $record->update([
                     'status' => 'dispatched',
                     'dispatched_at' => $record->dispatched_at ?? now(),
@@ -630,6 +666,118 @@ class BatchResource extends Resource
                 Notification::make()
                     ->title('Batch merged')
                     ->body("Remaining sealed packs moved. {$record->reference} is now flagged as merged.")
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * Recovers from a card going missing (or turning out to already be sold
+     * elsewhere) during warehouse picking — swaps it for a same-rarity-band
+     * replacement so the batch's displayed pull odds don't change, and never
+     * touches BatchVerifier/the verification snapshot (see CardSwapper).
+     */
+    public static function swapCardAction(): Action
+    {
+        return Action::make('swapCard')
+            ->label('Swap a card…')
+            ->icon(Heroicon::OutlinedArrowsRightLeft)
+            ->color('warning')
+            ->visible(fn (Batch $record) => in_array($record->status, ['pending_review', 'awaiting_payment', 'committed'], true)
+                && $record->packs()->where('status', 'sealed')->exists())
+            ->modalHeading('Swap a card')
+            ->modalDescription('Use this when a card meant for this batch turns out to be physically missing — or already sold elsewhere — while picking. The replacement must be the same rarity band, so this batch\'s displayed pull odds don\'t change.')
+            ->schema(fn (Batch $record) => [
+                Forms\Components\Select::make('pack_id')
+                    ->label('Pack with the missing card')
+                    ->options(fn () => $record->packs()
+                        ->where('status', 'sealed')
+                        ->with('card')
+                        ->orderBy('sequence_no')
+                        ->get()
+                        ->mapWithKeys(fn (Pack $pack) => [
+                            $pack->id => sprintf(
+                                '#%d — %s (%s) — %s market',
+                                $pack->sequence_no,
+                                $pack->card?->card_name ?? 'No card assigned',
+                                $pack->card?->rarity_band ? ucfirst($pack->card->rarity_band) : 'unknown band',
+                                $pack->card ? Money::format($pack->card->market_value_pence) : '—',
+                            ),
+                        ]))
+                    ->required()
+                    ->live()
+                    ->searchable(),
+                Forms\Components\Select::make('removal_status')
+                    ->label('Why is it being removed?')
+                    ->options([
+                        'written_off' => 'Missing / lost',
+                        'sold' => 'Already sold elsewhere',
+                    ])
+                    ->required(),
+                Forms\Components\Select::make('replacement_card_id')
+                    ->label('Replacement card')
+                    ->options(function ($get) use ($record) {
+                        $pack = $record->packs()->with('card')->find($get('pack_id'));
+                        $missingCard = $pack?->card;
+                        $band = $missingCard?->rarity_band;
+                        if (! $band) {
+                            return [];
+                        }
+
+                        $missingValue = $missingCard->market_value_pence ?? 0;
+
+                        return CardInventory::available()
+                            ->where('rarity_band', $band)
+                            ->where('game', $record->game->value)
+                            ->get()
+                            // Closest market value to the outgoing card first, so
+                            // a like-for-like swap is just "pick the top option".
+                            ->sortBy(fn (CardInventory $c) => abs(($c->market_value_pence ?? 0) - $missingValue))
+                            ->mapWithKeys(fn (CardInventory $c) => [
+                                $c->id => "{$c->card_name} ({$c->set_name}) — ".Money::format($c->market_value_pence).' market',
+                            ]);
+                    })
+                    ->required()
+                    ->searchable()
+                    ->disabled(fn ($get) => ! $get('pack_id'))
+                    ->helperText(function ($get) use ($record) {
+                        $pack = $record->packs()->with('card')->find($get('pack_id'));
+                        $card = $pack?->card;
+
+                        if (! $card) {
+                            return 'Only in-stock cards of the same rarity band and game are shown.';
+                        }
+
+                        return 'Same rarity band and game, sorted by closest market value to the missing card ('.Money::format($card->market_value_pence).').';
+                    }),
+                Forms\Components\Textarea::make('reason')
+                    ->label('Details')
+                    ->required()
+                    ->rows(2)
+                    ->maxLength(500)
+                    ->helperText('Recorded in this batch\'s admin notes.'),
+            ])
+            ->action(function (Batch $record, array $data, CardSwapper $swapper) {
+                $pack = Pack::findOrFail($data['pack_id']);
+                $replacement = CardInventory::findOrFail($data['replacement_card_id']);
+
+                try {
+                    $swapper->swap($pack, $replacement, $data['removal_status'], $data['reason'], auth()->id());
+                } catch (\RuntimeException $e) {
+                    Notification::make()
+                        ->title('Swap failed')
+                        ->body($e->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                GenerateBatchQrSheetJob::dispatch($record->id);
+
+                Notification::make()
+                    ->title('Card swapped')
+                    ->body("Pack #{$pack->sequence_no} now has {$replacement->card_name}. QR sheet regeneration has been queued.")
                     ->success()
                     ->send();
             });

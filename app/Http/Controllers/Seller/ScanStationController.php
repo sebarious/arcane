@@ -49,6 +49,10 @@ class ScanStationController extends Controller
             return response()->json(['status' => 'wrong_store'], 403);
         }
 
+        if (! $redeemer->isEligibleForRedemption($card)) {
+            return response()->json(['status' => 'not_dispatched'], 409);
+        }
+
         $wasAlreadySold = $card->status === 'sold';
         $redeemer->redeem($card, $user->id);
 

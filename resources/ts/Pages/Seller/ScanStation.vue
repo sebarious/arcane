@@ -6,7 +6,7 @@ import SellerLayout from '@/Layouts/SellerLayout.vue';
 import { CheckCircle2, AlertTriangle, XCircle, ScanLine } from 'lucide-vue-next';
 
 interface ScanResult {
-  status: 'sold' | 'already_sold' | 'not_found' | 'wrong_store' | 'error';
+  status: 'sold' | 'already_sold' | 'not_dispatched' | 'not_found' | 'wrong_store' | 'error';
   card?: { name: string; set: string | null; image: string | null; rarity_band: string | null };
   batch?: { reference: string };
   store?: { name: string };
@@ -95,6 +95,7 @@ function statusLabel(status: ScanResult['status']): string {
   return {
     sold: 'Marked sold',
     already_sold: 'Already sold',
+    not_dispatched: "Batch hasn't shipped yet",
     not_found: 'Code not recognized',
     wrong_store: "Belongs to a different store",
     error: 'Something went wrong',
@@ -127,11 +128,11 @@ function statusLabel(status: ScanResult['status']): string {
         class="mt-6 rounded-[10px] p-5 border flex items-start gap-4"
         :class="{
           'bg-[rgba(34,197,94,0.08)] border-[rgba(34,197,94,0.35)]': lastResult.status === 'sold',
-          'bg-[rgba(250,204,21,0.08)] border-[rgba(250,204,21,0.35)]': lastResult.status === 'already_sold',
+          'bg-[rgba(250,204,21,0.08)] border-[rgba(250,204,21,0.35)]': ['already_sold', 'not_dispatched'].includes(lastResult.status),
           'bg-[rgba(248,113,113,0.08)] border-[rgba(248,113,113,0.35)]': ['not_found', 'wrong_store', 'error'].includes(lastResult.status),
         }">
         <CheckCircle2 v-if="lastResult.status === 'sold'" class="size-6 text-green-400 shrink-0" />
-        <AlertTriangle v-else-if="lastResult.status === 'already_sold'" class="size-6 text-yellow-400 shrink-0" />
+        <AlertTriangle v-else-if="['already_sold', 'not_dispatched'].includes(lastResult.status)" class="size-6 text-yellow-400 shrink-0" />
         <XCircle v-else class="size-6 text-red-400 shrink-0" />
 
         <div class="min-w-0">
@@ -159,7 +160,7 @@ function statusLabel(status: ScanResult['status']): string {
             <span class="shrink-0 text-xs"
               :class="{
                 'text-green-400': entry.status === 'sold',
-                'text-yellow-400': entry.status === 'already_sold',
+                'text-yellow-400': ['already_sold', 'not_dispatched'].includes(entry.status),
                 'text-red-400': ['not_found', 'wrong_store', 'error'].includes(entry.status),
               }">
               {{ statusLabel(entry.status) }}

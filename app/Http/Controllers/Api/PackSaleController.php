@@ -29,6 +29,10 @@ class PackSaleController extends Controller
             return response()->json(['message' => 'Pack not found in this batch.'], 404);
         }
 
+        if (! $redeemer->isEligibleForRedemption($packModel->card)) {
+            return response()->json(['message' => 'This batch has not shipped yet.'], 409);
+        }
+
         $wasAlreadySold = $packModel->card->status === 'sold';
 
         $redeemer->redeem($packModel->card, $store->user_id);
