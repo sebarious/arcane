@@ -7,8 +7,8 @@ return [
   'distribution' => [
     Game::Pokemon->value => [
       BatchType::Sapphire->value => [
-        'common'    => 113,
-        'rare'      => 6,
+        'common'    => 114,
+        'rare'      => 5,
         'super'     => 3,
         'legendary' => 2,
         'mythic'    => 1,
@@ -21,9 +21,9 @@ return [
         'mythic'    => 1,
       ],
       BatchType::Diamond->value => [
-        'common'    => 436,
-        'rare'      => 40,
-        'super'     => 12,
+        'common'    => 420,
+        'rare'      => 60,
+        'super'     => 8,
         'legendary' => 10,
         'mythic'    => 2,
       ],
@@ -48,8 +48,8 @@ return [
   'tier_distribution' => [
     Game::Pokemon->value => [
       BatchType::Sapphire->value => [
-        'common'    => ['tier_1' => 38, 'tier_2' => 38, 'tier_3' => 37],
-        'rare'      => ['tier_1' => 2,  'tier_2' => 2,  'tier_3' => 2],
+        'common'    => ['tier_1' => 38, 'tier_2' => 38, 'tier_3' => 38],
+        'rare'      => ['tier_1' => 2,  'tier_2' => 2,  'tier_3' => 1],
         'super'     => ['tier_1' => 1,  'tier_2' => 1,  'tier_3' => 1],
         'legendary' => ['tier_1' => 1,  'tier_2' => 0,  'tier_3' => 1],
         // Single mythic pinned to the middle third — the top of the shared
@@ -60,14 +60,15 @@ return [
         'common'    => ['tier_1' => 72, 'tier_2' => 72, 'tier_3' => 72],
         'rare'      => ['tier_1' => 7,  'tier_2' => 7,  'tier_3' => 6],
         'super'     => ['tier_1' => 3,  'tier_2' => 3,  'tier_3' => 2],
-        'legendary' => ['tier_1' => 2,  'tier_2' => 1,  'tier_3' => 2],
+        'legendary' => ['tier_1' => 2,  'tier_2' => 2,  'tier_3' => 1],
         'mythic'    => ['tier_1' => 0,  'tier_2' => 1,  'tier_3' => 0],
       ],
       BatchType::Diamond->value => [
-        'common'    => ['tier_1' => 145, 'tier_2' => 145, 'tier_3' => 146],
-        'rare'      => ['tier_1' => 14,  'tier_2' => 13,  'tier_3' => 13],
-        'super'     => ['tier_1' => 4,   'tier_2' => 4,   'tier_3' => 4],
-        'legendary' => ['tier_1' => 4,   'tier_2' => 3,   'tier_3' => 3],
+        'common'    => ['tier_1' => 140, 'tier_2' => 140, 'tier_3' => 140],
+        'rare'      => ['tier_1' => 40,  'tier_2' => 10,  'tier_3' => 10],
+        'super'     => ['tier_1' => 3,   'tier_2' => 3,   'tier_3' => 2],
+        'legendary' => ['tier_1' => 6,   'tier_2' => 2,   'tier_3' => 2],
+        'mythic'    => ['tier_1' => 1,   'tier_2' => 0,   'tier_3' => 1]
         // 2 mythics — deliberately left unconfigured, which falls back to the
         // auto-split (1 from tier_1, 1 from tier_3): one guaranteed big pull
         // plus one modest one. Confirmed safe on the numbers — even the
