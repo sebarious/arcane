@@ -34,7 +34,7 @@ class SetCodeExtractor
      */
     public static function extract(string $text): ?string
     {
-        if (! preg_match_all('/\b((?:[A-Z]{1,8}[ \t]*){1,3})[ \t]*\R?[ \t]*\d{1,3}[ \t]*\/[ \t]*\d{1,3}\b/i', $text, $matches)) {
+        if (! preg_match_all('/\b((?:[A-Z]{1,8}[ \t]*){1,3})[ \t]*\R?[ \t]*\d{1,4}[ \t]*\/[ \t]*\d{1,4}\b/i', $text, $matches)) {
             return null;
         }
 
