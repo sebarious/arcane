@@ -163,6 +163,7 @@ Route::middleware(['web', 'auth', 'role:seller'])
             Route::get('/', DashboardController::class)->name('dashboard');
             Route::get('/batches', [BatchesController::class, 'index'])->name('batches.index');
             Route::get('/batches/{batch}', [BatchesController::class, 'show'])->name('batches.show');
+            Route::get('/batches/{batch}/master-sheet', [BatchesController::class, 'masterSheet'])->name('batches.master-sheet');
             Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
             Route::get('/request-batch', [BatchRequestController::class, 'create'])->name('batches.request');
             Route::post('/request-batch', [BatchRequestController::class, 'store'])->name('batches.request.store');

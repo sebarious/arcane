@@ -12,6 +12,7 @@
         "@tailwindcss/typography": "^0.5.20",
         "@tailwindcss/vite": "^4.3.0",
         "@types/node": "^25.9.3",
+        "@types/qrcode": "^1.5.6",
         "@vitejs/plugin-vue": "^6.0.7",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^3.1",
@@ -30,6 +31,7 @@
         "laravel-echo": "^2.3.7",
         "lucide-vue-next": "^1.0.0",
         "pusher-js": "^8.5.0",
+        "qrcode": "^1.5.4",
         "radix-vue": "^1.9.17",
         "vue": "^3.5.38",
         "ziggy-js": "^2.6.2"

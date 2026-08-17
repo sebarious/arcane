@@ -103,9 +103,13 @@ function filterBy(status: string | null) {
                 {{ statusMeta(batch.status).label }}
               </span>
             </td>
-            <td class="py-3 px-5 text-right">
+            <td class="py-3 px-5 text-right whitespace-nowrap">
               <Link v-if="!batch.is_merged" :href="`/seller/batches/${batch.id}`" class="text-[#c9a84c] hover:underline text-xs font-semibold">
                 View
+              </Link>
+              <Link v-if="!batch.is_merged" :href="`/seller/batches/${batch.id}/master-sheet`"
+                class="text-[#a3a3a3] hover:text-[#c9a84c] hover:underline text-xs font-semibold ml-4">
+                Master Sheet
               </Link>
             </td>
           </tr>

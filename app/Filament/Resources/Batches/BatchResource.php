@@ -559,6 +559,17 @@ class BatchResource extends Resource
             ->visible(fn (Batch $record) => filled($record->picking_sheet_pdf_path));
     }
 
+    public static function downloadInvoiceAction(): Action
+    {
+        return Action::make('downloadInvoice')
+            ->label('Download invoice')
+            ->icon(Heroicon::OutlinedDocumentText)
+            ->color('gray')
+            ->url(fn (Batch $record) => route('invoices.pdf', $record->invoice_id))
+            ->openUrlInNewTab()
+            ->visible(fn (Batch $record) => filled($record->invoice_id));
+    }
+
     /**
      * The one-click fulfilment trigger: regenerates the QR sheet, generates a
      * picking sheet for whatever this batch still has left to pick (chaos

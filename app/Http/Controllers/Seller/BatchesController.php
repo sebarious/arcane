@@ -120,4 +120,54 @@ class BatchesController extends Controller
             'bands' => $bands,
         ]);
     }
+
+    /**
+     * A flat, searchable, image-first view of every pack in the batch —
+     * including sold ones, unlike the public storefront's card list — with
+     * each card's QR code overlaid so it doubles as a physical reference
+     * sheet. Same ownership/visibility rule as show().
+     */
+    public function masterSheet(Request $request, Batch $batch)
+    {
+        $user = $request->user();
+
+        if (! $user->stores()->where('id', $batch->store_id)->exists()) {
+            abort(403);
+        }
+
+        if (! $batch->isVisibleToSeller()) {
+            abort(404);
+        }
+
+        $batch->load(['packs.card', 'store']);
+
+        $cards = $batch->packs
+            ->sortBy('sequence_no')
+            ->map(function ($pack) {
+                $inv = $pack->card;
+
+                return [
+                    'sequence' => $pack->sequence_no,
+                    'status' => $pack->status,
+                    'name' => $inv?->card_name ?? 'No card assigned',
+                    'set' => $inv?->set_name,
+                    'number' => $inv?->card_number,
+                    'image' => $inv?->image_url,
+                    'band' => $inv?->rarity_band,
+                    'scan_url' => $inv?->qr_token ? route('qr.scan', ['token' => $inv->qr_token]) : null,
+                ];
+            })
+            ->values();
+
+        return Inertia::render('Seller/MasterSheet', [
+            'batch' => [
+                'id' => $batch->id,
+                'reference' => $batch->reference,
+                'type' => $batch->type?->value,
+                'store' => ['name' => $batch->store->name],
+                'pack_count' => $batch->pack_count,
+            ],
+            'cards' => $cards,
+        ]);
+    }
 }

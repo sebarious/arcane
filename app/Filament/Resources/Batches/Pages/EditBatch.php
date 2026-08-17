@@ -23,6 +23,7 @@ class EditBatch extends EditRecord
             BatchResource::qrSheetAction()->iconButton()->tooltip('QR sheet'),
             BatchResource::regenerateQrSheetAction()->iconButton()->tooltip('Regenerate QR sheet'),
             BatchResource::pickingSheetAction()->iconButton()->tooltip('Picking sheet'),
+            BatchResource::downloadInvoiceAction()->iconButton()->tooltip('Download invoice'),
             BatchResource::verifyAction()->iconButton()->tooltip('Verification page'),
             BatchResource::mergeIntoAction()->iconButton()->tooltip('Merge into…'),
             BatchResource::swapCardAction()->iconButton()->tooltip('Swap a card…'),
