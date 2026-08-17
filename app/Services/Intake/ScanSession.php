@@ -2,6 +2,7 @@
 
 namespace App\Services\Intake;
 
+use App\Enums\Game;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -16,14 +17,15 @@ class ScanSession
 {
     protected const TTL_MINUTES = 20;
 
-    public function create(float $buyPercentage): string
+    public function create(float $buyPercentage, Game $game): string
     {
         $token = Str::random(40);
 
         Cache::put($this->key($token), [
-            'entries'        => [],
-            'next_id'        => 1,
+            'entries' => [],
+            'next_id' => 1,
             'buy_percentage' => $buyPercentage,
+            'game' => $game->value,
         ], now()->addMinutes(self::TTL_MINUTES));
 
         return $token;
@@ -44,6 +46,11 @@ class ScanSession
         return Cache::get($this->key($token))['buy_percentage'] ?? null;
     }
 
+    public function game(string $token): ?Game
+    {
+        return Game::tryFrom(Cache::get($this->key($token))['game'] ?? '');
+    }
+
     public function count(string $token): int
     {
         return count(Cache::get($this->key($token))['entries'] ?? []);
@@ -54,7 +61,7 @@ class ScanSession
      */
     public function push(string $token, array $row): ?int
     {
-        $key   = $this->key($token);
+        $key = $this->key($token);
         $state = Cache::get($key);
 
         if (! $state) {
@@ -63,7 +70,7 @@ class ScanSession
 
         $id = $state['next_id'];
         $state['entries'][$id] = $row;
-        $state['next_id']      = $id + 1;
+        $state['next_id'] = $id + 1;
 
         Cache::put($key, $state, now()->addMinutes(self::TTL_MINUTES));
 

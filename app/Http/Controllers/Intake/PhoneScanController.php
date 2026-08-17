@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Intake;
 
+use App\Enums\Game;
 use App\Filament\Resources\CardInventories\Pages\RapidIntake;
 use App\Http\Controllers\Controller;
 use App\Services\Intake\CardRowResolver;
@@ -77,6 +78,7 @@ class PhoneScanController extends Controller
         }
 
         $buyPercentage = $sessions->buyPercentage($token) ?? 0.0;
+        $game = $sessions->game($token) ?? Game::Pokemon;
 
         // A scan that finds nothing at all doesn't get pushed into the session —
         // see RapidIntake::scanFrame() for the full reasoning (sort into piles as
@@ -84,7 +86,7 @@ class PhoneScanController extends Controller
         $rows = [0 => $resolver->emptyRow()];
         $rows[0]['search_number'] = $number;
 
-        $outcome = $resolver->applySearchResolution($rows, 0, $buyPercentage, $scan['setCode'], excludeRareVariants: true);
+        $outcome = $resolver->applySearchResolution($rows, 0, $buyPercentage, $game, $scan['setCode'], excludeRareVariants: true);
 
         $cardName = null;
         if ($outcome === 'resolved') {
@@ -97,8 +99,8 @@ class PhoneScanController extends Controller
         }
 
         return response()->json([
-            'status'    => $outcome,
-            'number'    => $number,
+            'status' => $outcome,
+            'number' => $number,
             'card_name' => $cardName,
         ]);
     }

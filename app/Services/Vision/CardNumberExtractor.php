@@ -24,16 +24,16 @@ class CardNumberExtractor
     // print/OCR read for what PulseAPI stores as "SVP".
     private const PROMO_PREFIXES = [
         'SWSHP' => ['SWSH', 3],
-        'SWSH'  => ['SWSH', 3],
-        'SVP'   => ['SVP', 3],
-        'SVI'   => ['SVP', 3],
-        'MEP'   => ['MEP', 3],
-        'SMP'   => ['SM', 0],
-        'SM'    => ['SM', 0],
-        'HGSS'  => ['HGSS', 2],
-        'XY'    => ['XY', 2],
-        'BW'    => ['BW', 2],
-        'DP'    => ['DP', 2],
+        'SWSH' => ['SWSH', 3],
+        'SVP' => ['SVP', 3],
+        'SVI' => ['SVP', 3],
+        'MEP' => ['MEP', 3],
+        'SMP' => ['SM', 0],
+        'SM' => ['SM', 0],
+        'HGSS' => ['HGSS', 2],
+        'XY' => ['XY', 2],
+        'BW' => ['BW', 2],
+        'DP' => ['DP', 2],
     ];
 
     /**
@@ -62,7 +62,7 @@ class CardNumberExtractor
     private static function extractWithKnownPrefix(string $text): ?string
     {
         $prefixAlt = implode('|', self::KNOWN_PREFIXES);
-        $pattern   = '/\b(('.$prefixAlt.')\d{1,3})\s*\/\s*(('.$prefixAlt.')\d{1,3})\b/i';
+        $pattern = '/\b(('.$prefixAlt.')\d{1,4})\s*\/\s*(('.$prefixAlt.')\d{1,4})\b/i';
 
         if (! preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
             return null;
@@ -83,7 +83,7 @@ class CardNumberExtractor
      */
     private static function extractDigitsOnly(string $text): ?string
     {
-        $pattern = '/\b[A-Z]*(\d{1,3})\s*\/\s*[A-Z]*(\d{1,3})\b/i';
+        $pattern = '/\b[A-Z]*(\d{1,4})\s*\/\s*[A-Z]*(\d{1,4})\b/i';
 
         if (! preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
             return null;
@@ -122,7 +122,7 @@ class CardNumberExtractor
     private static function extractPromo(string $text): ?string
     {
         $prefixAlt = implode('|', array_keys(self::PROMO_PREFIXES));
-        $pattern   = '/\b('.$prefixAlt.')[ \t]*-?[ \t]*(?:[A-Z]{2}[ \t]*-?[ \t]*)?\R?[ \t]*(\d{2,4})\b/i';
+        $pattern = '/\b('.$prefixAlt.')[ \t]*-?[ \t]*(?:[A-Z]{2}[ \t]*-?[ \t]*)?\R?[ \t]*(\d{2,4})\b/i';
 
         if (! preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
             return null;

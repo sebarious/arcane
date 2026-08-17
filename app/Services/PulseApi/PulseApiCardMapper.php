@@ -2,6 +2,7 @@
 
 namespace App\Services\PulseApi;
 
+use App\Enums\Game;
 use App\Models\CardInventory;
 use App\Services\Banding\RarityBander;
 use App\Support\Money;
@@ -49,13 +50,87 @@ class PulseApiCardMapper
     }
 
     /**
-     * Whether a card's language is one we currently buy — see config('selling.allowed_languages').
+     * Same set_id-prefix signal as isNonPokemon(), but resolved to a specific Game
+     * rather than a plain yes/no — used to key per-game intake rules (see
+     * isAllowedIntakeLanguage()). Only Lorcana/One Piece have a distinguishing
+     * prefix today; anything else (including no prefix at all) is assumed Pokémon,
+     * same assumption isNonPokemon() already makes.
+     */
+    public static function gameFromSetId(?string $setId): Game
+    {
+        $setId = strtolower((string) $setId);
+
+        return match (true) {
+            str_starts_with($setId, 'lor-') => Game::Lorcana,
+            str_starts_with($setId, 'op-') => Game::OnePiece,
+            default => Game::Pokemon,
+        };
+    }
+
+    /**
+     * Whether a card's language is one we currently buy from customers — see
+     * config('selling.allowed_languages'). Used by the public Sell flow only.
      */
     public static function isAllowedLanguage(?string $language): bool
     {
         $allowed = config('selling.allowed_languages', ['English']);
 
         return in_array($language, $allowed, true);
+    }
+
+    /**
+     * Whether a card's language is one Rapid Intake will surface as a candidate,
+     * per game — see config('selling.intake_allowed_languages'). Deliberately
+     * separate from isAllowedLanguage() above: intake (staff buying stock) and Sell
+     * (buying from customers) don't have to accept the same languages, and Sell
+     * must stay unaffected by whatever intake allows.
+     */
+    public static function isAllowedIntakeLanguage(?string $language, ?string $setId): bool
+    {
+        $game = self::gameFromSetId($setId);
+        $allowed = config("selling.intake_allowed_languages.{$game->value}", ['English']);
+
+        return in_array($language, $allowed, true);
+    }
+
+    /**
+     * Whether a search candidate belongs to the game a Rapid Intake session is
+     * scoped to. Only Lorcana/One Piece have a reliable set_id signal (see
+     * gameFromSetId) — Magic has none yet (PulseAPI has no MTG coverage at all,
+     * confirmed live), so a genuine Magic card buckets identically to Pokémon.
+     * Selecting Lorcana/OnePiece strictly enforces a match; selecting
+     * Pokemon/Magic accepts anything NOT positively identified as Lorcana/OnePiece,
+     * rather than falsely rejecting real Magic candidates.
+     */
+    public static function matchesGame(array $attributes, Game $game): bool
+    {
+        $detected = self::gameFromSetId($attributes['set_id'] ?? null);
+
+        if (in_array($detected, [Game::Lorcana, Game::OnePiece], true)) {
+            return $detected === $game;
+        }
+
+        return in_array($game, [Game::Pokemon, Game::Magic], true);
+    }
+
+    /**
+     * PulseAPI sometimes returns image URLs with a raw (not percent-encoded) unicode
+     * filename segment — e.g. Chinese-exclusive sets' filenames contain the set's
+     * localized name, like ".../0309-09-pokémon-horizons.webp". PHP's FILTER_VALIDATE_URL
+     * rejects those outright, which Filament's ImageEntry/ImageColumn rely on internally
+     * to decide a state is a URL rather than a storage-disk path — an unencoded URL
+     * silently renders no thumbnail at all (though it still works if opened directly,
+     * since that's plain browser navigation, not subject to PHP's stricter validation).
+     * Encoding only the non-ASCII bytes (leaving normal URL syntax untouched) fixes this
+     * without changing what resource the URL actually points to.
+     */
+    protected static function encodeImageUrl(?string $url): ?string
+    {
+        if ($url === null) {
+            return null;
+        }
+
+        return preg_replace_callback('/[\x80-\xFF]/', fn (array $m) => rawurlencode($m[0]), $url);
     }
 
     /**
@@ -67,28 +142,28 @@ class PulseApiCardMapper
     public static function toInventoryAttributes(array $card): array
     {
         $marketPounds = Arr::get($card, 'prices.market_price') ?? Arr::get($card, 'prices.market_price_global');
-        $marketPence  = $marketPounds !== null ? Money::toPence($marketPounds) : null;
+        $marketPence = $marketPounds !== null ? Money::toPence($marketPounds) : null;
 
         return [
-            'product_id'               => $card['product_id'] ?? null,
-            'card_name'                => $card['card_name'] ?? '',
-            'card_number'              => $card['card_number'] ?? null,
-            'set_id'                   => $card['set_id'] ?? null,
-            'set_name'                 => $card['set_name'] ?? null,
-            'series'                   => $card['series'] ?? null,
-            'release_date'             => $card['release_date'] ?? null,
-            'material'                 => $card['material'] ?? null,
-            'promo_info'               => $card['promo_info'] ?? null,
-            'graded_by'                => $card['graded_by'] ?? null,
-            'grade'                    => $card['grade'] ?? null,
-            'rarity'                   => $card['rarity'] ?? null,
-            'rarity_rank'              => $card['rarity_rank'] ?? null,
-            'language'                 => $card['language'] ?? null,
-            'illustrator'              => $card['illustrator'] ?? null,
-            'pokedex_number'           => $card['pokedex_number'] ?? null,
-            'image_url'                => $card['image_url'] ?? null,
-            'slug'                     => $card['slug'] ?? null,
-            'market_value_pence'       => $marketPence,
+            'product_id' => $card['product_id'] ?? null,
+            'card_name' => $card['card_name'] ?? '',
+            'card_number' => $card['card_number'] ?? null,
+            'set_id' => $card['set_id'] ?? null,
+            'set_name' => $card['set_name'] ?? null,
+            'series' => $card['series'] ?? null,
+            'release_date' => $card['release_date'] ?? null,
+            'material' => $card['material'] ?? null,
+            'promo_info' => $card['promo_info'] ?? null,
+            'graded_by' => $card['graded_by'] ?? null,
+            'grade' => $card['grade'] ?? null,
+            'rarity' => $card['rarity'] ?? null,
+            'rarity_rank' => $card['rarity_rank'] ?? null,
+            'language' => $card['language'] ?? null,
+            'illustrator' => $card['illustrator'] ?? null,
+            'pokedex_number' => $card['pokedex_number'] ?? null,
+            'image_url' => self::encodeImageUrl($card['image_url'] ?? null),
+            'slug' => $card['slug'] ?? null,
+            'market_value_pence' => $marketPence,
             // PulseAPI's own timestamp — when THEY last calculated this price upstream.
             // Purely informational; not used for our cache TTL (see `synced_at` below).
             // Normalized here (not left as PulseAPI's raw ISO-8601 string) because this
@@ -96,13 +171,13 @@ class PulseApiCardMapper
             // RefreshInventoryPricesCommand), which bypass the model's `datetime` cast
             // entirely — an un-normalized value reaches the DB as-is, and MySQL's DATETIME
             // columns reject PulseAPI's "...T00:00:00.000Z" format outright.
-            'market_value_updated_at'  => self::parseTimestamp(Arr::get($card, 'prices.market_price_updated_at')),
-            'rarity_band'              => (new RarityBander())->bandFor($marketPence),
+            'market_value_updated_at' => self::parseTimestamp(Arr::get($card, 'prices.market_price_updated_at')),
+            'rarity_band' => (new RarityBander)->bandFor($marketPence),
             // When WE last synced this record from PulseAPI — always "now" here, since this
             // method only ever runs right after a live fetch. Deliberately ignores PulseAPI's
             // own `synced_at` field (their internal refresh cadence, not ours) — that's what
             // drives the intake cache TTL and the "Price synced" display.
-            'synced_at'                => now(),
+            'synced_at' => now(),
         ];
     }
 
@@ -158,9 +233,9 @@ class PulseApiCardMapper
      *
      * @return array<int, array<string, mixed>>
      */
-    public static function searchCandidates(string $name, string $number = '', int $limit = 8): array
+    public static function searchCandidates(string $name, string $number, Game $game, int $limit = 8): array
     {
-        $name   = trim($name);
+        $name = trim($name);
         $number = trim($number);
 
         if ($name === '' && $number === '') {
@@ -174,12 +249,14 @@ class PulseApiCardMapper
         // than the same print (see setCodeFromImageUrl's caveat above — PulseAPI
         // exposes no printed set-code field to disambiguate by) — most commonly a
         // Japan-exclusive set reusing the same number as the English print we
-        // actually stock. We only ever buy allowed-language stock (same rule the
-        // Sell flow already enforces), so cutting those before the ambiguity check
+        // actually stock. We only ever buy intake-allowed-language stock per game
+        // (see config('selling.intake_allowed_languages') — Pokémon includes Chinese
+        // for Chinese-exclusive sets), so cutting those before the ambiguity check
         // below resolves a lot of "ambiguous" numbers straight to the one real match.
         return collect($results['data'] ?? [])
             ->map(fn (array $card) => self::toInventoryAttributes($card))
-            ->filter(fn (array $attributes) => self::isAllowedLanguage($attributes['language'] ?? null))
+            ->filter(fn (array $attributes) => self::isAllowedIntakeLanguage($attributes['language'] ?? null, $attributes['set_id'] ?? null))
+            ->filter(fn (array $attributes) => self::matchesGame($attributes, $game))
             ->values()
             ->all();
     }
@@ -196,7 +273,7 @@ class PulseApiCardMapper
     public static function withDefaultFilters(array $filters): array
     {
         return [
-            'exclude_graded'      => 'true',
+            'exclude_graded' => 'true',
             'exclude_conditioned' => 'true',
             ...$filters,
         ];
@@ -259,7 +336,7 @@ class PulseApiCardMapper
      */
     private const IMAGE_FOLDER_CODE_OVERRIDES = [
         'WHITE-FLARE' => 'WHT',
-        'BLACK-BOLT'  => 'BLK',
+        'BLACK-BOLT' => 'BLK',
     ];
 
     /**
@@ -306,12 +383,16 @@ class PulseApiCardMapper
      */
     public static function labelForProductId(?string $productId): ?string
     {
-        if (! $productId) return null;
+        if (! $productId) {
+            return null;
+        }
 
         $attrs = self::cachedAttributes($productId);
         if (! $attrs) {
             $card = app(PulseApiClient::class)->getCard($productId);
-            if (! $card) return $productId;
+            if (! $card) {
+                return $productId;
+            }
             $attrs = self::toInventoryAttributes($card);
         }
 
