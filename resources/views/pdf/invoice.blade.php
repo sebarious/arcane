@@ -122,6 +122,35 @@
       color: #8a8497;
     }
 
+    .payment-details {
+      margin-top: 8mm;
+      padding: 6mm 8mm;
+      background: #f5f2fa;
+      border-radius: 2mm;
+    }
+
+    .payment-details .label {
+      color: #13101e;
+      font-size: 10px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .payment-details table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .payment-details td {
+      padding: 2px 0;
+      font-size: 10px;
+    }
+
+    .payment-details td.field {
+      color: #8a8497;
+      width: 35%;
+    }
+
     .footer-brand {
       margin-top: 6mm;
       font-size: 9px;
@@ -262,6 +291,28 @@
       </tr>
     </tbody>
   </table>
+
+  <div class="payment-details">
+    <div class="label">Payment details</div>
+    <table>
+      <tr>
+        <td class="field">Account name</td>
+        <td>ARCANE TCG LIMITED</td>
+      </tr>
+      <tr>
+        <td class="field">Sort code</td>
+        <td>04-00-05</td>
+      </tr>
+      <tr>
+        <td class="field">Account number</td>
+        <td>31710064</td>
+      </tr>
+      <tr>
+        <td class="field">Reference</td>
+        <td>{{ $invoice->number }}</td>
+      </tr>
+    </table>
+  </div>
 
   @if($vatRegistered)
   <p class="note">

@@ -35,6 +35,28 @@
       </tr>
     </table>
 
+    <div style="background: #f5f2fa; border-radius: 8px; padding: 16px 20px; margin: 20px 0;">
+      <div style="font-weight: bold; font-size: 13px; margin-bottom: 8px;">Payment details</div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 2px 0; color: #6b7280; width: 40%;">Account name</td>
+          <td style="padding: 2px 0;">ARCANE TCG LIMITED</td>
+        </tr>
+        <tr>
+          <td style="padding: 2px 0; color: #6b7280;">Sort code</td>
+          <td style="padding: 2px 0;">04-00-05</td>
+        </tr>
+        <tr>
+          <td style="padding: 2px 0; color: #6b7280;">Account number</td>
+          <td style="padding: 2px 0;">31710064</td>
+        </tr>
+        <tr>
+          <td style="padding: 2px 0; color: #6b7280;">Reference</td>
+          <td style="padding: 2px 0;">{{ $invoice->number }}</td>
+        </tr>
+      </table>
+    </div>
+
     <p>
       If you have any questions about this invoice, just reply to this email.
     </p>
