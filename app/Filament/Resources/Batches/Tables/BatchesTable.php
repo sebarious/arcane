@@ -24,10 +24,10 @@ class BatchesTable
                 TextColumn::make('pack_count')
                     ->numeric()
                     ->sortable(),
-                TextColumn::make('total_cost_pence')
+                TextColumn::make('total_market_value_pence')
                     ->numeric()
                     ->sortable(),
-                TextColumn::make('total_market_value_pence')
+                TextColumn::make('total_cost_pence')
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('sale_price_pence')
