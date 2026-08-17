@@ -1,15 +1,17 @@
 <?php
 
+use App\Enums\Game;
+
 return [
 
     // Percentage of live market price we offer customers selling cards to us,
     // by the same rarity tiers used elsewhere (see App\Services\Selling\SellOfferCalculator).
     'offer_percentages' => [
-        'mythic'    => 0.80,
+        'mythic' => 0.80,
         'legendary' => 0.75,
-        'super'     => 0.70,
-        'rare'      => 0.65,
-        'common'    => 0.60,
+        'super' => 0.70,
+        'rare' => 0.65,
+        'common' => 0.60,
     ],
 
     // A card's market value must be no more than this to be eligible for an automatic
@@ -22,9 +24,21 @@ return [
     // on a submission — e.g. 0.05 means the customer's offer is 5% higher.
     'affiliate_bonus_percentage' => (float) env('SELL_AFFILIATE_BONUS_PERCENTAGE', 0.05),
 
-    // Card languages we currently buy — English only for now, extend this array
-    // (e.g. add 'Japanese') once we're ready to expand.
+    // Card languages we currently buy from customers (the public Sell flow) — English
+    // only for now, extend this array (e.g. add 'Japanese') once we're ready to expand.
     'allowed_languages' => ['English'],
+
+    // Card languages Rapid Intake (staff buying stock for batches) will surface as
+    // candidates, per game — separate from allowed_languages above, since intake and
+    // the customer-facing Sell flow don't have to accept the same languages. Pokémon
+    // includes Chinese for Chinese-exclusive sets (e.g. promo packs); other games stay
+    // English-only until there's a reason to widen them.
+    'intake_allowed_languages' => [
+        Game::Pokemon->value => ['English', 'Chinese'],
+        Game::Magic->value => ['English'],
+        Game::Lorcana->value => ['English'],
+        Game::OnePiece->value => ['English'],
+    ],
 
     // Where customers post their cards to after a submission is accepted.
     'shipping_address' => env('SELL_SHIPPING_ADDRESS'),

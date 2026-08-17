@@ -78,7 +78,24 @@ class RapidIntake extends Page implements HasForms
             'rows' => [$this->emptyRow()],
             'bulk_add_count' => '10',
             'buy_percentage' => (string) self::defaultBuyPercentage(),
+            'game' => Game::Pokemon->value,
         ]);
+    }
+
+    // PulseAPI has no Magic: The Gathering coverage at all (confirmed live — searches
+    // for well-known MTG cards return zero MTG results), so it's left out of the
+    // selector until that changes rather than shipping a permanently-empty option.
+    protected static function intakeGameOptions(): array
+    {
+        return collect(Game::cases())
+            ->reject(fn (Game $g) => $g === Game::Magic)
+            ->mapWithKeys(fn (Game $g) => [$g->value => $g->label()])
+            ->all();
+    }
+
+    protected function selectedGame(): Game
+    {
+        return Game::tryFrom($this->data['game'] ?? '') ?? Game::Pokemon;
     }
 
     protected static function defaultBuyPercentage(): int
@@ -105,7 +122,7 @@ class RapidIntake extends Page implements HasForms
             return;
         }
 
-        $this->scanSessionToken = app(ScanSession::class)->create($this->buyPercentage());
+        $this->scanSessionToken = app(ScanSession::class)->create($this->buyPercentage(), $this->selectedGame());
         $this->scanSessionLastId = 0;
     }
 
@@ -186,7 +203,7 @@ class RapidIntake extends Page implements HasForms
             ->components([
                 Section::make('Acquisition details')
                     ->description('These apply to every card you add below.')
-                    ->columns(4)
+                    ->columns(5)
                     ->schema([
                         DatePicker::make('acquired_at')->required(),
                         TextInput::make('acquired_from')
@@ -196,6 +213,14 @@ class RapidIntake extends Page implements HasForms
                             ->label('LOT number')
                             ->required()
                             ->helperText('Defaults to one lot per day — change it if this is a separate box.'),
+                        Select::make('game')
+                            ->label('Game')
+                            ->options(self::intakeGameOptions())
+                            ->default(Game::Pokemon->value)
+                            ->selectablePlaceholder(false)
+                            ->dehydrated(false)
+                            ->required()
+                            ->helperText('Scopes card search (and any phone scans) to this game — switching it won\'t rescope cards already fetched below.'),
                         Select::make('buy_percentage')
                             ->label('Buy %')
                             ->options(
@@ -348,12 +373,15 @@ class RapidIntake extends Page implements HasForms
                                             return 'Not fetched yet — click "Fetch card data" above.';
                                         }
 
+                                        $game = Game::tryFrom($resolved['game'] ?? '');
+
                                         return sprintf(
-                                            '%s · %s · %s · %s',
+                                            '%s · %s · %s · %s · %s',
                                             $resolved['card_name'] ?? '?',
                                             $resolved['set_name'] ?? '?',
                                             $resolved['card_number'] ?? '?',
                                             $resolved['rarity'] ?? '?',
+                                            $game?->label() ?? '?',
                                         );
                                     }),
 
@@ -408,6 +436,7 @@ class RapidIntake extends Page implements HasForms
 
         $resolver = app(CardRowResolver::class);
         $buyPercentage = $this->buyPercentage();
+        $game = $this->selectedGame();
 
         $resolvedCount = 0;
         $ambiguousCount = 0;
@@ -418,7 +447,7 @@ class RapidIntake extends Page implements HasForms
             $attributes = $productId ? ($resolvedById[$productId] ?? null) : null;
 
             if ($attributes) {
-                $resolver->applyResolvedAttributes($rows, $i, $attributes, $buyPercentage);
+                $resolver->applyResolvedAttributes($rows, $i, $attributes, $buyPercentage, $game);
                 $resolvedCount++;
 
                 continue;
@@ -428,7 +457,7 @@ class RapidIntake extends Page implements HasForms
                 continue;
             }
 
-            match ($resolver->applySearchResolution($rows, $i, $buyPercentage)) {
+            match ($resolver->applySearchResolution($rows, $i, $buyPercentage, $game)) {
                 'resolved' => $resolvedCount++,
                 'ambiguous' => $ambiguousCount++,
                 'not_found' => $missingCount++,
@@ -511,7 +540,7 @@ class RapidIntake extends Page implements HasForms
         $scratch = [0 => $this->emptyRow()];
         $scratch[0]['search_number'] = $number;
 
-        $outcome = app(CardRowResolver::class)->applySearchResolution($scratch, 0, $this->buyPercentage(), $scan['setCode']);
+        $outcome = app(CardRowResolver::class)->applySearchResolution($scratch, 0, $this->buyPercentage(), $this->selectedGame(), $scan['setCode']);
 
         $cardName = null;
         if ($outcome === 'resolved') {
@@ -641,6 +670,7 @@ class RapidIntake extends Page implements HasForms
                 $productId = $row['product_id'] ?? null;
                 $resolver = app(CardRowResolver::class);
                 $buyPercentage = $this->buyPercentage();
+                $game = $this->selectedGame();
 
                 if ($productId) {
                     $attributes = PulseApiCardMapper::cachedAttributes($productId);
@@ -649,7 +679,7 @@ class RapidIntake extends Page implements HasForms
                         $attributes = $card ? PulseApiCardMapper::toInventoryAttributes($card) : null;
                     }
                     if ($attributes) {
-                        $resolver->applyResolvedAttributes($rows, $itemKey, $attributes, $buyPercentage);
+                        $resolver->applyResolvedAttributes($rows, $itemKey, $attributes, $buyPercentage, $game);
                         $this->data['rows'] = $rows;
                         $this->form->fill($this->data);
                         Notification::make()->title('Card resolved')->success()->send();
@@ -658,7 +688,7 @@ class RapidIntake extends Page implements HasForms
                     }
                 }
 
-                $outcome = $resolver->applySearchResolution($rows, $itemKey, $buyPercentage);
+                $outcome = $resolver->applySearchResolution($rows, $itemKey, $buyPercentage, $game);
                 $this->data['rows'] = $rows;
                 $this->form->fill($this->data);
 
@@ -722,7 +752,7 @@ class RapidIntake extends Page implements HasForms
                     return;
                 }
 
-                app(CardRowResolver::class)->applyResolvedAttributes($rows, $itemKey, $chosen, $this->buyPercentage());
+                app(CardRowResolver::class)->applyResolvedAttributes($rows, $itemKey, $chosen, $this->buyPercentage(), $this->selectedGame());
 
                 $this->data['rows'] = $rows;
                 $this->form->fill($this->data);
@@ -789,6 +819,7 @@ class RapidIntake extends Page implements HasForms
                     // Neither field is PulseAPI's — this was hand-typed, never synced from them.
                     'market_value_updated_at' => null,
                     'synced_at' => null,
+                    'game' => $this->selectedGame()->value,
                 ];
 
                 $rows[$itemKey]['resolved'] = json_encode($resolved);
@@ -850,7 +881,7 @@ class RapidIntake extends Page implements HasForms
                         'acquired_from' => $state['acquired_from'] ?: null,
                         'acquisition_lot' => $state['acquisition_lot'] ?: null,
                         'status' => 'in_stock',
-                        'game' => Game::Pokemon->value,
+                        'game' => $attributes['game'] ?? $this->selectedGame()->value,
                     ]);
                     $created++;
                 }
