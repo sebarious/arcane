@@ -248,6 +248,11 @@ class BatchResource extends Resource
                     ->label(config('vat.registered') ? 'Sale (ex VAT)' : 'Sale')
                     ->formatStateUsing(fn ($state) => Money::format($state))
                     ->alignEnd(),
+                Tables\Columns\TextColumn::make('total_market_value_pence')
+                    ->label('Market value')
+                    ->tooltip('Total live market price of every card in the batch.')
+                    ->formatStateUsing(fn ($state) => Money::format($state))
+                    ->alignEnd(),
                 Tables\Columns\TextColumn::make('total_cost_pence')
                     ->label('Cost')
                     ->formatStateUsing(fn ($state) => Money::format($state))
