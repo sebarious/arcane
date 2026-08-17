@@ -30,13 +30,14 @@ interface Batch {
 }
 
 interface BandCard {
+  id: number
   name: string | null
   set: string | null
   number: string | null
   image: string | null
   band: Rarity | null
-  sold: boolean
   product_badges: string[]
+  sold_at: string | null
 }
 
 interface BandInfo {
@@ -48,15 +49,25 @@ interface Props {
   store: Store
   batch: Batch
   bands: Record<Rarity, BandInfo>
+  pulled_bands: Record<Rarity, BandInfo>
 }
 
 const props = defineProps<Props>()
 
-// Local reactive copy so we can update counts live
-const bands = ref<Record<Rarity, BandInfo>>( props.bands )
+type Tab = 'live' | 'pulled'
+const activeTab = ref<Tab>( 'live' )
+
+// The grid shown to the user switches with the tab, but odds must always reflect live
+// stock only — computed once from props.bands (never the tab-dependent grid data) so
+// toggling to "Pulled" can't silently change what percentage is being advertised.
+const displayedBands = computed( () => activeTab.value === 'live' ? props.bands : props.pulled_bands )
+
+const hasVisibleCards = computed( () =>
+  ( Object.values( displayedBands.value ) as BandInfo[] ).some( ( b ) => b.count > 0 )
+)
 
 const odds = {} as Record<Rarity, number>;
-Object.entries(bands.value).forEach(([band, info]) => {
+Object.entries(props.bands).forEach(([band, info]) => {
   odds[band as Rarity] = info.count;
 });
 
@@ -73,7 +84,7 @@ const ogDescription = `${props.batch.pack_count} packs live at ${props.store.nam
 // Lead with whatever's rarest and still in stock — the best hook for a shared link.
 const ogImage = computed( () => {
   for ( const band of [ 'mythic', 'legendary', 'super', 'rare', 'common' ] as Rarity[] ) {
-    const withImage = bands.value[ band ]?.cards.find( ( c ) => c.image )
+    const withImage = props.bands[ band ]?.cards.find( ( c ) => c.image )
     if ( withImage?.image ) return withImage.image
   }
   return usePage().props.defaultOgImage as string
@@ -309,10 +320,36 @@ const generalMotion = {
       </div>
     </div>
 
+    <div class="relative shrink-0 w-full px-8 lg:px-[64px] pt-[40px]">
+      <div class="inline-flex items-center gap-[4px] bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[8px] p-[4px]">
+        <button type="button" @click="activeTab = 'live'"
+          :class="[
+            'px-[16px] py-[8px] rounded-[6px] font-[\'Jost\',sans-serif] font-semibold text-[13px] uppercase tracking-[0.04em] transition-colors',
+            activeTab === 'live' ? 'bg-[#7b4fe9] text-white' : 'text-[#a3a3a3] hover:text-white',
+          ]">
+          Live
+        </button>
+        <button type="button" @click="activeTab = 'pulled'"
+          :class="[
+            'px-[16px] py-[8px] rounded-[6px] font-[\'Jost\',sans-serif] font-semibold text-[13px] uppercase tracking-[0.04em] transition-colors',
+            activeTab === 'pulled' ? 'bg-[#7b4fe9] text-white' : 'text-[#a3a3a3] hover:text-white',
+          ]">
+          Pulled
+        </button>
+      </div>
+    </div>
+
     <div class="relative shrink-0 w-full">
-      <div
+      <div v-if="!hasVisibleCards"
+        class="content-stretch flex items-center justify-center py-[80px] px-8 lg:px-[64px] w-full">
+        <p class="font-['Jost',sans-serif] text-[#a3a3a3] text-[14px]">
+          {{ activeTab === 'live' ? 'No cards are left in this batch.' : 'No cards have been pulled from this batch yet.' }}
+        </p>
+      </div>
+      <div v-else
         class="content-stretch flex flex-col gap-[80px] items-start pb-[120px] pt-[60px] px-8 lg:px-[64px] relative size-full">
-        <div v-for=" band in bandOrder " :key="band.key"
+        <template v-for=" band in bandOrder " :key="band.key">
+        <div v-if="displayedBands[band.key]?.count"
           class="content-stretch flex flex-col gap-[32px] items-start relative shrink-0 w-full">
           <div class="content-stretch flex items-center justify-between py-[16px] relative shrink-0 w-full">
             <div aria-hidden
@@ -329,14 +366,14 @@ const generalMotion = {
                   :class="['absolute', 'border', `border-[${band.colors.inner_border}]`, 'border-solid', 'inset-0', 'pointer-events-none', 'rounded-[4px]']" />
                 <p
                   :class="['[word-break:break-word]', 'font-[\'Jost\',sans-serif]', 'font-semibold', 'leading-[normal]', 'relative', 'shrink-0', `text-[${band.colors.text}]`, 'text-[12px]', 'whitespace-nowrap']">
-                  {{ bands[band.key]?.count ?? 0 }}</p>
+                  {{ displayedBands[band.key]?.count ?? 0 }}</p>
               </div>
             </div>
           </div>
           <div
             class="content-stretch grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-[24px] relative shrink-0 w-full">
-            <div v-for=" card in bands[band.key].cards "
-              :key="( card.name || '' ) + ( card.number || '' ) + ( card.set || '' )"
+            <div v-for=" card in displayedBands[band.key].cards "
+              :key="card.id"
               :class="['bg-[#13101e]', `drop-shadow-[0px_0px_8px_${band.colors.shadow}]`, 'flex-[1_0_0]', 'min-w-px', 'relative', 'rounded-[8px]']">
               <div aria-hidden
                 :class="['absolute', 'border', `border-[${band.colors.card_border}]`, 'border-solid', 'inset-0', 'pointer-events-none', 'rounded-[8px]']" />
@@ -344,7 +381,17 @@ const generalMotion = {
                 <div class="aspect-[2.5/3.5] relative rounded-[6px] shrink-0 w-full">
                   <img v-if="card?.image" :loading="imageLoading( band.key )"
                     class="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[6px] size-full"
+                    :class="{ 'opacity-50': activeTab === 'pulled' }"
                     :alt="card?.name ?? ''" :src="card.image" />
+                  <span v-if="card?.sold_at"
+                    class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-[3px] text-[8px] font-bold uppercase tracking-[0.08em] text-white whitespace-nowrap"
+                    :style="{
+                      fontFamily: 'Jost, sans-serif',
+                      background: 'rgba(13,11,20,0.85)',
+                      border: '1px solid rgba(220,193,117,0.4)',
+                    }">
+                    Sold {{ card.sold_at }}
+                  </span>
                   <div v-if="card?.product_badges?.length"
                     class="absolute bottom-1.5 right-1.5 flex flex-col items-end gap-1">
                     <span v-for=" badge in card.product_badges " :key="badge"
@@ -377,6 +424,7 @@ const generalMotion = {
             </div>
           </div>
         </div>
+        </template>
       </div>
     </div>
   </main>

@@ -16,32 +16,58 @@ class BatchListController extends Controller
             abort(404);
         }
 
-        // Remaining cards in this batch (sealed packs)
-        $remaining = $batch->packs()
-            ->with('card')
-            ->get()
+        $packs = $batch->packs()->with('card')->get();
+
+        // Live tab: what's still in the pool (sealed packs). This also drives the pull-odds
+        // percentages above the grid — those must only ever reflect live stock, regardless of
+        // which tab is being viewed, so they're computed from this grouping alone.
+        $remaining = $packs
             ->filter(fn ($pack) => $pack->status === 'sealed')
             ->map(fn ($pack) => $pack->card)
             ->filter()
             ->groupBy('rarity_band');
 
+        // Pulled tab: cards already sold — voided packs are neither live stock nor a genuine
+        // pull, so they're excluded from both groupings, same as before this feature existed.
+        $sold = $packs
+            ->filter(fn ($pack) => $pack->status === 'sold')
+            ->filter(fn ($pack) => $pack->card !== null)
+            ->sortByDesc('sold_at')
+            ->map(fn ($pack) => [$pack->card, $pack->sold_at])
+            ->groupBy(fn ($pair) => $pair[0]->rarity_band);
+
+        $mapCard = function ($inv, $soldAt = null) {
+            return [
+                // Commons in particular repeat often (same print, many copies in one batch) —
+                // name+number+set alone isn't unique, so the frontend keys each grid tile off
+                // card_inventory's own id instead (a composite string key collides across
+                // duplicate copies and produces stale/misrendered tiles, worst in Common).
+                'id' => $inv->id,
+                'name' => $inv->card_name,
+                'set' => $inv->set_name,
+                'number' => $inv->card_number,
+                'image' => $inv->image_url,
+                'band' => $inv->rarity_band,
+                'market_price' => $inv->market_value_pence ? round($inv->market_value_pence / 100, 2) : null,
+                'product_badges' => $inv->product_badges,
+                'sold_at' => $soldAt?->format('d M Y'),
+            ];
+        };
+
         $bands = [];
+        $pulledBands = [];
 
         foreach (['mythic', 'legendary', 'super', 'rare', 'common'] as $band) {
-            $cards = $remaining[$band] ?? collect();
+            $liveCards = $remaining[$band] ?? collect();
             $bands[$band] = [
-                'count' => $cards->count(),
-                'cards' => $cards->map(function ($inv) {
-                    return [
-                        'name' => $inv->card_name,
-                        'set' => $inv->set_name,
-                        'number' => $inv->card_number,
-                        'image' => $inv->image_url,
-                        'band' => $inv->rarity_band,
-                        'market_price' => $inv->market_value_pence ? round($inv->market_value_pence / 100, 2) : null,
-                        'product_badges' => $inv->product_badges,
-                    ];
-                })->values(),
+                'count' => $liveCards->count(),
+                'cards' => $liveCards->map(fn ($inv) => $mapCard($inv))->values(),
+            ];
+
+            $soldPairs = $sold[$band] ?? collect();
+            $pulledBands[$band] = [
+                'count' => $soldPairs->count(),
+                'cards' => $soldPairs->map(fn ($pair) => $mapCard($pair[0], $pair[1]))->values(),
             ];
         }
 
@@ -68,6 +94,7 @@ class BatchListController extends Controller
                 ],
             ],
             'bands' => $bands,
+            'pulled_bands' => $pulledBands,
         ]);
     }
 }
