@@ -26,14 +26,18 @@ class GenerateBatchQrSheetJob implements ShouldQueue
     {
         $batch = Batch::with(['store', 'packs.card'])->findOrFail($this->batchId);
 
+        // Same order as PickingSheetGenerator (lot alphabetical, then chaosSortKey
+        // within a lot) rather than pack-number order — staff work through the
+        // picking sheet lot by lot, and if this sheet follows the same order they
+        // can grab the next QR sticker as they pull each card instead of hunting
+        // for its pack number across the whole sheet.
         $rows = $batch->packs()
             ->with('card')
-            // Pack number order, not alphabetical — the picking sheet already tells
-            // staff which pack number a card belongs to (PickingSheetGenerator), so
-            // this sheet just needs to be a direct pack-number lookup, not something
-            // to search by name.
-            ->orderBy('sequence_no')
             ->get()
+            ->groupBy(fn ($pack) => $pack->card?->acquisition_lot ?? '(no lot recorded)')
+            ->sortKeys()
+            ->flatMap(fn ($packsInLot) => $packsInLot->sortBy(fn ($pack) => $pack->card?->chaosSortKey() ?? ''))
+            ->values()
             ->map(function ($pack) {
                 $inv = $pack->card;
                 $token = $inv?->qr_token;
