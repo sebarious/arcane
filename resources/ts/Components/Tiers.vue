@@ -11,9 +11,7 @@
       </p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-
-      <!-- Common -->
+    <!-- <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <div class="price-card rounded-xl p-6 flex flex-col gap-4"
         style="--glow: rgba(163,163,163,0.65); --shimmer: rgba(163,163,163,0.1);">
         <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
@@ -25,7 +23,6 @@
         </div>
       </div>
 
-      <!-- Rare -->
       <div class="price-card rounded-xl p-6 flex flex-col gap-4"
         style="--glow: rgba(59,130,246,0.75); --shimmer: rgba(59,130,246,0.1);">
         <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
@@ -37,7 +34,6 @@
         </div>
       </div>
 
-      <!-- Super -->
       <div class="price-card rounded-xl p-6 flex flex-col gap-4"
         style="--glow: rgba(45,212,191,0.75); --shimmer: rgba(45,212,191,0.1);">
         <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
@@ -49,7 +45,6 @@
         </div>
       </div>
 
-      <!-- Legendary -->
       <div class="price-card rounded-xl p-6 flex flex-col gap-4"
         style="--glow: rgba(123,79,233,0.65); --shimmer: rgba(123,79,233,0.1);">
         <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
@@ -61,7 +56,6 @@
         </div>
       </div>
 
-      <!-- Mythic -->
       <div class="price-card rounded-xl p-6 flex flex-col gap-4"
         style="--glow: rgba(201,168,76,0.75); --shimmer: rgba(201,168,76,0.2);">
         <div class="price-icon w-12 h-12 rounded-xl flex items-center justify-center">
@@ -73,7 +67,7 @@
         </div>
       </div>
 
-    </div>
+    </div> -->
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Sapphire -->
