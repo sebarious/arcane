@@ -210,6 +210,22 @@ const generalMotion = {
               class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative text-[48px] text-white">
               {{ store.name }} Card List</p>
             <div class="content-stretch flex flex-wrap gap-[12px] items-center relative shrink-0">
+              <div v-if="batch.game_label"
+                class="bg-[rgba(201,168,76,0.1)] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(201,168,76,0.25)] border-solid inset-0 pointer-events-none rounded-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#c9a84c] text-[11px] uppercase whitespace-nowrap">
+                  {{ batch.game_label }}</p>
+              </div>
+              <div
+                class="bg-[rgba(255,255,255,0.04)] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0">
+                <div aria-hidden
+                  class="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[4px]" />
+                <p
+                  class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#a3a3a3] text-[11px] uppercase whitespace-nowrap">
+                  1 Raw Card</p>
+              </div>
               <div
                 class="bg-[rgba(123,79,233,0.1)] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[4px] shrink-0">
                 <div aria-hidden
@@ -224,11 +240,8 @@ const generalMotion = {
                   class="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[4px]" />
                 <p
                   class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#a3a3a3] text-[11px] uppercase whitespace-nowrap">
-                  {{ batch.pack_count }} packs</p>
+                  {{ totalOdds }}/{{ batch.pack_count }} packs left</p>
               </div>
-              <p
-                class="[word-break:break-word] font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[14px]">
-                Created {{ batch.created_at }}</p>
               <a v-if="batch.verification.id" :href="`/${store.slug}/${batch.id}/verify`"
                 class="bg-[rgba(34,197,94,0.08)] content-stretch flex items-center gap-[6px] px-[12px] py-[6px] relative rounded-[4px] shrink-0 hover:bg-[rgba(34,197,94,0.14)] transition-colors">
                 <div aria-hidden
@@ -238,6 +251,9 @@ const generalMotion = {
                   {{ batch.verification.revealed ? 'Provably fair — verify' : 'Verification ID committed' }}
                 </p>
               </a>
+              <p
+                class="[word-break:break-word] font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[14px]">
+                Created {{ batch.created_at }}</p>
             </div>
           </div>
         </div>

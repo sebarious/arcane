@@ -14,8 +14,16 @@
       <div class="relative shrink-0 w-full">
         <div class="content-stretch flex flex-col gap-[12px] items-start p-[20px] relative size-full">
           <div class="content-stretch flex flex-col items-start relative shrink-0 w-full gap-1">
+            <div class="content-stretch flex flex-wrap items-center gap-[6px] relative shrink-0">
+              <span v-if="batch.game_label"
+                class="font-['Jost',sans-serif] font-semibold text-[10px] uppercase tracking-wide text-[#a78bfa] bg-[rgba(123,79,233,0.12)] border border-[rgba(123,79,233,0.35)] rounded-full px-2 py-[2px]">
+                {{ batch.game_label }}</span>
+              <span
+                class="font-['Jost',sans-serif] font-semibold text-[10px] uppercase tracking-wide text-[#dcc175] bg-[rgba(220,193,117,0.12)] border border-[rgba(220,193,117,0.35)] rounded-full px-2 py-[2px]">
+                1 Raw Card</span>
+            </div>
             <p class="font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[18px] text-white w-full">
-              {{ batch.type_label }}</p>
+              Singles Pack &mdash; {{ batch.type_label }}</p>
             <p class="font-['Jost',sans-serif] text-xs text-[#a3a3a3]">
               {{ batch.store.name }} · {{ batch.remaining_packs }}/{{ batch.pack_count }} packs left</p>
           </div>
