@@ -16,10 +16,10 @@
           <div class="content-stretch flex flex-col items-start relative shrink-0 w-full gap-1">
             <div class="content-stretch flex flex-wrap items-center gap-[6px] relative shrink-0">
               <span v-if="batch.game_label"
-                class="font-['Jost',sans-serif] font-semibold text-[10px] uppercase tracking-wide text-[#a78bfa] bg-[rgba(123,79,233,0.12)] border border-[rgba(123,79,233,0.35)] rounded-full px-2 py-[2px]">
+                class="font-['Jost',sans-serif] font-semibold text-[10px] uppercase tracking-wide text-[#c9a84c] bg-[rgba(201,168,76,0.1)] border border-[rgba(201,168,76,0.25)] rounded-full px-2 py-[2px]">
                 {{ batch.game_label }}</span>
               <span
-                class="font-['Jost',sans-serif] font-semibold text-[10px] uppercase tracking-wide text-[#dcc175] bg-[rgba(220,193,117,0.12)] border border-[rgba(220,193,117,0.35)] rounded-full px-2 py-[2px]">
+                class="font-['Jost',sans-serif] font-semibold text-[10px] uppercase tracking-wide text-[#a3a3a3] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.1)] rounded-full px-2 py-[2px]">
                 1 Raw Card</span>
             </div>
             <p class="font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[18px] text-white w-full">
