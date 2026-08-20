@@ -96,6 +96,10 @@ class PickingSheetGenerator
                 // Our own band (common/rare/super/legendary/mythic), not PulseAPI's
                 // printed rarity — matches what staff actually use day to day.
                 'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : null,
+                // Same-name cards can differ by print variant (e.g. a Stamped or
+                // Pokémon Center Fennekin vs. the base print) — without this, staff
+                // pulling by name alone can grab the wrong physical copy from the box.
+                'product_badges' => $card->product_badges,
                 'pack_sequence' => $card->pack?->sequence_no,
             ]);
     }

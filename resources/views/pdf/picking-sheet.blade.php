@@ -71,6 +71,19 @@
       color: #555;
     }
 
+    .variant-badge {
+      display: inline-block;
+      font-size: 8px;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #111;
+      background: #ffd54a;
+      border: 1px solid #b8860b;
+      border-radius: 3px;
+      padding: 1px 5px;
+      margin-left: 6px;
+    }
+
     .new-page {
       page-break-before: always;
     }
@@ -103,7 +116,12 @@
         @foreach ($lot['cards'] as $card)
         <tr>
           <td class="position">{{ $card['position'] }}</td>
-          <td>{{ $card['card_name'] }}</td>
+          <td>
+            {{ $card['card_name'] }}
+            @foreach ($card['product_badges'] as $badge)
+            <span class="variant-badge">{{ $badge }}</span>
+            @endforeach
+          </td>
           <td class="muted">{{ $card['set_name'] }}</td>
           <td class="muted">{{ $card['card_number'] }}</td>
           <td class="muted">{{ $card['rarity'] }}</td>

@@ -37,6 +37,8 @@ interface BandCard {
   image: string | null
   band: Rarity | null
   product_badges: string[]
+  condition: string | null
+  pack_number: number | null
   sold_at: string | null
 }
 
@@ -161,6 +163,11 @@ const bandOrder: { key: Rarity; label: string, colors: Record<string, string> }[
 const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
   band === 'mythic' || band === 'legendary' ? 'eager' : 'lazy'
 
+const conditionLabel = (condition: string | null): string | null => {
+  if (!condition) return null
+  return condition === 'NM' ? 'Near Mint' : condition
+}
+
 const generalMotion = {
   initial: { opacity: 0, y: 18 },
   enter: {
@@ -254,6 +261,9 @@ const generalMotion = {
               <p
                 class="[word-break:break-word] font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[14px]">
                 Created {{ batch.created_at }}</p>
+              <p
+                class="[word-break:break-word] font-['Jost',sans-serif] font-normal leading-[normal] relative shrink-0 text-[#a3a3a3] text-[14px]">
+                Ref {{ batch.reference }}</p>
             </div>
           </div>
         </div>
@@ -434,6 +444,14 @@ const generalMotion = {
                         {{ card.set }}</p>
                       <p class="relative shrink-0 text-[10px] text-[rgba(255,255,255,0.35)]">#{{ card.number }}</p>
                     </div>
+                  </div>
+                  <div class="content-stretch flex items-center gap-[6px] relative shrink-0 flex-wrap">
+                    <span v-if="card.pack_number"
+                      class="font-['Jost',sans-serif] font-semibold text-[9px] uppercase tracking-wide text-[#a3a3a3] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.1)] rounded-[3px] px-1.5 py-0.5 whitespace-nowrap">
+                      #{{ card.pack_number }}</span>
+                    <span v-if="conditionLabel(card.condition)"
+                      class="font-['Jost',sans-serif] font-semibold text-[9px] uppercase tracking-wide text-[#a3a3a3] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.1)] rounded-[3px] px-1.5 py-0.5 whitespace-nowrap">
+                      {{ conditionLabel(card.condition) }}</span>
                   </div>
                 </div>
               </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Storefront;
 
 use App\Http\Controllers\Controller;
 use App\Models\Batch;
+use App\Models\Pack;
 use App\Models\Store;
 use Inertia\Inertia;
 
@@ -23,9 +24,8 @@ class BatchListController extends Controller
         // which tab is being viewed, so they're computed from this grouping alone.
         $remaining = $packs
             ->filter(fn ($pack) => $pack->status === 'sealed')
-            ->map(fn ($pack) => $pack->card)
-            ->filter()
-            ->groupBy('rarity_band');
+            ->filter(fn ($pack) => $pack->card !== null)
+            ->groupBy(fn (Pack $pack) => $pack->card->rarity_band);
 
         // Pulled tab: cards already sold — voided packs are neither live stock nor a genuine
         // pull, so they're excluded from both groupings, same as before this feature existed.
@@ -33,10 +33,11 @@ class BatchListController extends Controller
             ->filter(fn ($pack) => $pack->status === 'sold')
             ->filter(fn ($pack) => $pack->card !== null)
             ->sortByDesc('sold_at')
-            ->map(fn ($pack) => [$pack->card, $pack->sold_at])
-            ->groupBy(fn ($pair) => $pair[0]->rarity_band);
+            ->groupBy(fn (Pack $pack) => $pack->card->rarity_band);
 
-        $mapCard = function ($inv, $soldAt = null) {
+        $mapCard = function (Pack $pack) {
+            $inv = $pack->card;
+
             return [
                 // Commons in particular repeat often (same print, many copies in one batch) —
                 // name+number+set alone isn't unique, so the frontend keys each grid tile off
@@ -50,7 +51,9 @@ class BatchListController extends Controller
                 'band' => $inv->rarity_band,
                 'market_price' => $inv->market_value_pence ? round($inv->market_value_pence / 100, 2) : null,
                 'product_badges' => $inv->product_badges,
-                'sold_at' => $soldAt?->format('d M Y'),
+                'condition' => $inv->condition,
+                'pack_number' => $pack->sequence_no,
+                'sold_at' => $pack->sold_at?->format('d M Y'),
             ];
         };
 
@@ -61,13 +64,13 @@ class BatchListController extends Controller
             $liveCards = $remaining[$band] ?? collect();
             $bands[$band] = [
                 'count' => $liveCards->count(),
-                'cards' => $liveCards->map(fn ($inv) => $mapCard($inv))->values(),
+                'cards' => $liveCards->map($mapCard)->values(),
             ];
 
-            $soldPairs = $sold[$band] ?? collect();
+            $soldPacks = $sold[$band] ?? collect();
             $pulledBands[$band] = [
-                'count' => $soldPairs->count(),
-                'cards' => $soldPairs->map(fn ($pair) => $mapCard($pair[0], $pair[1]))->values(),
+                'count' => $soldPacks->count(),
+                'cards' => $soldPacks->map($mapCard)->values(),
             ];
         }
 
