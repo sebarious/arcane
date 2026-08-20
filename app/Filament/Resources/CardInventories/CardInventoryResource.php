@@ -163,6 +163,12 @@ class CardInventoryResource extends Resource
                     ->sortable()
                     ->description(fn (CardInventory $r) => "{$r->set_name} · {$r->card_number}"),
 
+                Tables\Columns\TextColumn::make('product_badges')
+                    ->label('Variant')
+                    ->badge()
+                    ->color('warning')
+                    ->placeholder('—'),
+
                 Tables\Columns\TextColumn::make('cost_pence')
                     ->label('Cost')
                     ->formatStateUsing(fn ($state) => Money::format($state))
