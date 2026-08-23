@@ -18,6 +18,7 @@ class PulseApiPriceProvider implements PriceProvider
   public function refreshPrice(CardInventory $item, string $condition = 'NM'): void
   {
     if (! $item->product_id) return;
+    if ($item->price_locked) return;
 
     $card = $this->client->getCard($item->product_id);
     if (! $card) return;

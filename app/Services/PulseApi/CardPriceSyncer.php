@@ -29,6 +29,7 @@ class CardPriceSyncer
 
         $staleProductIds = (clone $scope)
             ->whereNotNull('product_id')
+            ->where('price_locked', false)
             ->where(function (Builder $query) use ($ttlDays) {
                 $query->whereNull('synced_at')
                     ->orWhere('synced_at', '<', now()->subDays($ttlDays));
@@ -56,7 +57,13 @@ class CardPriceSyncer
                 'product_id',
             );
 
-            $updated += CardInventory::where('product_id', $productId)->update($attributes);
+            // A product_id can be shared by rows outside $scope too (e.g. a locked
+            // copy elsewhere in inventory) — re-excluding price_locked here, not just
+            // above, keeps a locked row's price untouched no matter which copy of it
+            // triggered this refresh.
+            $updated += CardInventory::where('product_id', $productId)
+                ->where('price_locked', false)
+                ->update($attributes);
         }
 
         return $updated;

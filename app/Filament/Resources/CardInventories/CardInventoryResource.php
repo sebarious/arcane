@@ -100,6 +100,10 @@ class CardInventoryResource extends Resource
                         ->afterStateHydrated(fn ($component, $record) => $record?->market_value_pence !== null
                                 && $component->state($record->market_value_pence / 100)),
 
+                    Forms\Components\Toggle::make('price_locked')
+                        ->label('Lock price')
+                        ->helperText('While on, PulseAPI can never overwrite this card\'s market value — not on resync, batch generation, or the scheduled price refresh. It\'s still picked for batches as normal; only the price stays fixed until you turn this off.'),
+
                     TextEntry::make('synced_at')
                         ->label('Price last synced')
                         ->state(fn (?CardInventory $record) => self::timestampDisplay($record?->synced_at)),
@@ -239,6 +243,15 @@ class CardInventoryResource extends Resource
                         default => 'gray',
                     }),
 
+                Tables\Columns\IconColumn::make('price_locked')
+                    ->label('Price locked')
+                    ->boolean()
+                    ->trueIcon(Heroicon::OutlinedLockClosed)
+                    ->falseIcon(Heroicon::OutlinedLockOpen)
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('acquisition_lot')
                     ->label('Lot')
                     ->toggleable(),
@@ -291,6 +304,8 @@ class CardInventoryResource extends Resource
                     ->icon(Heroicon::OutlinedArrowPath)
                     ->color('gray')
                     ->visible(fn (CardInventory $record) => filled($record->product_id))
+                    ->disabled(fn (CardInventory $record) => $record->price_locked)
+                    ->tooltip(fn (CardInventory $record) => $record->price_locked ? 'Price is locked — unlock it to resync' : null)
                     ->action(function (CardInventory $record) {
                         app(PulseApiPriceProvider::class)->refreshPrice($record);
 

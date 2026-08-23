@@ -239,7 +239,7 @@ const generalMotion = {
               <div class="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start min-w-px relative">
                 <p
                   class="font-['Jost',sans-serif] font-normal relative shrink-0 text-[12px] text-[rgba(255,255,255,0.35)] uppercase">
-                  Active Batches</p>
+                  Total Batches <small>(all time)</small></p>
                 <p class="font-['Cinzel',sans-serif] font-bold relative shrink-0 text-[28px] text-white">{{
                   store?.total_batches ?? 0 }}</p>
               </div>

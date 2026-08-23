@@ -12,7 +12,7 @@ class CardInventory extends Model
 
     protected $fillable = [
         'condition', 'cost_pence', 'acquired_at', 'acquired_from',
-        'acquisition_lot', 'market_value_pence', 'market_value_updated_at',
+        'acquisition_lot', 'market_value_pence', 'market_value_updated_at', 'price_locked',
         'rarity_band', 'pack_id', 'qr_token', 'status',
         'allocated_sale_price_pence', 'margin_pence',
         'delisted_at', 'delisted_by_user_id', 'game', 'picked_at', 'reserved_until', 'reserved_by',
@@ -32,6 +32,7 @@ class CardInventory extends Model
         'picked_at' => 'datetime',
         'reserved_until' => 'datetime',
         'game' => Game::class,
+        'price_locked' => 'boolean',
     ];
 
     public function pack()

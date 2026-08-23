@@ -45,6 +45,8 @@ class EditCardInventory extends EditRecord
                 ->icon(Heroicon::OutlinedArrowPath)
                 ->color('gray')
                 ->visible(fn () => filled($this->record->product_id))
+                ->disabled(fn () => $this->record->price_locked)
+                ->tooltip(fn () => $this->record->price_locked ? 'Price is locked — unlock it to resync' : null)
                 ->action(function () {
                     app(PulseApiPriceProvider::class)->refreshPrice($this->record);
                     $this->fillForm();

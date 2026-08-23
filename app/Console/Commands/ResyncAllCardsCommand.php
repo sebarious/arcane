@@ -31,6 +31,7 @@ class ResyncAllCardsCommand extends Command
         $productIds = CardInventory::query()
             ->inStock()
             ->whereNotNull('product_id')
+            ->where('price_locked', false)
             ->distinct()
             ->pluck('product_id');
 
@@ -40,7 +41,7 @@ class ResyncAllCardsCommand extends Command
             return self::SUCCESS;
         }
 
-        $totalRows = CardInventory::query()->inStock()->whereIn('product_id', $productIds)->count();
+        $totalRows = CardInventory::query()->inStock()->where('price_locked', false)->whereIn('product_id', $productIds)->count();
         $this->info(sprintf(
             '%s%d distinct card(s) across %d inventory row(s), in batches of %d…',
             $dryRun ? '[DRY RUN] ' : '',
@@ -59,7 +60,7 @@ class ResyncAllCardsCommand extends Command
 
             $cards = $client->batchGetCards($chunk->all());
 
-            $rows = CardInventory::query()->inStock()->whereIn('product_id', $chunk->all())->get(['id', 'product_id', 'rarity_band']);
+            $rows = CardInventory::query()->inStock()->where('price_locked', false)->whereIn('product_id', $chunk->all())->get(['id', 'product_id', 'rarity_band']);
 
             foreach ($rows->groupBy('product_id') as $productId => $productRows) {
                 $card = $cards[$productId] ?? null;

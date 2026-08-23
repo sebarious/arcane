@@ -24,6 +24,7 @@ class RefreshInventoryPricesCommand extends Command
         $stale = CardInventory::query()
             ->inStock()
             ->whereNotNull('product_id')
+            ->where('price_locked', false)
             ->where(function ($q) use ($ttlDays) {
                 $q->whereNull('synced_at')
                   ->orWhere('synced_at', '<', now()->subDays($ttlDays));
