@@ -8,10 +8,10 @@ return [
     // by the same rarity tiers used elsewhere (see App\Services\Selling\SellOfferCalculator).
     'offer_percentages' => [
         'mythic' => 0.80,
-        'legendary' => 0.75,
-        'super' => 0.70,
-        'rare' => 0.65,
-        'common' => 0.60,
+        'legendary' => 0.80,
+        'super' => 0.78,
+        'rare' => 0.75,
+        'common' => 0.75,
     ],
 
     // A card's market value must be no more than this to be eligible for an automatic

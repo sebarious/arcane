@@ -42,7 +42,10 @@ class ProfileController extends Controller
         $data = $request->validate([
             'description'  => ['nullable', 'string', 'max:2000'],
             'location'     => ['nullable', 'string', 'max:255'],
-            'logo'         => ['nullable', 'image', 'max:2048'],
+            // See OnboardingController's identical rule for why this isn't 2048 —
+            // LogoProcessor shrinks the stored file well under 2MB regardless of
+            // upload size, so the raw ceiling just needs to clear a phone photo.
+            'logo'         => ['nullable', 'image', 'max:10240'],
             'social_links' => ['nullable', 'array'],
             'social_links.*' => ['nullable', 'url', 'max:2048'],
         ]);

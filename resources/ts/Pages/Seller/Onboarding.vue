@@ -146,6 +146,12 @@ function submit() {
           </p>
         </div>
 
+        <div v-if="Object.keys(form.errors).length" class="mb-6 bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.35)] rounded-[8px] p-4">
+          <p class="font-['Jost',sans-serif] font-semibold text-sm text-red-400">
+            Couldn't submit — please fix the highlighted field(s) below.
+          </p>
+        </div>
+
         <div class="grid lg:grid-cols-3 gap-6">
           <!-- Logo -->
           <div class="bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[12px] p-6 h-fit">

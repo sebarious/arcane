@@ -64,7 +64,13 @@ class OnboardingController extends Controller
         $data = $request->validate([
             'description' => ['required', 'string', 'max:2000'],
             'location' => ['required', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            // The 2MB figure people are told is what we keep, not what we accept —
+            // LogoProcessor shrinks whatever comes in down to well under that
+            // regardless of source size, so the raw ceiling here just needs to
+            // clear a normal phone photo (matches public/.user.ini's raised
+            // upload_max_filesize, which would otherwise silently drop the file
+            // before Laravel — let alone LogoProcessor — ever sees it).
+            'logo' => ['nullable', 'image', 'max:10240'],
             'platforms' => ['nullable', 'array'],
             'platforms.*' => ['string', 'in:'.implode(',', self::PLATFORMS)],
             'social_links' => ['nullable', 'array'],
