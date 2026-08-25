@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -30,13 +32,17 @@ class ResetPasswordController extends Controller
 
         $credentials = $request->only('email', 'password', 'password_confirmation', 'token');
 
-        $resetUser = function ($user) use ($request) {
+        $resetUserRecord = null;
+
+        $resetUser = function (User $user) use ($request, &$resetUserRecord) {
             $user->forceFill([
                 'password' => Hash::make($request->string('password')),
                 'remember_token' => Str::random(60),
             ])->save();
 
             event(new PasswordReset($user));
+
+            $resetUserRecord = $user;
         };
 
         $status = Password::reset($credentials, $resetUser);
@@ -50,7 +56,13 @@ class ResetPasswordController extends Controller
         }
 
         if ($status === Password::PASSWORD_RESET) {
-            return redirect('/login')->with('status', __($status));
+            // Auto-login straight into the role-appropriate landing spot (see the
+            // /dashboard route) — for a seller fresh off an approval email, that's
+            // exactly their onboarding page (seller.dashboard bounces there via
+            // store.live until they're live), no separate login step needed.
+            Auth::login($resetUserRecord);
+
+            return redirect()->intended(route('dashboard'));
         }
 
         return back()->withErrors([

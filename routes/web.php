@@ -36,7 +36,7 @@ use App\Http\Controllers\Seller\BatchesController;
 use App\Http\Controllers\Seller\BatchRequestController;
 use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\InvoicesController;
-use App\Http\Controllers\Seller\PendingController;
+use App\Http\Controllers\Seller\OnboardingController;
 use App\Http\Controllers\Seller\ProfileController;
 use App\Http\Controllers\Seller\ScanStationController;
 use App\Http\Controllers\Seller\WalletController;
@@ -157,7 +157,8 @@ Route::middleware(['web', 'auth', 'role:seller'])
     ->group(function () {
         // Reachable even when the store isn't live yet — everything else below
         // redirects here until an admin flips Store::public_page_enabled.
-        Route::get('/pending', PendingController::class)->name('pending');
+        Route::get('/pending', [OnboardingController::class, 'show'])->name('pending');
+        Route::post('/pending', [OnboardingController::class, 'store'])->name('pending.store');
 
         Route::middleware('store.live')->group(function () {
             Route::get('/', DashboardController::class)->name('dashboard');

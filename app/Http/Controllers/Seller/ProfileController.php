@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
 use App\Models\Store;
+use App\Services\Stores\LogoProcessor;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -31,7 +32,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(Request $request, Store $store)
+    public function update(Request $request, Store $store, LogoProcessor $logoProcessor)
     {
         $user = $request->user();
         if (! $user->stores()->where('id', $store->id)->exists()) {
@@ -47,7 +48,7 @@ class ProfileController extends Controller
         ]);
 
         if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo')->store('store-logos', 'public');
+            $data['logo'] = $logoProcessor->process($request->file('logo'));
         }
 
         $store->update([

@@ -41,6 +41,8 @@ class EditStore extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            StoreResource::approveOnboardingAction(),
+            StoreResource::sendOnboardingInviteAction(),
             StoreResource::viewLiveAction(),
             StoreResource::addCreditAction(),
             StoreResource::toggleApiModeAction(),

@@ -14,8 +14,7 @@ class StoreIndexController extends Controller
     public function __invoke()
     {
         $stores = Store::query()
-            ->where('public_page_enabled', true)
-            ->where('status', 'active')
+            ->live()
             ->orderBy('name')
             ->get([
                 'id',

@@ -20,8 +20,7 @@ class EnsureSellerStoreIsPublic
     {
         $hasLiveStore = $request->user()
             ->stores()
-            ->where('public_page_enabled', true)
-            ->where('status', 'active')
+            ->live()
             ->exists();
 
         if (! $hasLiveStore) {

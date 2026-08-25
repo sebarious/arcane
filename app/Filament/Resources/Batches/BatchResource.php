@@ -17,6 +17,7 @@ use App\Services\Batches\BatchDeleter;
 use App\Services\Batches\BatchDesign;
 use App\Services\Batches\BatchGenerator;
 use App\Services\Batches\BatchMerger;
+use App\Services\Batches\BatchReroller;
 use App\Services\Batches\CardSwapper;
 use App\Support\Money;
 use BackedEnum;
@@ -794,6 +795,54 @@ class BatchResource extends Resource
                 Notification::make()
                     ->title('Card swapped')
                     ->body("Pack #{$pack->sequence_no} now has {$replacement->card_name}. QR sheet regeneration has been queued.")
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * The bulk sibling to swapCardAction() — replaces every sealed pack's card
+     * in one go (see BatchReroller), rather than one pack at a time. Same
+     * eligibility as swapCardAction(), plus BatchReroller blocks it outright
+     * once any card in this batch has already been picked for the warehouse.
+     */
+    public static function rerollAction(): Action
+    {
+        return Action::make('reroll')
+            ->label('Complete re-roll…')
+            ->icon(Heroicon::OutlinedArrowPathRoundedSquare)
+            ->color('danger')
+            ->visible(fn (Batch $record) => in_array($record->status, ['pending_review', 'awaiting_payment', 'committed'], true)
+                && $record->packs()->where('status', 'sealed')->exists())
+            ->requiresConfirmation()
+            ->modalHeading('Complete re-roll')
+            ->modalDescription('Replaces every not-yet-sold pack\'s card with a fresh pick — each keeps the same rarity band, so displayed pull odds don\'t change. Already-sold packs are untouched. This regenerates the QR sheet, so discard any already-printed copy. Blocked if picking has already started for this batch.')
+            ->schema([
+                Forms\Components\Textarea::make('reason')
+                    ->label('Reason')
+                    ->required()
+                    ->rows(2)
+                    ->maxLength(500)
+                    ->helperText('Recorded in this batch\'s admin notes.'),
+            ])
+            ->action(function (Batch $record, array $data, BatchReroller $reroller) {
+                try {
+                    $count = $reroller->reroll($record, $data['reason'], auth()->id());
+                } catch (\RuntimeException $e) {
+                    Notification::make()
+                        ->title('Re-roll failed')
+                        ->body($e->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                GenerateBatchQrSheetJob::dispatch($record->id);
+
+                Notification::make()
+                    ->title('Batch re-rolled')
+                    ->body("{$count} pack(s) got a new card. QR sheet regeneration has been queued.")
                     ->success()
                     ->send();
             });

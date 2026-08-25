@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Stores;
 
 use App\Enums\ApiMode;
 use App\Filament\Resources\Stores\RelationManagers\CreditTransactionsRelationManager;
+use App\Mail\SellerOnboardingApprovedMail;
+use App\Mail\SellerOnboardingInviteMail;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Stores\StoreCreditService;
@@ -21,6 +23,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use UnitEnum;
 
@@ -302,6 +306,13 @@ class StoreResource extends Resource
                 Tables\Columns\IconColumn::make('public_page_enabled')
                     ->label('Public')
                     ->boolean(),
+                Tables\Columns\TextColumn::make('onboarding_submitted_at')
+                    ->label('Onboarding submitted')
+                    ->since()
+                    ->dateTimeTooltip()
+                    ->placeholder('—')
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('api_access_granted')
                     ->label('API')
                     ->boolean()
@@ -324,6 +335,8 @@ class StoreResource extends Resource
                     ]),
             ])
             ->recordActions([
+                static::approveOnboardingAction(),
+                static::sendOnboardingInviteAction(),
                 static::viewLiveAction(),
                 static::addCreditAction(),
                 static::toggleApiModeAction(),
@@ -376,6 +389,71 @@ class StoreResource extends Resource
                 Notification::make()
                     ->title('Credit added')
                     ->body(Money::format($record->fresh()->credit_balance_pence).' now in this store\'s wallet.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * A standalone resend of the onboarding link — for sellers approved
+     * before the in-app onboarding page existed (so their original
+     * SellerApprovedMail never mentioned it), or anyone who lost that email.
+     * Reuses the same longer-lived 'seller_invite' broker as
+     * SellerApplicationApprover::approve() and lands them on the same
+     * auto-login → /seller/pending flow (see ResetPasswordController).
+     */
+    public static function sendOnboardingInviteAction(): Action
+    {
+        return Action::make('sendOnboardingInvite')
+            ->label('Send onboarding email')
+            ->icon(Heroicon::OutlinedEnvelope)
+            ->color('gray')
+            ->visible(fn (Store $record) => ! $record->public_page_enabled)
+            ->requiresConfirmation()
+            ->modalHeading('Send onboarding email')
+            ->modalDescription('Emails the seller a fresh link to log in and complete their onboarding (bio, location, logo, etc).')
+            ->action(function (Store $record) {
+                $token = Password::broker('seller_invite')->createToken($record->user);
+
+                $resetUrl = url(route('password.reset', [
+                    'token' => $token,
+                    'email' => $record->user->email,
+                ], false));
+
+                Mail::to($record->user->email)->send(new SellerOnboardingInviteMail($record, $resetUrl));
+
+                Notification::make()
+                    ->title('Onboarding email sent')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * The onboarding review step: visible once a seller has submitted their
+     * onboarding details (bio, location, platforms, socials, logo — see
+     * Seller\OnboardingController) but isn't live yet. Flips
+     * public_page_enabled, which is what actually unlocks their dashboard
+     * (EnsureSellerStoreIsPublic) and surfaces them on /stores
+     * (StoreIndexController) — both keyed off Store::scopeLive().
+     */
+    public static function approveOnboardingAction(): Action
+    {
+        return Action::make('approveOnboarding')
+            ->label('Approve — go live')
+            ->icon(Heroicon::OutlinedCheckBadge)
+            ->color('success')
+            ->visible(fn (Store $record) => $record->onboarding_submitted_at && ! $record->public_page_enabled)
+            ->requiresConfirmation()
+            ->modalHeading('Approve onboarding')
+            ->modalDescription('Makes this store live — unlocks their dashboard and adds them to the public /stores list. Emails the seller to let them know.')
+            ->action(function (Store $record) {
+                $record->update(['public_page_enabled' => true]);
+
+                Mail::to($record->user->email)->send(new SellerOnboardingApprovedMail($record));
+
+                Notification::make()
+                    ->title('Store approved — now live')
                     ->success()
                     ->send();
             });

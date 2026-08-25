@@ -20,7 +20,8 @@
     <p><strong>Login email:</strong> {{ $user->email }}</p>
 
     <p>
-      To activate your access, please set your password using the link below:
+      To activate your access, please set your password using the link below — it'll also take you straight to
+      your onboarding page, where you can add your store's bio, location, and logo:
     </p>
 
     <p>
@@ -42,19 +43,12 @@
     <h2 style="font-size: 18px; margin-bottom: 8px;">One more thing — complete your storefront onboarding</h2>
 
     <p>
-      Attached to this email is your <strong>Arcane Seller Onboarding</strong> form. Please fill it out
-      (you can type directly into the PDF using Adobe Acrobat Reader or Preview) and email it back to us at
-      <a href="mailto:{{ config('mail.from.address') }}">{{ config('mail.from.address') }}</a> along with your logo.
+      Once you've set your password, you'll land on your onboarding page. Tell us a bit about your store, where
+      customers can find you, and upload your logo — then submit it for review.
     </p>
 
-    <p>Your logo should be:</p>
-    <ul>
-      <li>600 &times; 600 pixels</li>
-      <li>PNG format</li>
-    </ul>
-
     <p>
-      Once we've received both, we'll set up your public storefront and let you know as soon as it's live.
+      Once we've approved it, we'll set up your public storefront and let you know as soon as it's live.
     </p>
 
     <p>

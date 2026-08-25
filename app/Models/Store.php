@@ -26,6 +26,7 @@ class Store extends Model
         'country',
         'vat_number',
         'public_page_enabled',
+        'onboarding_submitted_at',
         'status',
         'logo',
         'api_access_granted',
@@ -37,6 +38,7 @@ class Store extends Model
 
     protected $casts = [
         'public_page_enabled' => 'boolean',
+        'onboarding_submitted_at' => 'datetime',
         'api_access_granted' => 'boolean',
         'api_enabled' => 'boolean',
         'daily_request_limit' => 'integer',
@@ -79,6 +81,18 @@ class Store extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * A store only counts as "live" — dashboard unlocked, shown on /stores —
+     * once an admin has flipped public_page_enabled AND it's active. The single
+     * definition shared by EnsureSellerStoreIsPublic, StoreIndexController, and
+     * the Filament "Live" tab, so none of them can drift out of sync on what
+     * "live" actually means.
+     */
+    public function scopeLive($query)
+    {
+        return $query->where('public_page_enabled', true)->where('status', 'active');
     }
 
     protected static function booted(): void
