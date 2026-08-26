@@ -17,11 +17,15 @@ use Illuminate\Support\Facades\DB;
  * fair" (see BatchVerifier's docblock — the same property batch merges
  * already rely on).
  *
- * The replacement must be the same rarity_band as the card it's replacing:
- * the storefront's displayed pull odds are a live count of sealed packs'
- * cards grouped by rarity_band (see BatchListController), so a same-band
- * swap leaves those odds untouched by construction, while a cross-band swap
- * would silently change what customers are told the odds are.
+ * The replacement must match the band the outgoing card is being replaced
+ * *for* — normally that's just the outgoing card's own current rarity_band,
+ * but an 'in_stock' removal (the UI calls this "price changed") explicitly
+ * targets a different band on purpose (see $targetBand below): the
+ * storefront's displayed pull odds are
+ * a live count of sealed packs' cards grouped by rarity_band (see
+ * BatchListController), so keeping the replacement pinned to the band the
+ * slot actually needs — not whatever the outgoing card's live band now says
+ * — is what keeps those odds correct, not what breaks them.
  */
 class CardSwapper
 {
@@ -36,17 +40,33 @@ class CardSwapper
     // at the shop before staff realised it was already earmarked for a pack).
     // Neither books new revenue here — same as a normal pack sale, the
     // CardInventory status change is the record, not a new Invoice line.
-    protected const REMOVAL_STATUSES = ['written_off', 'sold'];
+    // 'in_stock' is different again: nothing was lost or sold, the card's
+    // price just moved it into a different band than this slot needs, so it
+    // goes straight back into the live pool for a future batch to pick up.
+    protected const REMOVAL_STATUSES = ['written_off', 'sold', 'in_stock'];
 
     /**
+     * @param  ?string  $targetBand  Only meaningful (and required) when
+     *                               $removalStatus is 'in_stock' — the band this
+     *                               slot actually needs, since the outgoing
+     *                               card's own rarity_band is exactly what a
+     *                               price change just moved away from it.
+     *                               Ignored for every other removal status,
+     *                               which instead match the outgoing card's
+     *                               current band, as before.
+     *
      * @throws \RuntimeException if the pack/batch isn't in a swappable state, the
      *                           removal status is invalid, or the replacement isn't
      *                           genuinely available or doesn't match
      */
-    public function swap(Pack $pack, CardInventory $replacement, string $removalStatus, string $reason, ?int $byUserId): void
+    public function swap(Pack $pack, CardInventory $replacement, string $removalStatus, string $reason, ?int $byUserId, ?string $targetBand = null): void
     {
         if (! in_array($removalStatus, self::REMOVAL_STATUSES, true)) {
             throw new \RuntimeException("Invalid removal reason: {$removalStatus}.");
+        }
+
+        if ($removalStatus === 'in_stock' && ! $targetBand) {
+            throw new \RuntimeException('Pick the tier this slot needs before choosing a replacement.');
         }
 
         $batch = $pack->batch;
@@ -73,17 +93,24 @@ class CardSwapper
             throw new \RuntimeException("{$replacement->card_name} is no longer available — it may already be allocated, sold, or reserved.");
         }
 
-        if ($replacement->rarity_band !== $oldCard->rarity_band) {
-            throw new \RuntimeException("Replacement must be the same rarity band ({$oldCard->rarity_band}) as {$oldCard->card_name} — a cross-band swap would change this batch's displayed pull odds.");
+        $requiredBand = $removalStatus === 'in_stock' ? $targetBand : $oldCard->rarity_band;
+
+        if ($replacement->rarity_band !== $requiredBand) {
+            throw new \RuntimeException("Replacement must be {$requiredBand} band — a mismatched band would change this batch's displayed pull odds.");
         }
 
         if ($replacement->game !== $batch->game) {
             throw new \RuntimeException("Replacement card must be a {$batch->game->label()} card.");
         }
 
-        DB::transaction(function () use ($batch, $pack, $oldCard, $replacement, $removalStatus, $reason, $byUserId) {
+        DB::transaction(function () use ($batch, $pack, $oldCard, $replacement, $removalStatus, $requiredBand, $reason, $byUserId) {
             $allocatedSalePrice = $oldCard->allocated_sale_price_pence;
             $cardMargin = $oldCard->margin_pence;
+
+            // A price-changed card isn't a loss or a removal from sale — it's
+            // going straight back into the live pool — so unlike written_off/sold
+            // it doesn't get stamped delisted.
+            $isPriceChange = $removalStatus === 'in_stock';
 
             $oldCard->update([
                 'pack_id' => null,
@@ -92,8 +119,8 @@ class CardSwapper
                 'allocated_sale_price_pence' => null,
                 'margin_pence' => null,
                 'picked_at' => null,
-                'delisted_at' => now(),
-                'delisted_by_user_id' => $byUserId,
+                'delisted_at' => $isPriceChange ? null : now(),
+                'delisted_by_user_id' => $isPriceChange ? null : $byUserId,
             ]);
 
             $replacement->update([
@@ -109,16 +136,21 @@ class CardSwapper
             $newMargin = $batch->sale_price_pence - $newTotalCost;
 
             $who = $byUserId ? (User::find($byUserId)?->name ?? "user #{$byUserId}") : 'system';
-            $removalLabel = $removalStatus === 'sold' ? 'sold elsewhere' : 'missing/written off';
+            $removalLabel = match ($removalStatus) {
+                'sold' => 'sold elsewhere',
+                'written_off' => 'missing/written off',
+                'in_stock' => "price changed to {$oldCard->rarity_band} — returned to stock",
+            };
             $note = sprintf(
-                '[%s] Card swap by %s: %s (#%d, %s) marked %s, replaced with %s. Reason: %s',
+                '[%s] Card swap by %s: %s (#%d, %s) marked %s, replaced with %s (%s). Reason: %s',
                 now()->format('d M Y H:i'),
                 $who,
                 $oldCard->card_name,
                 $pack->sequence_no,
-                $oldCard->rarity_band,
+                $requiredBand,
                 $removalLabel,
                 $replacement->card_name,
+                $requiredBand,
                 $reason,
             );
 

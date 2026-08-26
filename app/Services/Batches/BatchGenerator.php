@@ -166,13 +166,6 @@ class BatchGenerator
             ));
         }
 
-        $totalCost = $best['total_cost'];      // what we actually paid
-        $totalMarket = $best['total_market'];    // market only
-        $marginAtCost = $targetSale - $totalCost; // what hits the books
-        $vatOnMargin = Money::marginSchemeVat($marginAtCost);
-
-        $snapshotPath = $this->writeVerificationSnapshot($batch, $poolData, $bandDistribution, $tierDistribution, $duplicateLimits, $thresholds, $targetSale, $targetMargin, $targetValue, $packCount, $best['selected_ids']);
-
         // Cards in final pack order — whereIn() doesn't preserve the IN-list order,
         // so re-sort by the selector's own selected_ids sequence explicitly. That
         // order is what determines which pack (by sequence_no) gets which card, so
@@ -180,6 +173,25 @@ class BatchGenerator
         // later replay of it.
         $cardsById = CardInventory::whereIn('id', $best['selected_ids'])->get()->keyBy('id');
         $cards = collect($best['selected_ids'])->map(fn ($id) => $cardsById[$id]);
+
+        // The selector picked this set from data that could be stale (syncStale()
+        // above only refreshes cards past the TTL) — force a live Pulse check on
+        // every one of them now, right before they're actually allocated, and
+        // swap out (then re-check) anything Pulse no longer agrees belongs in the
+        // band it was selected for. Never touches the verification snapshot
+        // below — that still records the selector's original fair draw, exactly
+        // like a post-generation CardSwapper/BatchReroller correction would.
+        $cards = $this->verifyAndBackfillPrices($batch, $cards, $bucketed, $duplicateLimits);
+
+        // Recomputed from the verified, possibly-corrected final card list — the
+        // selector's $best totals reflect its pre-verification picks, which may
+        // no longer match what's actually about to be allocated.
+        $totalCost = (int) $cards->sum('cost_pence');
+        $totalMarket = (int) $cards->sum('market_value_pence');
+        $marginAtCost = $targetSale - $totalCost; // what hits the books
+        $vatOnMargin = Money::marginSchemeVat($marginAtCost);
+
+        $snapshotPath = $this->writeVerificationSnapshot($batch, $poolData, $bandDistribution, $tierDistribution, $duplicateLimits, $thresholds, $targetSale, $targetMargin, $targetValue, $packCount, $best['selected_ids']);
 
         DB::transaction(function () use ($batch, $cards, $totalCost, $totalMarket, $targetSale, $marginAtCost, $vatOnMargin, $snapshotPath) {
             $packs = collect();
@@ -352,6 +364,101 @@ class BatchGenerator
         ], JSON_PRETTY_PRINT));
 
         return $path;
+    }
+
+    /**
+     * Forces a live Pulse check (via CardPriceSyncer::forceRefresh(), unless
+     * price-locked) on every selected card, and swaps out anything that either
+     * failed to fetch or no longer belongs in the rarity_band it was selected
+     * for — replacing it with another card from that same band's pool, which is
+     * itself checked the same way, repeating until every slot is filled with a
+     * card Pulse has just confirmed actually belongs there.
+     *
+     * $bucketedPool is the same pre-selection pool CandidateSelector chose from
+     * (rarity_band => Collection<CardInventory>) — replacements only ever come
+     * from cards genuinely in the pool for the band being backfilled, and never
+     * repeat a card already committed elsewhere in this batch.
+     *
+     * @param  Collection<int, CardInventory>  $cards  In final pack order.
+     * @param  Collection<string, Collection<int, CardInventory>>  $bucketedPool
+     * @param  array<string, int>  $duplicateLimits
+     * @return Collection<int, CardInventory> Same order, in, with any failed slots backfilled.
+     *
+     * @throws \RuntimeException if a band runs out of verifiable replacements.
+     */
+    protected function verifyAndBackfillPrices(Batch $batch, Collection $cards, Collection $bucketedPool, array $duplicateLimits): Collection
+    {
+        // What each slot was actually selected for — captured before any refresh
+        // can overwrite a card's live rarity_band, since that's exactly the
+        // field a price change moves.
+        $requiredBands = $cards->mapWithKeys(fn (CardInventory $c) => [$c->id => $c->rarity_band]);
+
+        $verifiedProductIds = $this->priceSyncer->forceRefresh($cards);
+        $cards->reject(fn (CardInventory $c) => $c->price_locked)->each->refresh();
+
+        $usedProductIds = [];
+        foreach ($cards as $c) {
+            $usedProductIds[$c->product_id] = ($usedProductIds[$c->product_id] ?? 0) + 1;
+        }
+
+        $claimedIds = $cards->pluck('id')->flip();
+        $final = collect();
+
+        foreach ($cards as $card) {
+            $band = $requiredBands[$card->id];
+            $passed = $card->price_locked
+                || (isset($verifiedProductIds[$card->product_id]) && $card->rarity_band === $band);
+
+            if ($passed) {
+                $final->push($card);
+
+                continue;
+            }
+
+            $usedProductIds[$card->product_id] = max(0, ($usedProductIds[$card->product_id] ?? 1) - 1);
+            $claimedIds->forget($card->id);
+
+            $limitPerCard = (int) ($duplicateLimits[$band] ?? 1);
+            $replacement = null;
+
+            foreach (($bucketedPool[$band] ?? collect()) as $candidate) {
+                if ($claimedIds->has($candidate->id)) {
+                    continue;
+                }
+
+                if (($usedProductIds[$candidate->product_id] ?? 0) >= $limitPerCard) {
+                    continue;
+                }
+
+                // Claimed the moment it's tried, pass or fail — never reconsidered
+                // for a different slot, and never re-checked twice for this one.
+                $claimedIds->put($candidate->id, true);
+
+                if ($candidate->price_locked) {
+                    $replacement = $candidate;
+
+                    break;
+                }
+
+                $candidateVerified = $this->priceSyncer->forceRefresh(collect([$candidate]));
+                $candidate->refresh();
+
+                if (isset($candidateVerified[$candidate->product_id]) && $candidate->rarity_band === $band) {
+                    $replacement = $candidate;
+
+                    break;
+                }
+            }
+
+            if (! $replacement) {
+                throw new \RuntimeException("Could not find a Pulse-verified {$band} replacement while generating batch {$batch->reference} — too many candidates have moved out of this band since selection.");
+            }
+
+            $usedProductIds[$replacement->product_id] = ($usedProductIds[$replacement->product_id] ?? 0) + 1;
+            $final->push($replacement);
+        }
+
+        return $final;
     }
 
     /**

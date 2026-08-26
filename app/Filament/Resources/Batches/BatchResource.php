@@ -703,10 +703,10 @@ class BatchResource extends Resource
             ->visible(fn (Batch $record) => in_array($record->status, ['pending_review', 'awaiting_payment', 'committed'], true)
                 && $record->packs()->where('status', 'sealed')->exists())
             ->modalHeading('Swap a card')
-            ->modalDescription('Use this when a card meant for this batch turns out to be physically missing — or already sold elsewhere — while picking. The replacement must be the same rarity band, so this batch\'s displayed pull odds don\'t change.')
+            ->modalDescription('Use this when a card meant for this batch turns out to be physically missing, already sold elsewhere, or has re-priced into a different tier while picking. A same-tier replacement is required, so this batch\'s displayed pull odds don\'t change.')
             ->schema(fn (Batch $record) => [
                 Forms\Components\Select::make('pack_id')
-                    ->label('Pack with the missing card')
+                    ->label('Pack with the card to replace')
                     ->options(fn () => $record->packs()
                         ->where('status', 'sealed')
                         ->with('card')
@@ -729,14 +729,29 @@ class BatchResource extends Resource
                     ->options([
                         'written_off' => 'Missing / lost',
                         'sold' => 'Already sold elsewhere',
+                        'in_stock' => 'Price changed — moved to a different tier',
                     ])
-                    ->required(),
+                    ->required()
+                    ->live(),
+                Forms\Components\Select::make('target_band')
+                    ->label('Tier this slot needs')
+                    ->options([
+                        'common' => 'Common',
+                        'rare' => 'Rare',
+                        'super' => 'Super',
+                        'legendary' => 'Legendary',
+                        'mythic' => 'Mythic',
+                    ])
+                    ->required()
+                    ->live()
+                    ->visible(fn ($get) => $get('removal_status') === 'in_stock')
+                    ->helperText('The outgoing card\'s price moved it out of the band this slot needs — pick that band here rather than relying on its (now wrong) current one. Usually the same tier it was originally picked for.'),
                 Forms\Components\Select::make('replacement_card_id')
                     ->label('Replacement card')
                     ->options(function ($get) use ($record) {
                         $pack = $record->packs()->with('card')->find($get('pack_id'));
                         $missingCard = $pack?->card;
-                        $band = $missingCard?->rarity_band;
+                        $band = $get('removal_status') === 'in_stock' ? $get('target_band') : $missingCard?->rarity_band;
                         if (! $band) {
                             return [];
                         }
@@ -756,16 +771,16 @@ class BatchResource extends Resource
                     })
                     ->required()
                     ->searchable()
-                    ->disabled(fn ($get) => ! $get('pack_id'))
+                    ->disabled(fn ($get) => ! $get('pack_id') || ($get('removal_status') === 'in_stock' && ! $get('target_band')))
                     ->helperText(function ($get) use ($record) {
                         $pack = $record->packs()->with('card')->find($get('pack_id'));
                         $card = $pack?->card;
 
                         if (! $card) {
-                            return 'Only in-stock cards of the same rarity band and game are shown.';
+                            return 'Only in-stock cards of the right tier and game are shown.';
                         }
 
-                        return 'Same rarity band and game, sorted by closest market value to the missing card ('.Money::format($card->market_value_pence).').';
+                        return 'Same tier and game, sorted by closest market value to the outgoing card ('.Money::format($card->market_value_pence).').';
                     }),
                 Forms\Components\Textarea::make('reason')
                     ->label('Details')
@@ -777,9 +792,10 @@ class BatchResource extends Resource
             ->action(function (Batch $record, array $data, CardSwapper $swapper) {
                 $pack = Pack::findOrFail($data['pack_id']);
                 $replacement = CardInventory::findOrFail($data['replacement_card_id']);
+                $targetBand = $data['removal_status'] === 'in_stock' ? ($data['target_band'] ?? null) : null;
 
                 try {
-                    $swapper->swap($pack, $replacement, $data['removal_status'], $data['reason'], auth()->id());
+                    $swapper->swap($pack, $replacement, $data['removal_status'], $data['reason'], auth()->id(), $targetBand);
                 } catch (\RuntimeException $e) {
                     Notification::make()
                         ->title('Swap failed')

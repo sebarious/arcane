@@ -5,6 +5,7 @@ namespace App\Services\PulseApi;
 use App\Models\CardInventory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 
 class CardPriceSyncer
 {
@@ -67,5 +68,56 @@ class CardPriceSyncer
         }
 
         return $updated;
+    }
+
+    /**
+     * Unlike syncStale(), refreshes every given card regardless of how recently
+     * it was last synced — used right after a batch's candidate selection, when
+     * the specific cards about to be allocated need to be priced against Pulse
+     * right now, not whatever happened to be true whenever they last synced
+     * (see BatchGenerator::verifyAndBackfillPrices — that's what catches a card
+     * whose price has since moved it into a different rarity_band than the slot
+     * it was selected for). Price-locked cards are skipped entirely — never
+     * sent to Pulse, never in the returned set — same guarantee syncStale()
+     * makes.
+     *
+     * @param  Collection<int, CardInventory>  $cards
+     * @return array<string, true> product_id => successfully verified against Pulse just now
+     */
+    public function forceRefresh(Collection $cards): array
+    {
+        $productIds = $cards
+            ->reject(fn (CardInventory $c) => $c->price_locked)
+            ->pluck('product_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $fetched = $this->client->batchGetCards($productIds);
+        $verified = [];
+
+        foreach ($fetched as $productId => $card) {
+            if (! $card) {
+                continue;
+            }
+
+            $attributes = Arr::except(
+                PulseApiCardMapper::toInventoryAttributes($card),
+                'product_id',
+            );
+
+            CardInventory::where('product_id', $productId)
+                ->where('price_locked', false)
+                ->update($attributes);
+
+            $verified[$productId] = true;
+        }
+
+        return $verified;
     }
 }
