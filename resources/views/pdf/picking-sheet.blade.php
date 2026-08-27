@@ -87,6 +87,22 @@
     .new-page {
       page-break-before: always;
     }
+
+    .already-picked-heading {
+      font-size: 15px;
+      margin: 0 0 2px;
+      color: #555;
+    }
+
+    .lot.already-picked .lot-heading {
+      background: none;
+      color: #777;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .lot.already-picked td {
+      color: #777;
+    }
   </style>
 </head>
 
@@ -132,6 +148,51 @@
     </table>
   </div>
   @endforeach
+
+  @if (isset($alreadyPickedLots) && $alreadyPickedLots->isNotEmpty())
+  <div class="new-page">
+    <h2 class="already-picked-heading">Already picked — reference only, no action needed</h2>
+    <p class="subtitle">
+      These cards belong to this batch but were already pulled in an earlier picking run (e.g. before a
+      later card swap) — they're no longer in their lot's box, so there's no position to give them here.
+    </p>
+
+    @foreach ($alreadyPickedLots as $lot)
+    <div class="lot already-picked">
+      <p class="lot-heading">Lot: {{ $lot['lot'] }}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Card</th>
+            <th>Set</th>
+            <th>Number</th>
+            <th>Rarity</th>
+            <th>Pack #</th>
+            <th>Picked</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach ($lot['cards'] as $card)
+          <tr>
+            <td>
+              {{ $card['card_name'] }}
+              @foreach ($card['product_badges'] as $badge)
+              <span class="variant-badge">{{ $badge }}</span>
+              @endforeach
+            </td>
+            <td>{{ $card['set_name'] }}</td>
+            <td>{{ $card['card_number'] }}</td>
+            <td>{{ $card['rarity'] }}</td>
+            <td>{{ $card['pack_sequence'] }}</td>
+            <td>{{ $card['picked_at'] }}</td>
+          </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
+    @endforeach
+  </div>
+  @endif
 </body>
 
 </html>

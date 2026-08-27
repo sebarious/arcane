@@ -22,7 +22,9 @@
 
     <p style="color: #6b7280; font-size: 13px;">
       Cards on the picking sheet are marked as picked the moment this was generated — a fresh run for this
-      batch will only ever include whatever's still left.
+      batch will only ask you to pick whatever's still left. If anything in this batch was already picked in
+      an earlier run (e.g. before a later card swap), it's still listed on the sheet in a separate
+      "already picked" reference section, so the sheet always reflects the whole batch.
     </p>
   </div>
 </body>

@@ -26,6 +26,11 @@ class GeneratePickingSheetJob implements ShouldQueue
     {
         $batch = Batch::findOrFail($this->batchId);
 
+        // Captured BEFORE generate() runs — generate() stamps picked_at on
+        // whatever it returns as a side effect, so calling this after would
+        // also pick up the cards generate() just processed in this same run.
+        $alreadyPickedLots = $generator->alreadyPicked($batch);
+
         $lots = $generator->generate($batch);
 
         if ($lots->isEmpty()) {
@@ -35,6 +40,7 @@ class GeneratePickingSheetJob implements ShouldQueue
         $pdf = Pdf::loadView('pdf.picking-sheet', [
             'batch' => $batch,
             'lots' => $lots,
+            'alreadyPickedLots' => $alreadyPickedLots,
         ])->setPaper('a4', 'portrait');
 
         $path = "picking-sheets/{$batch->reference}-".now()->format('YmdHis').'.pdf';

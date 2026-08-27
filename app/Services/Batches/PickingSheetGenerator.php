@@ -29,7 +29,8 @@ class PickingSheetGenerator
      *                                                                alphabetical order, each with its cards in the order to pick them.
      *                                                                Empty if the batch has nothing left to pick. Marks every returned
      *                                                                card picked_at = now() — calling this twice for the same batch
-     *                                                                only ever returns what's left, if anything.
+     *                                                                only ever returns what's left, if anything. See alreadyPicked()
+     *                                                                below for what's already been picked in an earlier run.
      */
     public function generate(Batch $batch): Collection
     {
@@ -102,6 +103,50 @@ class PickingSheetGenerator
                 'product_badges' => $card->product_badges,
                 'pack_sequence' => $card->pack?->sequence_no,
             ]);
+    }
+
+    /**
+     * Everything in this batch that's already been picked (picked_at set) —
+     * for a read-only reference section on the sheet alongside whatever
+     * generate() returns, so a sheet regenerated after e.g. a CardSwapper
+     * swap still shows the whole batch's state, not just the new delta.
+     * Never mutates anything and never computes a box position — an
+     * already-picked card was physically pulled in an earlier run, so it
+     * isn't sitting in its lot's box any more and has no position to give.
+     *
+     * @return Collection<int, array{lot: string, cards: Collection}>
+     */
+    public function alreadyPicked(Batch $batch): Collection
+    {
+        $targets = CardInventory::whereIn('pack_id', $batch->packs()->pluck('id'))
+            ->whereNotNull('picked_at')
+            ->with('pack')
+            ->get();
+
+        if ($targets->isEmpty()) {
+            return collect();
+        }
+
+        return $targets
+            ->groupBy(fn (CardInventory $card) => $card->acquisition_lot ?? '(no lot recorded)')
+            ->sortKeys()
+            ->map(fn (Collection $lotTargets, string $lot) => [
+                'lot' => $lot,
+                'cards' => $lotTargets
+                    ->sortBy(fn (CardInventory $card) => $card->chaosSortKey())
+                    ->values()
+                    ->map(fn (CardInventory $card) => [
+                        'card_inventory_id' => $card->id,
+                        'card_name' => $card->card_name,
+                        'set_name' => $card->set_name,
+                        'card_number' => $card->card_number,
+                        'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : null,
+                        'product_badges' => $card->product_badges,
+                        'pack_sequence' => $card->pack?->sequence_no,
+                        'picked_at' => $card->picked_at?->format('d M Y H:i'),
+                    ]),
+            ])
+            ->values();
     }
 
     private function boxQuery(string $lot)
