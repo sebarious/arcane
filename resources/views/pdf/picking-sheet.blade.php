@@ -114,6 +114,11 @@
     the card ahead of it has been pulled.
   </p>
 
+  @if ($lots->isEmpty())
+  <p class="subtitle"><strong>Nothing new to pick</strong> — every card in this batch has already been picked.
+    See the reference section below for the full list.</p>
+  @endif
+
   @foreach ($lots as $lot)
   <div class="lot">
     <p class="lot-heading">Lot: {{ $lot['lot'] }}</p>

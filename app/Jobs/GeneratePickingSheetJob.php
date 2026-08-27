@@ -33,7 +33,15 @@ class GeneratePickingSheetJob implements ShouldQueue
 
         $lots = $generator->generate($batch);
 
-        if ($lots->isEmpty()) {
+        // Nothing new to pick AND nothing already picked either — a genuinely
+        // empty batch, nothing to show at all. But if everything's already
+        // been picked (lots empty, alreadyPickedLots not), still regenerate:
+        // otherwise the file left behind is whatever the *previous* run
+        // produced — which, if that run predates a later correction (e.g. a
+        // CardSwapper swap this run's already-picked section now accounts
+        // for), would leave a stale, incomplete PDF in place forever with no
+        // way to self-correct.
+        if ($lots->isEmpty() && $alreadyPickedLots->isEmpty()) {
             return;
         }
 
