@@ -39,6 +39,10 @@ class LoginController extends Controller
             return redirect()->intended('/seller');
         }
 
+        if ($user->hasRole('affiliate')) {
+            return redirect()->intended('/affiliate');
+        }
+
         return redirect()->intended('/');
     }
 

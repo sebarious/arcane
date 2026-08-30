@@ -47,7 +47,7 @@ const affiliateCodeInput = ref( '' );
 const affiliateApplying = ref( false );
 const affiliateValid = ref<boolean | null>( null );
 const affiliateError = ref( '' );
-const affiliateStoreName = ref<string | null>( null );
+const affiliateName = ref<string | null>( null );
 const affiliateBonusPercentage = ref( 0 );
 
 const bonusPercentLabel = computed( () => `${ Math.round( affiliateBonusPercentage.value * 100 ) }%` );
@@ -63,16 +63,16 @@ async function applyAffiliateCode() {
     const { data } = await axios.get( '/sell/verify-affiliate-code', { params: { code } } );
     if ( data.valid ) {
       affiliateValid.value = true;
-      affiliateStoreName.value = data.store_name;
+      affiliateName.value = data.name;
       affiliateBonusPercentage.value = data.bonus_percentage;
     } else {
       affiliateValid.value = false;
-      affiliateStoreName.value = null;
+      affiliateName.value = null;
       affiliateError.value = data.message ?? "That code isn't valid.";
     }
   } catch ( e ) {
     affiliateValid.value = false;
-    affiliateStoreName.value = null;
+    affiliateName.value = null;
     affiliateError.value = 'Could not verify that code — please try again.';
   } finally {
     affiliateApplying.value = false;
@@ -82,7 +82,7 @@ async function applyAffiliateCode() {
 function clearAffiliateCode() {
   affiliateCodeInput.value = '';
   affiliateValid.value = null;
-  affiliateStoreName.value = null;
+  affiliateName.value = null;
   affiliateError.value = '';
   affiliateBonusPercentage.value = 0;
 }
@@ -290,7 +290,7 @@ function itemError( index: number ): string | undefined {
               </div>
 
               <p v-if=" affiliateValid === true " class="text-[13px] text-[#7fd4a0] font-['Jost',sans-serif]">
-                ✓ Applied — {{ affiliateStoreName }}'s code. You'll get {{ bonusPercentLabel }} more on every offer below.
+                ✓ Applied — {{ affiliateName }}'s code. You'll get {{ bonusPercentLabel }} more on every offer below.
               </p>
               <p v-else-if=" affiliateValid === false " class="text-[13px] text-red-400 font-['Jost',sans-serif]">
                 {{ affiliateError }}

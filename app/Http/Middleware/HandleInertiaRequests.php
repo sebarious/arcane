@@ -42,7 +42,9 @@ class HandleInertiaRequests extends Middleware
                 'params' => $request->route()->parameters(),
             ] : null,
             'auth' => [
-                'user' => fn () => $request->user()?->only('id', 'name', 'email'),
+                // 'role' resolves via User::getRoleAttribute() — drives Nav.vue's
+                // dashboard link (seller vs affiliate vs plain login state).
+                'user' => fn () => $request->user()?->only('id', 'name', 'email', 'role'),
             ],
             // Drives the impersonation banner shown on every Inertia page — see
             // App\Services\Auth\ImpersonationManager and Components/ImpersonationBanner.vue.

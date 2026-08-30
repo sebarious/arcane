@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Admin\ImpersonateController;
 use App\Http\Controllers\Admin\PickingSheetController;
+use App\Http\Controllers\Affiliate\BankDetailsController as AffiliateBankDetailsController;
+use App\Http\Controllers\Affiliate\DashboardController as AffiliateDashboardController;
+use App\Http\Controllers\Affiliate\SignupController as AffiliateSignupController;
+use App\Http\Controllers\Affiliate\WithdrawalController as AffiliateWithdrawalController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -63,7 +67,13 @@ Route::middleware(['web', 'auth'])
 Route::get('/', HomeController::class)->name('home');
 
 Route::middleware(['web', 'auth'])->get('/dashboard', function () {
-    return request()->user()->hasRole('admin') ? redirect('/admin') : redirect()->route('seller.dashboard');
+    $user = request()->user();
+
+    return match (true) {
+        $user->hasRole('admin') => redirect('/admin'),
+        $user->hasRole('affiliate') => redirect()->route('affiliate.dashboard'),
+        default => redirect()->route('seller.dashboard'),
+    };
 })->name('dashboard');
 
 Route::middleware(['web', 'auth'])  // tighten with an 'admin' gate later
@@ -177,6 +187,28 @@ Route::middleware(['web', 'auth', 'role:seller'])
             Route::post('/api-access/{store}/sandbox/reset', [ApiAccessController::class, 'regenerateSandbox'])->name('api-access.sandbox.reset');
             Route::get('/scan', [ScanStationController::class, 'show'])->name('scan');
             Route::post('/scan', [ScanStationController::class, 'scan'])->name('scan.submit');
+        });
+    });
+
+Route::middleware(['web', 'guest'])->group(function () {
+    Route::get('/affiliate/signup', [AffiliateSignupController::class, 'show'])->name('affiliate.signup');
+    Route::get('/affiliate/signup/suggest-code', [AffiliateSignupController::class, 'suggestCode'])->name('affiliate.signup.suggest-code');
+    Route::post('/affiliate/signup', [AffiliateSignupController::class, 'store'])->name('affiliate.signup.store');
+});
+
+Route::middleware(['web', 'auth', 'role:affiliate'])
+    ->prefix('affiliate')
+    ->name('affiliate.')
+    ->group(function () {
+        // Reachable regardless of approval status — renders pending/active/
+        // suspended itself. See EnsureAffiliateIsApproved's docblock.
+        Route::get('/', AffiliateDashboardController::class)->name('dashboard');
+
+        Route::middleware('affiliate.approved')->group(function () {
+            Route::get('/bank-details', [AffiliateBankDetailsController::class, 'show'])->name('bank-details.show');
+            Route::post('/bank-details', [AffiliateBankDetailsController::class, 'update'])->name('bank-details.update');
+            Route::get('/withdrawals', [AffiliateWithdrawalController::class, 'index'])->name('withdrawals.index');
+            Route::post('/withdrawals', [AffiliateWithdrawalController::class, 'store'])->name('withdrawals.store');
         });
     });
 

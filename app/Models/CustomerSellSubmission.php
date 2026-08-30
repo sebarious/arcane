@@ -16,6 +16,7 @@ class CustomerSellSubmission extends Model
         'description',
         'affiliate_code',
         'affiliate_store_id',
+        'affiliate_id',
         'affiliate_bonus_pence',
         'status',
         'estimated_value_pence',
@@ -50,6 +51,11 @@ class CustomerSellSubmission extends Model
     public function affiliateStore()
     {
         return $this->belongsTo(Store::class, 'affiliate_store_id');
+    }
+
+    public function affiliate()
+    {
+        return $this->belongsTo(Affiliate::class);
     }
 
     public static function nextReference(): string

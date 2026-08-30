@@ -31,7 +31,7 @@ class KioskCheckoutService
             'card_name' => $card->card_name,
             'set_name' => $card->set_name,
             'card_number' => $card->card_number,
-            'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : null,
+            'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : 'Unbanded',
             'image_url' => $card->image_url,
             'price_pence' => $this->priceFor($card),
             'product_badges' => $card->product_badges,
@@ -79,7 +79,7 @@ class KioskCheckoutService
                     'card_name' => $card->card_name,
                     'set_name' => $card->set_name,
                     'card_number' => $card->card_number,
-                    'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : null,
+                    'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : 'Unbanded',
                     'market_value_pence' => $card->market_value_pence,
                     'unit_price_pence' => $unitPrice,
                 ]);

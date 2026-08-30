@@ -41,10 +41,10 @@ const steps = [
         Affiliate <span class="text-[#c9a84c]">Program</span>
       </p>
       <p class="font-['Jost',sans-serif] font-normal text-[#a3a3a3] text-[18px] mt-[16px] max-w-2xl leading-relaxed">
-        Every store on Arcane has its own shareable affiliate code. Quote it when you
-        sell cards to us — whether you're one of their customers or the store itself —
-        and get <span class="text-[#c9a84c] font-semibold">{{ bonusLabel }} more</span> on
-        your offer, automatically.
+        Every store on Arcane has its own shareable affiliate code — or get one of your own with no
+        store required. Quote a code when you sell cards to us and get
+        <span class="text-[#c9a84c] font-semibold">{{ bonusLabel }} more</span> on your offer,
+        automatically. Whoever's code you quote earns credit too.
       </p>
     </div>
 
@@ -62,6 +62,25 @@ const steps = [
             {{ step.body }}
           </p>
         </div>
+      </div>
+    </div>
+
+    <div class="px-8 lg:px-[64px] pb-[40px] max-w-4xl mx-auto">
+      <div class="bg-[#13101e] border border-[rgba(201,168,76,0.25)] rounded-[16px] p-[32px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-[20px]">
+        <div>
+          <p class="font-['Cinzel',sans-serif] font-bold text-[20px] text-white">
+            Don't run a store? Become an affiliate yourself.
+          </p>
+          <p class="font-['Jost',sans-serif] text-[14px] text-[#a3a3a3] mt-[6px] max-w-lg">
+            Sign up for your own affiliate code — no store, no approval to get started. Share it, earn
+            credit when it's quoted, and withdraw once your balance passes £100.
+          </p>
+        </div>
+        <Link href="/affiliate/signup"
+          class="w-full sm:w-auto shrink-0 text-center px-6 py-3 rounded-[4px] text-sm font-['Jost',sans-serif] font-bold uppercase tracking-wide text-[#0d0b14]"
+          style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
+          Become an affiliate
+        </Link>
       </div>
     </div>
 
