@@ -21,8 +21,13 @@ return new class extends Migration
             // without having to re-sum the whole ledger.
             $table->integer('balance_after_pence');
             $table->string('reason')->nullable();
+            // Laravel's auto-generated name for this one (affiliate_credit_transactions_
+            // customer_sell_submission_id_foreign) is 65 characters — one over MySQL's
+            // 64-char identifier limit. Postgres (local dev) just truncates it silently,
+            // which is why this only surfaced on Forge's MySQL. Explicit shorter name below.
             $table->foreignId('customer_sell_submission_id')->nullable()
-                ->constrained('customer_sell_submissions')->nullOnDelete();
+                ->constrained('customer_sell_submissions', 'id', 'affiliate_credit_transactions_submission_id_foreign')
+                ->nullOnDelete();
             // Set on the 'redemption' row a withdrawal request creates (and on the
             // refunding 'credit' row if that withdrawal is later rejected) — see
             // AffiliateCreditService.
