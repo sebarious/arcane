@@ -13,7 +13,7 @@ class CardInventory extends Model
     protected $fillable = [
         'condition', 'cost_pence', 'acquired_at', 'acquired_from',
         'acquisition_lot', 'market_value_pence', 'market_value_updated_at', 'price_locked',
-        'rarity_band', 'pack_id', 'qr_token', 'status',
+        'rarity_band', 'pack_id', 'rip_id', 'qr_token', 'status',
         'allocated_sale_price_pence', 'margin_pence',
         'delisted_at', 'delisted_by_user_id', 'game', 'picked_at', 'reserved_until', 'reserved_by',
         // PulseAPI card data
@@ -40,6 +40,11 @@ class CardInventory extends Model
         return $this->belongsTo(Pack::class);
     }
 
+    public function rip()
+    {
+        return $this->belongsTo(Rip::class);
+    }
+
     public function delistedBy()
     {
         return $this->belongsTo(User::class, 'delisted_by_user_id');
@@ -63,15 +68,17 @@ class CardInventory extends Model
 
     /**
      * Physically unclaimed stock — in the warehouse, not earmarked for a
-     * mystery pack, and not currently sitting in someone else's kiosk basket.
-     * The single definition of "available" shared by BatchGenerator's
-     * candidate pool and kiosk search/reservation, so the two channels can
-     * never both think they own the same physical card.
+     * mystery pack or a digital rip, and not currently sitting in someone
+     * else's kiosk basket. The single definition of "available" shared by
+     * BatchGenerator's candidate pool, RipDrawer's draw pool, and kiosk
+     * search/reservation, so none of those channels can ever think they own
+     * the same physical card at once.
      */
     public function scopeAvailable($q)
     {
         return $q->where('status', 'in_stock')
             ->whereNull('pack_id')
+            ->whereNull('rip_id')
             ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()));
     }
 

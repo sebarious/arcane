@@ -19,8 +19,8 @@
         <p class="text-[10px] text-[#DCC175] truncate mb-1" :style="{ fontFamily: 'Jost, sans-serif' }">
           {{ pull.card.set }}
         </p>
-        <p class="text-[10px] text-purple-300/50" :style="{ fontFamily: 'Jost, sans-serif' }">
-          {{ pull.store.name }}
+        <p class="text-[10px] text-purple-300/50 uppercase tracking-[0.15em]" :style="{ fontFamily: 'Jost, sans-serif' }">
+          {{ pull.store?.name ?? `${pull.card.band} · In the pool` }}
         </p>
       </div>
     </div>

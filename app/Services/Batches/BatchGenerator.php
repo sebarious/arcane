@@ -70,14 +70,16 @@ class BatchGenerator
         // Refresh any stale prices in this pool before selecting from it — a card
         // priced weeks ago could since have moved bands entirely, so this needs to
         // happen before we group by rarity_band below, not after.
-        // Excludes anything currently held in a kiosk basket (reserved_until) —
-        // see CardInventory::scopeAvailable() — so a card someone's mid-checkout
-        // on at the kiosk can't also get pulled into a batch here.
+        // Excludes anything currently held in a kiosk basket (reserved_until) or
+        // committed to a digital rip (rip_id) — see CardInventory::scopeAvailable()
+        // — so a card someone's mid-checkout on at the kiosk, or already drawn
+        // into a Digital Rip, can't also get pulled into a batch here.
         $this->priceSyncer->syncStale(
             CardInventory::query()
                 ->inStock()
                 ->where('game', $game->value)
                 ->whereNull('pack_id')
+                ->whereNull('rip_id')
                 ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()))
         );
 
@@ -89,6 +91,7 @@ class BatchGenerator
             ->where('game', $game->value)
             ->whereNotNull('rarity_band')
             ->whereNull('pack_id')
+            ->whereNull('rip_id')
             ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()))
             ->orderBy('id')
             ->get();

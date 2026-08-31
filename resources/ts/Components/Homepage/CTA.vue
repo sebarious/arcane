@@ -27,18 +27,29 @@
           market pricing.
         </p>
 
-        <Link href="/apply"
-          class="inline-block px-14 py-4 text-black text-xs tracking-[0.3em] uppercase font-bold relative overflow-hidden group"
-          :style="{
-            background: 'linear-gradient(135deg, #DCC175, #e8d49a)',
-            borderRadius: '3px',
-            fontFamily: 'Jost, sans-serif',
-          }">
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" :style="{
-            background: 'linear-gradient(135deg, #7c3aed, #9d5cf5)',
-          }" />
-        <span class="relative">Apply to Partner</span>
-        </Link>
+        <div class="flex flex-wrap items-center justify-center gap-5">
+          <Link href="/rips"
+            class="inline-block px-14 py-4 text-black text-xs tracking-[0.3em] uppercase font-bold relative overflow-hidden group"
+            :style="{
+              background: 'linear-gradient(135deg, #DCC175, #e8d49a)',
+              borderRadius: '3px',
+              fontFamily: 'Jost, sans-serif',
+            }">
+          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" :style="{
+              background: 'linear-gradient(135deg, #7c3aed, #9d5cf5)',
+            }" />
+          <span class="relative">Buy a Pack</span>
+          </Link>
+
+          <Link href="/apply"
+            class="inline-block px-14 py-4 text-[#DCC175] text-xs tracking-[0.3em] uppercase font-bold border border-[#DCC175]/50 hover:border-[#DCC175] hover:bg-[#DCC175]/10 transition-all duration-300"
+            :style="{
+              borderRadius: '3px',
+              fontFamily: 'Jost, sans-serif',
+            }">
+            Apply Now
+          </Link>
+        </div>
       </div>
     </div>
   </section>

@@ -21,11 +21,13 @@ export type Batch = {
 
 export type Pull = {
   id: number;
-  sequence: number;
-  sold_at: string;
-  batch: Batch;
+  sequence?: number;
+  sold_at?: string;
+  // Optional: PullCard.vue only ever reads pull.card.* — the Live Pool feed
+  // (unallocated in-stock cards) has no real pack/batch/store to point to.
+  batch?: Batch;
   card: Card
-  store: Store;
+  store?: Store;
 };
 export type LiveCard = {
   name: string;
