@@ -10,6 +10,7 @@ use App\Services\PulseApi\PulseApiCardMapper;
 use App\Support\Money;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -24,6 +25,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use UnitEnum;
 
@@ -210,7 +212,7 @@ class CardInventoryResource extends Resource
                         'super' => 'Super',
                         'legendary' => 'Legendary',
                         'mythic' => 'Mythic',
-                        default => 'Unknown',
+                        default => 'Unbanded',
                     })
                     ->color(fn (?string $state) => match ($state) {
                         'common' => 'gray',
@@ -218,7 +220,7 @@ class CardInventoryResource extends Resource
                         'super' => 'primary',
                         'legendary' => 'warning',
                         'mythic' => 'danger',
-                        default => 'gray',
+                        default => 'danger',
                     }),
 
                 Tables\Columns\TextColumn::make('status')
@@ -269,7 +271,19 @@ class CardInventoryResource extends Resource
                         'super' => 'Super',
                         'legendary' => 'Legendary',
                         'mythic' => 'Mythic',
-                    ]),
+                        'unbanded' => 'Unbanded',
+                    ])
+                    // The 'unbanded' option has no literal column value to match —
+                    // it means rarity_band IS NULL — so this needs an explicit
+                    // query() override rather than SelectFilter's default
+                    // where(column, value) behaviour.
+                    ->query(function (Builder $query, array $data) {
+                        return match ($data['value'] ?? null) {
+                            null => $query,
+                            'unbanded' => $query->whereNull('rarity_band'),
+                            default => $query->where('rarity_band', $data['value']),
+                        };
+                    }),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'in_stock' => 'In stock',
@@ -315,10 +329,12 @@ class CardInventoryResource extends Resource
                             ->success()
                             ->send();
                     }),
+                static::markSoldAction(),
                 EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    static::markSoldBulkAction(),
                     DeleteBulkAction::make(),
                     ExportBulkAction::make()->exporter(SoldCardExporter::class),
                 ]),
@@ -331,6 +347,67 @@ class CardInventoryResource extends Resource
         return $timestamp
             ? $timestamp->diffForHumans().' ('.$timestamp->format('d M Y, H:i').')'
             : 'Never';
+    }
+
+    /**
+     * For a card sold in person (over the counter, at a show, etc.) rather
+     * than through a pack redemption — only ever an in_stock row, since an
+     * allocated card is committed to a specific pack/batch already; use
+     * BatchResource's "Swap a card" (CardSwapper) for that case instead, so
+     * the pack gets a replacement rather than being left pointing at a card
+     * that's no longer there.
+     */
+    public static function markSoldAction(): Action
+    {
+        return Action::make('markSold')
+            ->label('Mark as sold')
+            ->icon(Heroicon::OutlinedBanknotes)
+            ->color('gray')
+            ->visible(fn (CardInventory $record) => $record->status === 'in_stock')
+            ->requiresConfirmation()
+            ->modalHeading('Mark as sold')
+            ->modalDescription('Use this when a card was sold in person rather than through a pack — removes it from available stock immediately.')
+            ->action(function (CardInventory $record) {
+                $record->update([
+                    'status' => 'sold',
+                    'delisted_at' => now(),
+                    'delisted_by_user_id' => auth()->id(),
+                ]);
+
+                Notification::make()
+                    ->title('Marked as sold')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    public static function markSoldBulkAction(): BulkAction
+    {
+        return BulkAction::make('markSold')
+            ->label('Mark as sold')
+            ->icon(Heroicon::OutlinedBanknotes)
+            ->color('gray')
+            ->requiresConfirmation()
+            ->modalHeading('Mark as sold')
+            ->modalDescription('Use this when these cards were sold in person rather than through a pack. Any selected card that isn\'t currently in stock (e.g. already allocated to a batch) is left untouched.')
+            ->deselectRecordsAfterCompletion()
+            ->action(function (Collection $records) {
+                $inStock = $records->filter(fn (CardInventory $record) => $record->status === 'in_stock');
+
+                CardInventory::whereIn('id', $inStock->pluck('id'))->update([
+                    'status' => 'sold',
+                    'delisted_at' => now(),
+                    'delisted_by_user_id' => auth()->id(),
+                ]);
+
+                $skipped = $records->count() - $inStock->count();
+
+                Notification::make()
+                    ->title("{$inStock->count()} card(s) marked as sold")
+                    ->body($skipped > 0 ? "{$skipped} skipped — not currently in stock." : null)
+                    ->success()
+                    ->send();
+            });
     }
 
     // Rapid Intake is the only way cards enter inventory — no 'create' page/route.

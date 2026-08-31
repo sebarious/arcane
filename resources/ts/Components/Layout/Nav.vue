@@ -19,10 +19,10 @@
             {{ label }}
           </a>
         </div>
-        <Link :href="isLoggedIn ? '/seller' : '/apply'"
+        <Link :href="dashboardHref"
           class="text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-[#DCC175] text-black font-semibold hover:bg-[#e8d49a] transition-all duration-300"
           :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-          {{ isLoggedIn ? 'Seller Dashboard' : 'Become a Seller' }}
+          {{ dashboardLabel }}
         </Link>
       </div>
 
@@ -65,10 +65,10 @@
         </a>
       </nav>
       <div class="px-8 pb-12 pt-8">
-        <Link :href="isLoggedIn ? '/seller' : '/apply'" @click="close"
+        <Link :href="dashboardHref" @click="close"
           class="block w-full text-center py-4 bg-[#DCC175] text-black text-sm font-bold tracking-[0.2em] uppercase hover:bg-[#e8d49a] transition-colors"
           :style="{ borderRadius: '4px', fontFamily: 'Jost, sans-serif' }">
-          {{ isLoggedIn ? 'Seller Dashboard' : 'Become a Seller' }}
+          {{ dashboardLabel }}
         </Link>
       </div>
     </div>
@@ -85,6 +85,19 @@ const page = usePage();
 
 const isLoggedIn = computed( () => !!(page?.props?.auth as any)?.user );
 const isHome = computed( () => (page?.props?.route as any)?.name === 'home' );
+const userRole = computed( () => (page?.props?.auth as any)?.user?.role as string | undefined );
+
+// Admins land on the seller dashboard link too (there's no separate admin
+// nav entry here) — only an affiliate gets its own label/destination.
+const dashboardHref = computed( () => {
+  if ( ! isLoggedIn.value ) return '/apply';
+  return userRole.value === 'affiliate' ? '/affiliate' : '/seller';
+} );
+
+const dashboardLabel = computed( () => {
+  if ( ! isLoggedIn.value ) return 'Become a Seller';
+  return userRole.value === 'affiliate' ? 'Affiliate Dashboard' : 'Seller Dashboard';
+} );
 
 const NAV_LINKS = computed( (): [string, string, boolean][] => [
   ['Sell to Us', '/sell', !!(page?.props?.route as any)?.name?.startsWith('sell')],
