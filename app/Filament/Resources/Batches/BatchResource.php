@@ -717,7 +717,7 @@ class BatchResource extends Resource
                                 '#%d — %s (%s) — %s market',
                                 $pack->sequence_no,
                                 $pack->card?->card_name ?? 'No card assigned',
-                                $pack->card?->rarity_band ? ucfirst($pack->card->rarity_band) : 'unknown band',
+                                $pack->card?->rarity_band ? ucfirst($pack->card->rarity_band) : 'unbanded',
                                 $pack->card ? Money::format($pack->card->market_value_pence) : '—',
                             ),
                         ]))

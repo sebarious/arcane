@@ -210,7 +210,7 @@ class CardInventoryResource extends Resource
                         'super' => 'Super',
                         'legendary' => 'Legendary',
                         'mythic' => 'Mythic',
-                        default => 'Unknown',
+                        default => 'Unbanded',
                     })
                     ->color(fn (?string $state) => match ($state) {
                         'common' => 'gray',
@@ -218,7 +218,7 @@ class CardInventoryResource extends Resource
                         'super' => 'primary',
                         'legendary' => 'warning',
                         'mythic' => 'danger',
-                        default => 'gray',
+                        default => 'danger',
                     }),
 
                 Tables\Columns\TextColumn::make('status')
@@ -269,7 +269,19 @@ class CardInventoryResource extends Resource
                         'super' => 'Super',
                         'legendary' => 'Legendary',
                         'mythic' => 'Mythic',
-                    ]),
+                        'unbanded' => 'Unbanded',
+                    ])
+                    // The 'unbanded' option has no literal column value to match —
+                    // it means rarity_band IS NULL — so this needs an explicit
+                    // query() override rather than SelectFilter's default
+                    // where(column, value) behaviour.
+                    ->query(function (Builder $query, array $data) {
+                        return match ($data['value'] ?? null) {
+                            null => $query,
+                            'unbanded' => $query->whereNull('rarity_band'),
+                            default => $query->where('rarity_band', $data['value']),
+                        };
+                    }),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'in_stock' => 'In stock',

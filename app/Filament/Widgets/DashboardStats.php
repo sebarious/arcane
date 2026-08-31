@@ -75,6 +75,12 @@ class DashboardStats extends BaseWidget
             ->whereIn('status', ['submitted', 'under_review'])
             ->count();
 
+        // Priced outside every band's range (e.g. too expensive even for mythic) —
+        // these sit in stock but can never be picked up by batch generation
+        // (BatchGenerator's pool query requires rarity_band IS NOT NULL) until
+        // their price moves back into range or they're manually reclassified.
+        $unbandedCount = (clone $inStock)->whereNull('rarity_band')->count();
+
         // All cards regardless of status (in stock, allocated, dispatched, sold, ...).
         $totalCards = $this->applyGameFilter(CardInventory::query())->count();
 
@@ -91,6 +97,11 @@ class DashboardStats extends BaseWidget
                 ->color('info'),
 
             ...$bandStatCards,
+
+            Stat::make('Unbanded', number_format($unbandedCount))
+                ->description($unbandedCount > 0 ? 'Priced outside every band — can\'t be batched yet' : 'None right now')
+                ->descriptionIcon('heroicon-m-question-mark-circle')
+                ->color($unbandedCount > 0 ? 'danger' : 'success'),
 
             Stat::make('Live batches', $liveBatches)
                 ->description($draftBatches > 0 ? "{$draftBatches} draft awaiting generation" : 'No drafts pending')

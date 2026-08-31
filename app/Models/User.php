@@ -61,6 +61,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasOne(Store::class);
     }
 
+    public function affiliate(): HasOne
+    {
+        return $this->hasOne(Affiliate::class);
+    }
+
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ArcaneResetPasswordNotification($token));

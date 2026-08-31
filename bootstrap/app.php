@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthenticateStoreApiToken;
 use App\Http\Middleware\EnforceStoreDailyApiLimit;
+use App\Http\Middleware\EnsureAffiliateIsApproved;
 use App\Http\Middleware\EnsureKioskConfigured;
 use App\Http\Middleware\EnsureMarkAsSoldEnabled;
 use App\Http\Middleware\EnsureSellerStoreIsPublic;
@@ -53,6 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // existing aliases...
             'role' => RoleMiddleware::class,
             'store.live' => EnsureSellerStoreIsPublic::class,
+            'affiliate.approved' => EnsureAffiliateIsApproved::class,
             'store.api' => AuthenticateStoreApiToken::class,
             'store.api.daily-limit' => EnforceStoreDailyApiLimit::class,
             'store.api.mark-sold' => EnsureMarkAsSoldEnabled::class,

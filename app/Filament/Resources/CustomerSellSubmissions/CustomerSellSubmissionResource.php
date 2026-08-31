@@ -51,12 +51,18 @@ class CustomerSellSubmissionResource extends Resource
                     TextEntry::make('affiliate_display')
                         ->label('Affiliate code used')
                         ->visible(fn (?CustomerSellSubmission $record) => filled($record?->affiliate_code))
-                        ->state(fn (?CustomerSellSubmission $record) => sprintf(
-                            '%s (%s) — +%s bonus applied',
-                            $record?->affiliate_code,
-                            $record?->affiliateStore?->name ?? 'store not found',
-                            Money::format($record?->affiliate_bonus_pence),
-                        )),
+                        ->state(function (?CustomerSellSubmission $record) {
+                            $who = $record?->affiliate_store_id
+                                ? ($record->affiliateStore?->name ?? 'store not found')
+                                : ('Affiliate: '.($record?->affiliate?->user?->name ?? 'affiliate not found'));
+
+                            return sprintf(
+                                '%s (%s) — +%s bonus applied',
+                                $record?->affiliate_code,
+                                $who,
+                                Money::format($record?->affiliate_bonus_pence),
+                            );
+                        }),
                     Forms\Components\Repeater::make('items')
                         ->relationship()
                         ->label('')
