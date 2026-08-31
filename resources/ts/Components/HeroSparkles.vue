@@ -24,8 +24,14 @@ type Particle = {
   shape: 'diamond' | 'circle';
 };
 
+// Was 48 — each one carries its own `box-shadow` blur (see particleStyle
+// below), which is real paint/rasterization cost on top of the animation
+// itself, especially on weaker mobile GPUs. 24 reads almost identically as
+// ambient sparkle at the sizes these render at, for half the layers.
+const PARTICLE_COUNT = 24;
+
 const particles = computed<Particle[]>( () =>
-  Array.from( { length: 48 }, ( _, i ) => {
+  Array.from( { length: PARTICLE_COUNT }, ( _, i ) => {
     const left = Math.random() * 100;
     const startY = 80 + Math.random() * 20;
     const size = Math.random() * 4 + 1;
@@ -55,7 +61,10 @@ const particleStyle = ( p: Particle ) => ( {
   background: p.color,
   borderRadius: p.shape === 'circle' ? '50%' : '2px',
   '--sparkle-rotate': p.shape === 'diamond' ? '45deg' : '0deg',
-  boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
+  // Smaller shadow radius than the original (was size*3) — a large blurred
+  // shadow is more rasterization work per particle than a tight glow reads
+  // any less "sparkly" at the sizes these render at.
+  boxShadow: `0 0 ${p.size * 1.5}px ${p.color}`,
   '--sparkle-rise': `-${300 + Math.random() * 200}px`,
   animationDuration: p.dur * 1000 + 'ms',
   animationDelay: p.delay * 1000 + 'ms',

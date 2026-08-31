@@ -47,16 +47,16 @@
 
         <!-- CTAs -->
         <div class="grid grid-cols-2 md:flex gap-4 md:flex-wrap">
-          <Link href="/apply"
+          <Link href="/rips"
             class="text-center md:px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-          Apply Now
+          Buy a Pack
           </Link>
-          <a href="/stores"
+          <Link href="/apply"
             class="text-center md:px-8 py-3.5 text-[#DCC175]/70 text-xs tracking-[0.22em] uppercase border border-[#DCC175]/25 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-300 backdrop-blur-sm"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-            Browse stores
-          </a>
+            Apply Now
+          </Link>
         </div>
       </div>
 
@@ -144,6 +144,7 @@ onMounted( () => {
 onUnmounted( () => {
   window.removeEventListener( 'resize', checkMobile );
   window.removeEventListener( 'scroll', onScroll );
+  if ( rafId !== null ) cancelAnimationFrame( rafId );
 } );
 
 // --- mouse tracking replacement for useMotionValue --------------------------
@@ -151,12 +152,29 @@ onUnmounted( () => {
 const rawX = ref( 0 ); // -0.5 .. 0.5
 const rawY = ref( 0 );
 
+// getBoundingClientRect() forces a synchronous layout read — calling it on
+// every single mousemove event (which can fire dozens of times a second)
+// means forcing that reflow just as often. rAF-batching to once per frame
+// caps it at the display refresh rate instead, and only the latest pointer
+// position within that frame is kept (mousePos), not every intermediate one.
+let rafId: number | null = null;
+const mousePos = ref<{ x: number; y: number } | null>( null );
+
 const handleMouseMove = ( e: MouseEvent ) => {
-  const el = sectionRef.value;
-  if ( !el ) return;
-  const rect = el.getBoundingClientRect();
-  rawX.value = ( e.clientX - rect.left ) / rect.width - 0.5;
-  rawY.value = ( e.clientY - rect.top ) / rect.height - 0.5;
+  mousePos.value = { x: e.clientX, y: e.clientY };
+
+  if ( rafId !== null ) return;
+
+  rafId = requestAnimationFrame( () => {
+    rafId = null;
+
+    const el = sectionRef.value;
+    if ( !el || !mousePos.value ) return;
+
+    const rect = el.getBoundingClientRect();
+    rawX.value = ( mousePos.value.x - rect.left ) / rect.width - 0.5;
+    rawY.value = ( mousePos.value.y - rect.top ) / rect.height - 0.5;
+  } );
 };
 
 // --- styles and motion configs ----------------------------------------------

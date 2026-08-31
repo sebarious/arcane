@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import AppRoot from './Components/AppRoot.vue';
+import ClientOnly from './Components/ClientOnly.vue';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Arcane';
 
@@ -47,7 +48,8 @@ createServer(
         app
           .use( plugin )
           .use( ZiggyVue )
-          .use( MotionPlugin );
+          .use( MotionPlugin )
+          .component( 'ClientOnly', ClientOnly );
 
         return app;
       },

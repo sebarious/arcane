@@ -7,6 +7,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from 'ziggy-js';
 import { MotionPlugin } from '@vueuse/motion';
 import AppRoot from './Components/AppRoot.vue';
+import ClientOnly from './Components/ClientOnly.vue';
 
 createInertiaApp( {
     title: ( title ) => ( title ? `${title} · Arcane` : 'Arcane' ),
@@ -30,6 +31,7 @@ createInertiaApp( {
             .use( ZiggyVue )
             .use( MotionPlugin )
             .component( 'Link', Link )
+            .component( 'ClientOnly', ClientOnly )
             .mount( el );
     },
 

@@ -40,7 +40,10 @@ const blobs = [
     xPath: [0, 120, -60, 40, 0],
     yPath: [0, -80, 110, -40, 0],
     dur: 18,
-    blur: 160,
+    // 160px was expensive to rasterize on an 820px layer, especially on
+    // weaker mobile GPUs — 90px reads as effectively the same soft glow at
+    // the sizes/opacity this renders at, for meaningfully less blur work.
+    blur: 90,
   },
   // ...rest
 ];
