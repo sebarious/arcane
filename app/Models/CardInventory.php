@@ -76,6 +76,23 @@ class CardInventory extends Model
     }
 
     /**
+     * Once a card leaves the available() pool — allocated to a pack,
+     * dispatched, sold, written off, anything other than sitting unclaimed
+     * in stock — its rarity_band is frozen for good. A pack sealed and
+     * promised to a customer as "common" must never quietly become "rare"
+     * days later just because the live market price drifted; the band
+     * printed on the card list is the one that's owed. market_value_pence
+     * itself is unaffected by this — it can keep refreshing for reporting
+     * purposes, this only protects the band classification. Checked by
+     * every price-sync write path (CardPriceSyncer, PulseApiPriceProvider,
+     * the manual "edit market value" admin form) before touching the band.
+     */
+    public function isBandLocked(): bool
+    {
+        return ! ($this->status === 'in_stock' && $this->pack_id === null);
+    }
+
+    /**
      * Chaos storage: a card's physical spot is purely its alphabetical rank
      * (name, then set, then id to break ties) among still-in-box cards in its
      * lot — see App\Services\Batches\PickingSheetGenerator. Used wherever a

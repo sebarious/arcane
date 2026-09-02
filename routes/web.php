@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BatchQrSheetController;
 use App\Http\Controllers\Catalogue\PageController as CataloguePageController;
+use App\Http\Controllers\CreditNotePdfController;
 use App\Http\Controllers\Debug\ErrorPagePreviewController;
 use App\Http\Controllers\Debug\QrSheetPreviewController;
 use App\Http\Controllers\HomeController;
@@ -215,6 +216,8 @@ Route::middleware(['web', 'auth', 'role:affiliate'])
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/admin/invoices/{invoice}/pdf', InvoicePdfController::class)
         ->name('invoices.pdf');
+    Route::get('/admin/credit-notes/{creditNote}/pdf', CreditNotePdfController::class)
+        ->name('credit-notes.pdf');
 });
 
 // Not role:admin-gated — while impersonating, the authenticated user IS the

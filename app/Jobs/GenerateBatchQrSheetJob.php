@@ -45,7 +45,18 @@ class GenerateBatchQrSheetJob implements ShouldQueue
                 $qrPng = null;
                 if ($token) {
                     $url = route('qr.scan', ['token' => $token]);
-                    $png = QrCode::format('png')->size(56)->margin(0)->generate($url);
+                    // Printed size is unchanged (still displayed in a 52x52px box in
+                    // the blade view below) — what changed is the *source* PNG: it's
+                    // rendered at far higher native resolution (400 vs 56) so the
+                    // printed edges are crisp rather than a coarse bitmap stretched
+                    // through PDF rendering, and margin(4) bakes a real ISO-standard
+                    // quiet zone into the image itself rather than relying on the
+                    // surrounding table cell's thin, inconsistent padding (which on
+                    // one side is just body text a few px away). Dedicated handheld
+                    // CCD/laser scanners depend on a clean quiet zone to even locate
+                    // the code far more than a phone camera does — this was reported
+                    // as the cause of scan failures with those scanners in the field.
+                    $png = QrCode::format('png')->size(400)->margin(4)->generate($url);
                     $qrPng = 'data:image/png;base64,'.base64_encode($png);
                 }
 

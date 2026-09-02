@@ -20,7 +20,12 @@ class QrSheetPreviewController extends Controller
 
         $batch->load(['store', 'packs.card']);
 
-        $qrSize = (int) $request->integer('qr_size', 56);
+        // Defaults match GenerateBatchQrSheetJob's production values — see
+        // that job's own comment for why (real quiet zone + higher source
+        // resolution, same printed footprint). Both stay overridable here
+        // for testing other combinations against a real handheld scanner.
+        $qrSize = (int) $request->integer('qr_size', 400);
+        $qrMargin = (int) $request->integer('qr_margin', 4);
         $nameLimit = (int) $request->integer('name_limit', 14);
         $perPage = (int) $request->integer('per_page', 65);
 
@@ -31,7 +36,7 @@ class QrSheetPreviewController extends Controller
             // reflects the real sheet's row order.
             ->sortBy(fn ($pack) => strtolower(($pack->card?->set_name ?? '').'|'.($pack->card?->card_name ?? '')))
             ->values()
-            ->map(function ($pack) use ($qrSize, $nameLimit) {
+            ->map(function ($pack) use ($qrSize, $qrMargin, $nameLimit) {
                 $inv = $pack->card;
                 $token = $inv?->qr_token;
 
@@ -42,7 +47,7 @@ class QrSheetPreviewController extends Controller
 
                     $png = QrCode::format('png')
                         ->size($qrSize)
-                        ->margin(0)
+                        ->margin($qrMargin)
                         ->generate($url);
 
                     $qrPng = 'data:image/png;base64,' . base64_encode($png);

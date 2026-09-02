@@ -68,6 +68,11 @@ class Store extends Model
         return $this->hasMany(StoreCreditTransaction::class);
     }
 
+    public function creditNotes()
+    {
+        return $this->hasMany(CreditNote::class);
+    }
+
     public function apiRequestLogs()
     {
         return $this->hasMany(ApiRequestLog::class);

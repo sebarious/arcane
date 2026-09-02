@@ -28,23 +28,29 @@ class CardPriceSyncer
     {
         $ttlDays = $ttlDays ?? (int) config('services.pulseapi.price_ttl_days', 5);
 
-        $staleProductIds = (clone $scope)
+        $staleCards = (clone $scope)
             ->whereNotNull('product_id')
             ->where('price_locked', false)
             ->where(function (Builder $query) use ($ttlDays) {
                 $query->whereNull('synced_at')
                     ->orWhere('synced_at', '<', now()->subDays($ttlDays));
             })
-            ->pluck('product_id')
-            ->unique()
-            ->values()
-            ->all();
+            ->get(['id', 'product_id']);
 
-        if (empty($staleProductIds)) {
+        if ($staleCards->isEmpty()) {
             return 0;
         }
 
-        $fetched = $this->client->batchGetCards($staleProductIds);
+        // A product_id can be (and by design, per the duplicate-limit logic
+        // elsewhere, is) shared by rows well outside $scope too — a copy
+        // already allocated to a pack in a different batch, dispatched, or
+        // sold entirely unrelated to this refresh. Grouping ids by
+        // product_id here, and scoping every write below to exactly those
+        // ids, means this can never fan out and touch (let alone reband —
+        // see CardInventory::isBandLocked()) a row $scope never intended.
+        $idsByProductId = $staleCards->groupBy('product_id')->map(fn ($rows) => $rows->pluck('id'));
+
+        $fetched = $this->client->batchGetCards($idsByProductId->keys()->all());
 
         $updated = 0;
 
@@ -53,16 +59,18 @@ class CardPriceSyncer
                 continue;
             }
 
+            $ids = $idsByProductId->get($productId, collect());
+
+            if ($ids->isEmpty()) {
+                continue;
+            }
+
             $attributes = Arr::except(
                 PulseApiCardMapper::toInventoryAttributes($card),
                 'product_id',
             );
 
-            // A product_id can be shared by rows outside $scope too (e.g. a locked
-            // copy elsewhere in inventory) — re-excluding price_locked here, not just
-            // above, keeps a locked row's price untouched no matter which copy of it
-            // triggered this refresh.
-            $updated += CardInventory::where('product_id', $productId)
+            $updated += CardInventory::whereIn('id', $ids)
                 ->where('price_locked', false)
                 ->update($attributes);
         }
@@ -86,23 +94,30 @@ class CardPriceSyncer
      */
     public function forceRefresh(Collection $cards): array
     {
-        $productIds = $cards
-            ->reject(fn (CardInventory $c) => $c->price_locked)
-            ->pluck('product_id')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        // Same reasoning as syncStale() — scope every write to exactly the
+        // ids of the cards actually passed in, not the blanket product_id,
+        // so an unrelated row that happens to share it (already allocated/
+        // dispatched/sold elsewhere) is never touched by this call.
+        $idsByProductId = $cards
+            ->reject(fn (CardInventory $c) => $c->price_locked || ! $c->product_id)
+            ->groupBy('product_id')
+            ->map(fn ($rows) => $rows->pluck('id'));
 
-        if (empty($productIds)) {
+        if ($idsByProductId->isEmpty()) {
             return [];
         }
 
-        $fetched = $this->client->batchGetCards($productIds);
+        $fetched = $this->client->batchGetCards($idsByProductId->keys()->all());
         $verified = [];
 
         foreach ($fetched as $productId => $card) {
             if (! $card) {
+                continue;
+            }
+
+            $ids = $idsByProductId->get($productId, collect());
+
+            if ($ids->isEmpty()) {
                 continue;
             }
 
@@ -111,7 +126,7 @@ class CardPriceSyncer
                 'product_id',
             );
 
-            CardInventory::where('product_id', $productId)
+            CardInventory::whereIn('id', $ids)
                 ->where('price_locked', false)
                 ->update($attributes);
 

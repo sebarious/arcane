@@ -27,11 +27,23 @@ class EditCardInventory extends EditRecord
             $data['market_value_pence'] = Money::toPence($data['market_value_pounds']);
             unset($data['market_value_pounds']);
 
-            // A manual override — update OUR sync timestamp and re-band accordingly.
-            // Leave market_value_updated_at alone; it's PulseAPI's own timestamp, and we
-            // didn't just get a fresh calculation from them.
+            // A manual override — update OUR sync timestamp. Leave
+            // market_value_updated_at alone; it's PulseAPI's own timestamp,
+            // and we didn't just get a fresh calculation from them.
             $data['synced_at'] = now();
-            $data['rarity_band'] = (new RarityBander())->bandFor($data['market_value_pence']);
+
+            // Only re-band while the card is still unclaimed — this field is
+            // present (and its value re-submitted) on every save of this
+            // form regardless of which field an admin actually meant to
+            // change, so without this guard, simply opening and re-saving
+            // an already-dispatched/sold card (to fix an unrelated field
+            // like acquisition_lot) would silently reband it against
+            // whatever the market value had already drifted to. Once
+            // locked, the rarity_band <select> above is the only way to
+            // deliberately change it. See CardInventory::isBandLocked().
+            if (! $this->record->isBandLocked()) {
+                $data['rarity_band'] = (new RarityBander)->bandFor($data['market_value_pence']);
+            }
         }
 
         return $data;

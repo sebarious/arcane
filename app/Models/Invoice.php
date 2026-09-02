@@ -47,6 +47,11 @@ class Invoice extends Model
         return $this->hasMany(StoreCreditTransaction::class);
     }
 
+    public function creditNotes()
+    {
+        return $this->hasMany(CreditNote::class);
+    }
+
     /** total_pence stays the true invoice value — this is what's actually still owed. */
     public function getAmountDuePenceAttribute(): int
     {
