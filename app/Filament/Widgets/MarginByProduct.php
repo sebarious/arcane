@@ -10,6 +10,8 @@ class MarginByProduct extends ChartWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 9;
+
     protected ?string $heading = 'Average margin % by product (committed batches)';
 
     protected int|string|array $columnSpan = 'full';

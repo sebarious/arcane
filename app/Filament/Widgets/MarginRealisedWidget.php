@@ -11,6 +11,8 @@ class MarginRealisedWidget extends BaseWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 5;
+
     protected ?string $heading = 'Margin realised vs unrealised';
 
     protected function getStats(): array

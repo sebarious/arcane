@@ -10,6 +10,8 @@ class InventoryByBand extends ChartWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 7;
+
     protected ?string $heading = 'Inventory value by rarity';
 
     protected ?string $description = 'Sum of market value of in-stock cards per band';

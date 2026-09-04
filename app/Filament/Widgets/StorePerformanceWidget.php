@@ -13,6 +13,8 @@ class StorePerformanceWidget extends BaseWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 10;
+
     protected static ?string $heading = 'Store performance (last 30 days)';
 
     protected int|string|array $columnSpan = 'full';

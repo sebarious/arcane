@@ -11,6 +11,8 @@ class PacksSoldChart extends ChartWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 6;
+
     protected ?string $heading = 'Packs sold (last 30 days)';
 
     protected int|string|array $columnSpan = 'full';

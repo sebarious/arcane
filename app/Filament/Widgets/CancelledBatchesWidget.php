@@ -11,6 +11,8 @@ use Filament\Support\Icons\Heroicon;
 
 class CancelledBatchesWidget extends BaseWidget
 {
+    protected static ?int $sort = 3;
+
     protected static ?string $heading = 'Cancelled batches';
 
     protected int|string|array $columnSpan = 'full';

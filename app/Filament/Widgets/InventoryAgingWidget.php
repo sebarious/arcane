@@ -11,6 +11,8 @@ class InventoryAgingWidget extends ChartWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 8;
+
     protected ?string $heading = 'Inventory aging (in stock)';
 
     protected ?string $description = 'How long have cards been sitting in your stock?';

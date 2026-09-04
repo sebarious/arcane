@@ -13,6 +13,8 @@ class AttentionList extends BaseWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 4;
+
     protected static ?string $heading = 'Draft batches awaiting generation';
     protected int|string|array $columnSpan = 'full';
 

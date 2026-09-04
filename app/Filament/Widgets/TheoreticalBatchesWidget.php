@@ -25,6 +25,8 @@ class TheoreticalBatchesWidget extends BaseWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 2;
+
     protected ?string $heading = 'Theoretical batches remaining';
 
     protected function getStats(): array

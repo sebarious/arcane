@@ -14,6 +14,8 @@ class DashboardStats extends BaseWidget
 {
     use HasGameFilter;
 
+    protected static ?int $sort = 1;
+
     protected ?string $heading = 'Business at a glance';
 
     protected const BAND_COLORS = [

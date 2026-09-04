@@ -56,8 +56,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                TheoreticalBatchesWidget::class,
                 DashboardStats::class,
+                TheoreticalBatchesWidget::class,
                 CancelledBatchesWidget::class,
                 AttentionList::class,
                 MarginRealisedWidget::class,
