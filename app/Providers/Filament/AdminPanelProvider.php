@@ -11,6 +11,7 @@ use App\Filament\Widgets\MarginByProduct;
 use App\Filament\Widgets\MarginRealisedWidget;
 use App\Filament\Widgets\PacksSoldChart;
 use App\Filament\Widgets\StorePerformanceWidget;
+use App\Filament\Widgets\TheoreticalBatchesWidget;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -56,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 DashboardStats::class,
+                TheoreticalBatchesWidget::class,
                 CancelledBatchesWidget::class,
                 AttentionList::class,
                 MarginRealisedWidget::class,
