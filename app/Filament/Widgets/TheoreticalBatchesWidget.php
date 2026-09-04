@@ -6,6 +6,7 @@ use App\Enums\BatchType;
 use App\Enums\Game;
 use App\Filament\Widgets\Concerns\HasGameFilter;
 use App\Models\CardInventory;
+use App\Services\Batches\BatchDesign;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -28,13 +29,13 @@ class TheoreticalBatchesWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $game = $this->gameFilter ?? Game::Pokemon->value;
+        $game = Game::from($this->gameFilter ?? Game::Pokemon->value);
 
         $duplicateLimits = config('banding.duplicate_limits', []);
 
         $stockByBand = CardInventory::query()
             ->available()
-            ->where('game', $game)
+            ->where('game', $game->value)
             ->whereNotNull('rarity_band')
             ->selectRaw('rarity_band, product_id, COUNT(*) as qty')
             ->groupBy('rarity_band', 'product_id')
@@ -44,7 +45,7 @@ class TheoreticalBatchesWidget extends BaseWidget
         $stats = [];
 
         foreach (BatchType::cases() as $type) {
-            $distribution = config("banding.distribution.{$game}.{$type->value}", []);
+            $distribution = config("banding.distribution.{$game->value}.{$type->value}", []);
 
             if (empty($distribution)) {
                 continue;
@@ -69,10 +70,11 @@ class TheoreticalBatchesWidget extends BaseWidget
             }
 
             $theoreticalBatches ??= 0;
+            $packCount = BatchDesign::packCount($game, $type);
 
             $stats[] = Stat::make($type->label(), number_format($theoreticalBatches))
                 ->description($theoreticalBatches > 0
-                    ? "Enough stock for {$theoreticalBatches} more ({$type->packCount()} packs each)"
+                    ? "Enough stock for {$theoreticalBatches} more ({$packCount} packs each)"
                     : 'Not enough stock for another batch')
                 ->descriptionIcon('heroicon-m-cube')
                 ->color($theoreticalBatches > 0 ? 'success' : 'danger');
