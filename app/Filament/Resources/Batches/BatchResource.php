@@ -19,6 +19,7 @@ use App\Services\Batches\BatchGenerator;
 use App\Services\Batches\BatchMerger;
 use App\Services\Batches\BatchReroller;
 use App\Services\Batches\CardSwapper;
+use App\Services\Batches\PremadeBatchAssigner;
 use App\Support\Money;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -62,7 +63,7 @@ class BatchResource extends Resource
                         ->relationship('store', 'name')
                         ->searchable()
                         ->preload()
-                        ->required(),
+                        ->helperText('Leave blank to create a premade batch — generate its cards now and assign a store later.'),
                     Forms\Components\Select::make('game')
                         ->label('Game')
                         ->options(collect(Game::cases())->mapWithKeys(
@@ -216,7 +217,11 @@ class BatchResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('reference')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('store.name')->label('Store')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('store.name')
+                    ->label('Store')
+                    ->placeholder('Unassigned (premade)')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('game')
                     ->label('Game')
                     ->badge()
@@ -322,6 +327,16 @@ class BatchResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
+                Tables\Filters\TernaryFilter::make('store_id')
+                    ->label('Store assignment')
+                    ->placeholder('All batches')
+                    ->trueLabel('Assigned to a store')
+                    ->falseLabel('Unassigned (premade pool)')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('store_id'),
+                        false: fn (Builder $query) => $query->whereNull('store_id'),
+                        blank: fn (Builder $query) => $query,
+                    ),
                 Tables\Filters\Filter::make('committed_between')
                     ->label('Sold between')
                     ->schema([
@@ -384,6 +399,112 @@ class BatchResource extends Resource
     }
 
     /**
+     * Fills a store-bound request that has no cards yet straight from the
+     * premade pool (see PremadeBatchAssigner::fulfillRequest) instead of
+     * running generateAction()'s fresh generation for it — lets a request get
+     * fulfilled instantly from stock that was picked ahead of time.
+     */
+    public static function assignPremadeAction(): Action
+    {
+        return Action::make('assignPremade')
+            ->label('Assign premade batch…')
+            ->icon(Heroicon::OutlinedArchiveBoxArrowDown)
+            ->color('primary')
+            ->visible(fn (Batch $record) => $record->status === 'draft' && $record->store_id !== null)
+            ->modalHeading('Fulfil from a premade batch')
+            ->modalDescription('Instead of generating fresh cards for this request, pull an already-generated batch from the unassigned premade pool. This batch keeps its own reference and verification — the premade batch\'s cards move onto it, and the (now empty) premade batch is removed.')
+            ->schema(fn (Batch $record) => [
+                Forms\Components\Select::make('premade_batch_id')
+                    ->label('Premade batch')
+                    ->options(fn () => Batch::query()
+                        ->whereNull('store_id')
+                        ->where('status', 'pending_review')
+                        ->where('game', $record->game->value)
+                        ->where('type', $record->type->value)
+                        ->orderBy('created_at')
+                        ->get()
+                        ->mapWithKeys(fn (Batch $b) => [
+                            $b->id => sprintf(
+                                '%s — generated %s — profit %s',
+                                $b->reference,
+                                $b->created_at->diffForHumans(),
+                                Money::format($b->margin_pence),
+                            ),
+                        ]))
+                    ->searchable()
+                    ->required()
+                    ->helperText(fn (Batch $record) => "Only unassigned, already-generated {$record->type->label()} batches for {$record->game->label()} are shown."),
+            ])
+            ->action(function (Batch $record, array $data, PremadeBatchAssigner $assigner) {
+                $premade = Batch::findOrFail($data['premade_batch_id']);
+                $premadeReference = $premade->reference;
+
+                try {
+                    $assigner->fulfillRequest($record, $premade);
+                } catch (\RuntimeException $e) {
+                    Notification::make()
+                        ->title('Could not assign')
+                        ->body($e->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                GenerateBatchQrSheetJob::dispatch($record->id);
+
+                Notification::make()
+                    ->title('Premade batch assigned')
+                    ->body("{$record->reference} now has cards from {$premadeReference}. QR sheet regeneration has been queued.")
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * Hands a ready, unassigned premade batch straight to a store — no
+     * request involved (see PremadeBatchAssigner::assignToStore). Once
+     * assigned it enters the normal invoice -> publish flow from here.
+     */
+    public static function assignToStoreAction(): Action
+    {
+        return Action::make('assignToStore')
+            ->label('Assign to store')
+            ->icon(Heroicon::OutlinedBuildingStorefront)
+            ->color('primary')
+            ->visible(fn (Batch $record) => $record->store_id === null && $record->status === 'pending_review')
+            ->modalHeading('Assign to a store')
+            ->modalDescription('This premade batch already has cards generated and sealed — picking a store here moves it straight into that store\'s invoice → publish flow.')
+            ->schema([
+                Forms\Components\Select::make('store_id')
+                    ->label('Store')
+                    ->relationship('store', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+            ])
+            ->action(function (Batch $record, array $data, PremadeBatchAssigner $assigner) {
+                try {
+                    $assigner->assignToStore($record, (int) $data['store_id']);
+                } catch (\RuntimeException $e) {
+                    Notification::make()
+                        ->title('Could not assign')
+                        ->body($e->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Batch assigned')
+                    ->body("Now belongs to {$record->store->name} — send the invoice when you're ready.")
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
      * Second step: raises the invoice and emails the seller — see
      * BatchGenerator::sendInvoice(). Doesn't touch the storefront; that's
      * publishAction()'s job, once the invoice this raises has actually been
@@ -395,7 +516,7 @@ class BatchResource extends Resource
             ->label('Send invoice')
             ->icon(Heroicon::OutlinedPaperAirplane)
             ->color('warning')
-            ->visible(fn (Batch $record) => $record->status === 'pending_review')
+            ->visible(fn (Batch $record) => $record->status === 'pending_review' && $record->store_id !== null)
             ->requiresConfirmation()
             ->modalHeading('Send invoice')
             ->modalDescription('Generates the invoice and emails it to the seller. The batch stays off the storefront until it\'s marked paid and put live.')
@@ -617,7 +738,7 @@ class BatchResource extends Resource
             ->color('gray')
             ->url(fn (Batch $record) => route('stores.lists.verify', ['store' => $record->store, 'batch' => $record]))
             ->openUrlInNewTab()
-            ->visible(fn (Batch $record) => $record->isVerificationRevealed());
+            ->visible(fn (Batch $record) => $record->isVerificationRevealed() && $record->store_id !== null);
     }
 
     public static function retryAction(): Action

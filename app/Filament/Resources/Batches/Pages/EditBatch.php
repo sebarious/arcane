@@ -16,6 +16,8 @@ class EditBatch extends EditRecord
         // longer fit on screen. Each keeps a tooltip so it's still discoverable.
         return [
             BatchResource::generateAction()->iconButton()->tooltip('Generate cards'),
+            BatchResource::assignPremadeAction()->iconButton()->tooltip('Assign premade batch'),
+            BatchResource::assignToStoreAction()->iconButton()->tooltip('Assign to store'),
             BatchResource::sendInvoiceAction()->iconButton()->tooltip('Send invoice'),
             BatchResource::publishAction()->iconButton()->tooltip('Put it live'),
             BatchResource::markShippedAction()->iconButton()->tooltip('Mark as shipped'),
