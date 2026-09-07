@@ -40,6 +40,13 @@
       margin-top: 2px;
     }
 
+    .brand-address {
+      font-size: 9px;
+      color: #a3a3a3;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
     .invoice-title {
       font-size: 16px;
       font-weight: bold;
@@ -189,6 +196,12 @@
         <td>
           <div class="brand-name">ARCANE</div>
           <div class="brand-tagline">Authenticated Pokemon mystery packs</div>
+          <div class="brand-address">
+            ARCANE TCG<br>
+            22 Somers Road<br>
+            Rugby<br>
+            CV22 7DH
+          </div>
         </td>
         <td class="right">
           <div class="invoice-title">INVOICE</div>

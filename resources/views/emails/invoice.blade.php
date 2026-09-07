@@ -65,6 +65,11 @@
       Best regards,<br>
       The Arcane Team
     </p>
+
+    <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+      ARCANE TCG<br>
+      22 Somers Road, Rugby, CV22 7DH
+    </p>
   </div>
 </body>
 
