@@ -22,10 +22,10 @@ return [
       ],
       BatchType::Diamond->value => [
         'common'    => 420,
-        'rare'      => 60,
+        'rare'      => 63,
         'super'     => 8,
-        'legendary' => 10,
-        'mythic'    => 2,
+        'legendary' => 6,
+        'mythic'    => 3,
       ],
     ],
 
@@ -65,10 +65,10 @@ return [
       ],
       BatchType::Diamond->value => [
         'common'    => ['tier_1' => 140, 'tier_2' => 140, 'tier_3' => 140],
-        'rare'      => ['tier_1' => 40,  'tier_2' => 10,  'tier_3' => 10],
+        'rare'      => ['tier_1' => 30,  'tier_2' => 18,  'tier_3' => 15],
         'super'     => ['tier_1' => 3,   'tier_2' => 3,   'tier_3' => 2],
-        'legendary' => ['tier_1' => 6,   'tier_2' => 2,   'tier_3' => 2],
-        'mythic'    => ['tier_1' => 1,   'tier_2' => 0,   'tier_3' => 1]
+        'legendary' => ['tier_1' => 3,   'tier_2' => 1,   'tier_3' => 2],
+        'mythic'    => ['tier_1' => 2,   'tier_2' => 1,   'tier_3' => 0]
         // 2 mythics — deliberately left unconfigured, which falls back to the
         // auto-split (1 from tier_1, 1 from tier_3): one guaranteed big pull
         // plus one modest one. Confirmed safe on the numbers — even the

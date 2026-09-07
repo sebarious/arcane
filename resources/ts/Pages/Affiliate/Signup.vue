@@ -1,32 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import axios from 'axios';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { RefreshCw } from 'lucide-vue-next';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
-
-const props = defineProps<{ suggestedCode: string }>();
 
 const form = useForm({
   name: '',
   email: '',
   password: '',
   password_confirmation: '',
-  affiliate_code: props.suggestedCode,
 });
-
-const regenerating = ref(false);
-
-async function regenerateCode() {
-  regenerating.value = true;
-  try {
-    const { data } = await axios.get('/affiliate/signup/suggest-code');
-    form.affiliate_code = data.code;
-  } finally {
-    regenerating.value = false;
-  }
-}
 
 const submit = () => {
   form.post('/affiliate/signup');
@@ -119,23 +101,6 @@ const submit = () => {
                   class="w-full bg-transparent border-none outline-none text-[15px] text-white font-['Jost',sans-serif] placeholder:opacity-40 placeholder:text-white focus:ring-0 focus:outline-none" />
               </div>
             </div>
-          </div>
-
-          <div class="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
-            <label class="font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase">
-              Your affiliate code</label>
-            <div class="flex items-stretch bg-[#1a1628] border border-[#3d2f6e] rounded-[6px] shrink-0 w-full overflow-hidden">
-              <p class="flex-1 flex items-center px-[14px] font-['Cinzel',sans-serif] font-bold text-[18px] text-[#c9a84c] tracking-wide">
-                {{ form.affiliate_code }}
-              </p>
-              <button type="button" @click="regenerateCode" :disabled="regenerating"
-                class="flex items-center gap-2 px-4 border-l border-[#3d2f6e] text-xs text-[#a3a3a3] hover:text-white font-['Jost',sans-serif] font-semibold uppercase tracking-wide transition-colors disabled:opacity-50">
-                <RefreshCw :class="['size-3.5', { 'animate-spin': regenerating }]" />
-                Regenerate
-              </button>
-            </div>
-            <p v-if="form.errors.affiliate_code" class="text-[11px] text-red-400">{{ form.errors.affiliate_code }}</p>
-            <p v-else class="text-[11px] text-[#71717a]">Don't like it? Keep hitting regenerate until you find one you do.</p>
           </div>
 
           <button type="submit" @click="submit" :disabled="form.processing"

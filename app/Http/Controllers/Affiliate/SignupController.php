@@ -25,19 +25,7 @@ class SignupController extends Controller
 {
     public function show()
     {
-        return Inertia::render('Affiliate/Signup', [
-            'suggestedCode' => Affiliate::generateAffiliateCode(),
-        ]);
-    }
-
-    /**
-     * Lets the signup form's "Regenerate" button fetch a fresh suggestion
-     * without a full page reload — same generator, checked against the same
-     * uniqueness constraint, just called on demand instead of once at page load.
-     */
-    public function suggestCode()
-    {
-        return response()->json(['code' => Affiliate::generateAffiliateCode()]);
+        return Inertia::render('Affiliate/Signup');
     }
 
     public function store(Request $request)
@@ -46,12 +34,11 @@ class SignupController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', 'min:8'],
-            // Whatever the user last landed on via the regenerate button —
-            // re-checked here since another signup could in theory have
-            // claimed it in the meantime.
-            'affiliate_code' => ['required', 'string', 'max:30', 'unique:affiliates,affiliate_code'],
         ]);
 
+        // affiliate_code isn't collected here — Affiliate::booted() generates a
+        // placeholder on creation, and an admin sets the real one manually when
+        // approving the signup (see AffiliateResource's edit form).
         [$user, $affiliate] = DB::transaction(function () use ($data) {
             $user = User::create([
                 'name' => $data['name'],
@@ -63,7 +50,6 @@ class SignupController extends Controller
 
             $affiliate = Affiliate::create([
                 'user_id' => $user->id,
-                'affiliate_code' => strtoupper($data['affiliate_code']),
             ]);
 
             return [$user, $affiliate];

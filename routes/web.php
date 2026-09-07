@@ -193,7 +193,6 @@ Route::middleware(['web', 'auth', 'role:seller'])
 
 Route::middleware(['web', 'guest'])->group(function () {
     Route::get('/affiliate/signup', [AffiliateSignupController::class, 'show'])->name('affiliate.signup');
-    Route::get('/affiliate/signup/suggest-code', [AffiliateSignupController::class, 'suggestCode'])->name('affiliate.signup.suggest-code');
     Route::post('/affiliate/signup', [AffiliateSignupController::class, 'store'])->name('affiliate.signup.store');
 });
 

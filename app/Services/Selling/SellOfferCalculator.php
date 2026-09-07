@@ -57,4 +57,38 @@ class SellOfferCalculator
     {
         return $this->quote($marketValuePence) !== null;
     }
+
+    /**
+     * Human-facing summary of the buy percentages by market value, merging
+     * adjacent rarity bands that happen to share the same percentage (so a
+     * flat rate across several bands reads as one range) — feeds the /sell
+     * page's "what we pay" table rather than any offer calculation.
+     *
+     * @return list<array{min_pence: int, max_pence: int, percentage: float}>
+     */
+    public function bandSummary(): array
+    {
+        $thresholds = RarityBander::DEFAULT_THRESHOLDS;
+        $thresholds['mythic']['max'] = (int) config('selling.max_offer_price_pence', 100000);
+
+        $rows = [];
+
+        foreach ($thresholds as $band => ['min' => $min, 'max' => $max]) {
+            $percentage = (float) (config("selling.offer_percentages.{$band}") ?? 0);
+            if ($percentage <= 0) {
+                continue;
+            }
+
+            $lastIndex = array_key_last($rows);
+            if ($lastIndex !== null && $rows[$lastIndex]['percentage'] === $percentage) {
+                $rows[$lastIndex]['max_pence'] = $max;
+
+                continue;
+            }
+
+            $rows[] = ['min_pence' => $min, 'max_pence' => $max, 'percentage' => $percentage];
+        }
+
+        return $rows;
+    }
 }

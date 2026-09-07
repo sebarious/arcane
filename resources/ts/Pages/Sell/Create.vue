@@ -5,7 +5,16 @@ import { Head, useForm } from '@inertiajs/vue3';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
 
-const props = defineProps<{ affiliateCode?: string | null }>();
+interface BuyPercentageBand {
+  min_pence: number;
+  max_pence: number;
+  percentage: number;
+}
+
+const props = defineProps<{
+  affiliateCode?: string | null;
+  buyPercentageBands: BuyPercentageBand[];
+}>();
 
 interface SearchResult {
   product_id: string;
@@ -157,6 +166,19 @@ function formatPence( pence: number | null ): string {
   return '£' + ( pence / 100 ).toFixed( 2 );
 }
 
+function formatBandRange( band: BuyPercentageBand, index: number ): string {
+  const min = ( band.min_pence / 100 ).toFixed( 2 );
+  const max = ( band.max_pence / 100 ).toFixed( 2 );
+
+  if ( index === 0 ) return `Up to £${ max }`;
+  if ( index === props.buyPercentageBands.length - 1 ) return `£${ min }+`;
+  return `£${ min } – £${ max }`;
+}
+
+function formatBandPercentage( band: BuyPercentageBand ): string {
+  return `${ Math.round( band.percentage * 100 ) }%`;
+}
+
 function boostedPence( pence: number | null ): number | null {
   if ( pence === null || ! affiliateValid.value ) return null;
   return Math.round( pence * ( 1 + affiliateBonusPercentage.value ) );
@@ -251,6 +273,29 @@ function itemError( index: number ): string | undefined {
               {{ point }}
             </p>
           </div>
+        </div>
+
+        <!-- Buy percentages by card value -->
+        <div v-if=" buyPercentageBands.length "
+          class="bg-[#13101e] border border-[rgba(124,58,237,0.25)] rounded-[12px] p-[24px] relative shrink-0 w-full">
+          <p class="font-['Jost',sans-serif] font-semibold leading-[normal] text-[15px] text-white mb-[16px]">
+            What we pay, based on a card's market value
+          </p>
+          <div class="grid sm:grid-cols-3 gap-[12px]">
+            <div v-for=" ( band, index ) in buyPercentageBands " :key=" band.min_pence "
+              class="flex items-center justify-between gap-[12px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] px-[16px] py-[12px]">
+              <span class="font-['Jost',sans-serif] font-normal text-[14px] text-[#d8d3e0]">
+                {{ formatBandRange( band, index ) }}
+              </span>
+              <span class="font-['Cinzel',sans-serif] font-bold text-[18px] text-[#c9a84c]">
+                {{ formatBandPercentage( band ) }}
+              </span>
+            </div>
+          </div>
+          <p class="font-['Jost',sans-serif] font-normal text-[12px] text-[#71717a] mt-[12px]">
+            Based on live market value at the time we confirm your cards — quote a valid affiliate code above for
+            an extra {{ bonusPercentLabel || '5%' }}.
+          </p>
         </div>
 
         <div class="content-stretch space-y-8 lg:space-y-0 lg:flex lg:gap-[32px] lg:items-start relative lg:shrink-0 w-full">
