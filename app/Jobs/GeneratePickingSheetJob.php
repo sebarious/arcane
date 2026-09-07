@@ -49,6 +49,7 @@ class GeneratePickingSheetJob implements ShouldQueue
             'batch' => $batch,
             'lots' => $lots,
             'alreadyPickedLots' => $alreadyPickedLots,
+            'specialHandling' => $generator->specialHandling($batch),
         ])->setPaper('a4', 'portrait');
 
         $path = "picking-sheets/{$batch->reference}-".now()->format('YmdHis').'.pdf';

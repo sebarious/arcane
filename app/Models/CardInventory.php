@@ -16,6 +16,7 @@ class CardInventory extends Model
         'rarity_band', 'pack_id', 'qr_token', 'status',
         'allocated_sale_price_pence', 'margin_pence',
         'delisted_at', 'delisted_by_user_id', 'game', 'picked_at', 'reserved_until', 'reserved_by',
+        'on_ebay', 'in_card_wall',
         // PulseAPI card data
         'product_id', 'card_name', 'card_number', 'set_id', 'set_name', 'series',
         'release_date', 'material', 'promo_info', 'graded_by', 'grade',
@@ -33,6 +34,8 @@ class CardInventory extends Model
         'reserved_until' => 'datetime',
         'game' => Game::class,
         'price_locked' => 'boolean',
+        'on_ebay' => 'boolean',
+        'in_card_wall' => 'boolean',
     ];
 
     public function pack()

@@ -149,6 +149,34 @@ class PickingSheetGenerator
             ->values();
     }
 
+    /**
+     * Every card in this batch (picked or not) currently flagged "on eBay" or
+     * "in card wall" — a final can't-miss checklist appended to the end of
+     * the picking sheet, since either flag means the card may not actually
+     * be sitting in its lot's box where chaos storage assumes it is.
+     *
+     * @return Collection<int, array{card_inventory_id: int, card_name: string, set_name: ?string, card_number: ?string, pack_sequence: ?int, on_ebay: bool, in_card_wall: bool, product_badges: array}>
+     */
+    public function specialHandling(Batch $batch): Collection
+    {
+        return CardInventory::whereIn('pack_id', $batch->packs()->pluck('id'))
+            ->where(fn ($q) => $q->where('on_ebay', true)->orWhere('in_card_wall', true))
+            ->with('pack')
+            ->get()
+            ->sortBy(fn (CardInventory $card) => $card->chaosSortKey())
+            ->values()
+            ->map(fn (CardInventory $card) => [
+                'card_inventory_id' => $card->id,
+                'card_name' => $card->card_name,
+                'set_name' => $card->set_name,
+                'card_number' => $card->card_number,
+                'pack_sequence' => $card->pack?->sequence_no,
+                'on_ebay' => $card->on_ebay,
+                'in_card_wall' => $card->in_card_wall,
+                'product_badges' => $card->product_badges,
+            ]);
+    }
+
     private function boxQuery(string $lot)
     {
         $query = $lot === '(no lot recorded)'

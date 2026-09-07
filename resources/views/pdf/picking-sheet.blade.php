@@ -103,6 +103,34 @@
     .lot.already-picked td {
       color: #777;
     }
+
+    .special-handling-heading {
+      font-size: 15px;
+      margin: 0 0 2px;
+      color: #a33;
+    }
+
+    .flag-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-radius: 3px;
+      padding: 2px 7px;
+      margin-right: 4px;
+    }
+
+    .flag-ebay {
+      color: #7a3a00;
+      background: #ffe0b3;
+      border: 1px solid #cc8400;
+    }
+
+    .flag-card-wall {
+      color: #0a3d7a;
+      background: #cfe3ff;
+      border: 1px solid #3d78cc;
+    }
   </style>
 </head>
 
@@ -196,6 +224,51 @@
       </table>
     </div>
     @endforeach
+  </div>
+  @endif
+
+  @if (isset($specialHandling) && $specialHandling->isNotEmpty())
+  <div class="new-page">
+    <h2 class="special-handling-heading">⚠ Special handling — check before shipping</h2>
+    <p class="subtitle">
+      These cards are currently marked as listed on eBay or on display in the card wall — they may not
+      actually be sitting in their lot's box. Pull them from where they're flagged (and delist/replace on
+      eBay if sold) before this batch ships.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Card</th>
+          <th>Set</th>
+          <th>Number</th>
+          <th>Pack #</th>
+          <th>Flags</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach ($specialHandling as $card)
+        <tr>
+          <td>
+            {{ $card['card_name'] }}
+            @foreach ($card['product_badges'] as $badge)
+            <span class="variant-badge">{{ $badge }}</span>
+            @endforeach
+          </td>
+          <td class="muted">{{ $card['set_name'] }}</td>
+          <td class="muted">{{ $card['card_number'] }}</td>
+          <td>{{ $card['pack_sequence'] }}</td>
+          <td>
+            @if ($card['on_ebay'])
+            <span class="flag-badge flag-ebay">On eBay</span>
+            @endif
+            @if ($card['in_card_wall'])
+            <span class="flag-badge flag-card-wall">Card Wall</span>
+            @endif
+          </td>
+        </tr>
+        @endforeach
+      </tbody>
+    </table>
   </div>
   @endif
 </body>

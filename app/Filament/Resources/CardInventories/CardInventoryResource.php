@@ -135,6 +135,14 @@ class CardInventoryResource extends Resource
                         ])
                         ->required()
                         ->default('in_stock'),
+
+                    Forms\Components\Toggle::make('on_ebay')
+                        ->label('On eBay')
+                        ->helperText('This physical card is currently listed on eBay — flagged on any picking sheet it appears on so staff know to check/delist it before shipping.'),
+
+                    Forms\Components\Toggle::make('in_card_wall')
+                        ->label('In card wall')
+                        ->helperText('This physical card is currently on display in the card wall rather than boxed — flagged on any picking sheet it appears on so staff know to pull it from there instead.'),
                 ]),
         ]);
     }
@@ -254,6 +262,14 @@ class CardInventoryResource extends Resource
                     ->falseColor('gray')
                     ->toggleable(),
 
+                Tables\Columns\ToggleColumn::make('on_ebay')
+                    ->label('On eBay')
+                    ->toggleable(),
+
+                Tables\Columns\ToggleColumn::make('in_card_wall')
+                    ->label('Card wall')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('acquisition_lot')
                     ->label('Lot')
                     ->toggleable(),
@@ -300,6 +316,10 @@ class CardInventoryResource extends Resource
                         ->distinct()
                         ->pluck('acquisition_lot', 'acquisition_lot')
                         ->all()),
+                Tables\Filters\TernaryFilter::make('on_ebay')
+                    ->label('On eBay'),
+                Tables\Filters\TernaryFilter::make('in_card_wall')
+                    ->label('In card wall'),
                 Tables\Filters\Filter::make('sold_between')
                     ->label('Sold between')
                     ->schema([
