@@ -16,8 +16,8 @@ return [
       BatchType::Ruby->value => [
         'label'                 => 'Ruby',
         'packs'                 => 250,
-        'price_per_pack_pence'  => 750,  // £7.50
-        'target_margin_on_cost' => 0.20, // 20%
+        'price_per_pack_pence'  => 775,  // £7.75
+        'target_margin_on_cost' => 0.22, // 22%
       ],
       BatchType::Diamond->value => [
         'label'                 => 'Diamond',

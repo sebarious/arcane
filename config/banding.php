@@ -14,11 +14,11 @@ return [
         'mythic'    => 1,
       ],
       BatchType::Ruby->value => [
-        'common'    => 216,
+        'common'    => 217,
         'rare'      => 20,
         'super'     => 8,
-        'legendary' => 5,
-        'mythic'    => 1,
+        'legendary' => 3,
+        'mythic'    => 2,
       ],
       BatchType::Diamond->value => [
         'common'    => 420,
@@ -57,11 +57,11 @@ return [
         'mythic'    => ['tier_1' => 0,  'tier_2' => 1,  'tier_3' => 0],
       ],
       BatchType::Ruby->value => [
-        'common'    => ['tier_1' => 72, 'tier_2' => 72, 'tier_3' => 72],
+        'common'    => ['tier_1' => 73, 'tier_2' => 72, 'tier_3' => 72],
         'rare'      => ['tier_1' => 7,  'tier_2' => 7,  'tier_3' => 6],
         'super'     => ['tier_1' => 3,  'tier_2' => 3,  'tier_3' => 2],
-        'legendary' => ['tier_1' => 2,  'tier_2' => 2,  'tier_3' => 1],
-        'mythic'    => ['tier_1' => 0,  'tier_2' => 1,  'tier_3' => 0],
+        'legendary' => ['tier_1' => 1,  'tier_2' => 1,  'tier_3' => 1],
+        'mythic'    => ['tier_1' => 1,  'tier_2' => 1,  'tier_3' => 0],
       ],
       BatchType::Diamond->value => [
         'common'    => ['tier_1' => 140, 'tier_2' => 140, 'tier_3' => 140],
