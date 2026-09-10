@@ -14,6 +14,7 @@ interface BuyPercentageBand {
 const props = defineProps<{
   affiliateCode?: string | null;
   buyPercentageBands: BuyPercentageBand[];
+  defaultAffiliateBonusPercentage: number;
 }>();
 
 interface SearchResult {
@@ -57,7 +58,7 @@ const affiliateApplying = ref( false );
 const affiliateValid = ref<boolean | null>( null );
 const affiliateError = ref( '' );
 const affiliateName = ref<string | null>( null );
-const affiliateBonusPercentage = ref( 0 );
+const affiliateBonusPercentage = ref( props.defaultAffiliateBonusPercentage );
 
 const bonusPercentLabel = computed( () => `${ Math.round( affiliateBonusPercentage.value * 100 ) }%` );
 
@@ -93,7 +94,7 @@ function clearAffiliateCode() {
   affiliateValid.value = null;
   affiliateName.value = null;
   affiliateError.value = '';
-  affiliateBonusPercentage.value = 0;
+  affiliateBonusPercentage.value = props.defaultAffiliateBonusPercentage;
 }
 
 // Arriving via a store's /a/{slug} link — prefill and validate straight away
@@ -294,7 +295,7 @@ function itemError( index: number ): string | undefined {
           </div>
           <p class="font-['Jost',sans-serif] font-normal text-[12px] text-[#71717a] mt-[12px]">
             Based on live market value at the time we confirm your cards — quote a valid affiliate code above for
-            an extra {{ bonusPercentLabel || '5%' }}.
+            an extra {{ bonusPercentLabel }}.
           </p>
         </div>
 
@@ -308,7 +309,7 @@ function itemError( index: number ): string | undefined {
             <div class="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
               <label
                 class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[13px] text-[rgba(255,255,255,0.35)] uppercase whitespace-nowrap">
-                Affiliate code <small class="normal-case">(optional — get {{ bonusPercentLabel || '5%' }} more)</small></label>
+                Affiliate code <small class="normal-case">(optional — get {{ bonusPercentLabel }} more)</small></label>
 
               <div class="flex gap-[12px] w-full max-w-md">
                 <div class="bg-[#1a1628] drop-shadow-[0px_0px_5px_rgba(124,58,237,0.15)] h-[48px] relative rounded-[6px] flex-1">

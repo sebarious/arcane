@@ -14,6 +14,7 @@ class SubmissionCreateController extends Controller
         return Inertia::render('Sell/Create', [
             'affiliateCode' => $request->query('affiliate'),
             'buyPercentageBands' => $calculator->bandSummary(),
+            'defaultAffiliateBonusPercentage' => (float) config('selling.affiliate_bonus_percentage', 0.05),
         ]);
     }
 }
