@@ -176,37 +176,37 @@
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-mythic"></span>Mythic</span>
-              <span class="text-white/50">1 <span class="text-white/80">· 0.4%</span></span>
+              <span class="text-white/50">2 <span class="text-white/80">· 0.8%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-mythic" style="width:0.4%"></div>
+              <div class="h-full rounded-full bar-mythic" style="width:0.8%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-legendary"></span>Legendary</span>
-              <span class="text-white/50">5 <span class="text-white/80">· 2.0%</span></span>
+              <span class="text-white/50">3 <span class="text-white/80">· 1.2%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-legendary" style="width:2.0%"></div>
+              <div class="h-full rounded-full bar-legendary" style="width:1.2%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-super"></span>Super</span>
-              <span class="text-white/50">8 <span class="text-white/80">· 3.2%</span></span>
+              <span class="text-white/50">5 <span class="text-white/80">· 2.0%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="h-full rounded-full bar-super" style="width:3.2%"></div>
+              <div class="h-full rounded-full bar-super" style="width:2.0%"></div>
             </div>
           </div>
           <div>
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
-              <span class="text-white/50">36 <span class="text-white/80">· 8%</span></span>
+              <span class="text-white/50">20 <span class="text-white/80">· 8%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
               <div class="h-full rounded-full bar-rare" style="width:8%"></div>
