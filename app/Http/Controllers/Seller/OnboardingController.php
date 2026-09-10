@@ -7,7 +7,6 @@ use App\Mail\SellerOnboardingReceivedMail;
 use App\Mail\SellerOnboardingSubmittedMail;
 use App\Models\Store;
 use App\Models\User;
-use App\Services\Stores\LogoProcessor;
 use Filament\Notifications\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -16,7 +15,7 @@ use Inertia\Inertia;
 /**
  * The one page reachable pre-store.live (see EnsureSellerStoreIsPublic) — a
  * seller lands here right after approval to submit their onboarding details
- * (bio, location, platforms, social links, logo), then sees a "submitted,
+ * (bio, location, platforms, social links), then sees a "submitted,
  * under review" holding state until an admin approves (StoreResource::
  * approveOnboardingAction()) and public_page_enabled flips.
  */
@@ -42,7 +41,6 @@ class OnboardingController extends Controller
                 'name' => $store->name,
                 'description' => $store->description,
                 'location' => $store->location,
-                'logo' => $store->logo,
                 'platforms' => collect($store->platforms ?? [])
                     ->filter(fn ($enabled) => (bool) $enabled)
                     ->keys()
@@ -64,13 +62,6 @@ class OnboardingController extends Controller
         $data = $request->validate([
             'description' => ['required', 'string', 'max:2000'],
             'location' => ['required', 'string', 'max:255'],
-            // The 2MB figure people are told is what we keep, not what we accept —
-            // LogoProcessor shrinks whatever comes in down to well under that
-            // regardless of source size, so the raw ceiling here just needs to
-            // clear a normal phone photo (matches public/.user.ini's raised
-            // upload_max_filesize, which would otherwise silently drop the file
-            // before Laravel — let alone LogoProcessor — ever sees it).
-            'logo' => ['nullable', 'image', 'max:10240'],
             'platforms' => ['nullable', 'array'],
             'platforms.*' => ['string', 'in:'.implode(',', self::PLATFORMS)],
             'social_links' => ['nullable', 'array'],
@@ -92,9 +83,6 @@ class OnboardingController extends Controller
             'platforms' => $platforms,
             'social_links' => $socialLinks,
             'onboarding_submitted_at' => now(),
-            ...($request->hasFile('logo')
-                ? ['logo' => app(LogoProcessor::class)->process($request->file('logo'))]
-                : []),
         ]);
 
         Mail::to($user->email)->send(new SellerOnboardingReceivedMail($store));

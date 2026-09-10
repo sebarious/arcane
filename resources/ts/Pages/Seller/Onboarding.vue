@@ -8,7 +8,6 @@ interface StoreDetails {
   name: string;
   description: string | null;
   location: string | null;
-  logo: string | null;
   platforms: string[];
   social_links: Record<string, string>;
 }
@@ -53,7 +52,6 @@ const SOCIAL_FIELDS: { key: string; label: string; placeholder: string }[] = [
 const form = useForm({
   description: props.store?.description ?? '',
   location: props.store?.location ?? '',
-  logo: null as File | null,
   platforms: [...( props.store?.platforms ?? [] )] as string[],
   social_links: SOCIAL_FIELDS.reduce(
     (acc, f) => ({ ...acc, [f.key]: props.store?.social_links[f.key] ?? '' }),
@@ -61,17 +59,8 @@ const form = useForm({
   ),
 });
 
-const logoPreview = ref<string | null>( props.store?.logo ?? null );
-
-function onLogoChange(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0] ?? null;
-  form.logo = file;
-  if (file) logoPreview.value = URL.createObjectURL(file);
-}
-
 function submit() {
   form.post('/seller/pending', {
-    forceFormData: true,
     preserveScroll: true,
   });
 }
@@ -152,25 +141,9 @@ function submit() {
           </p>
         </div>
 
-        <div class="grid lg:grid-cols-3 gap-6">
-          <!-- Logo -->
-          <div class="bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[12px] p-6 h-fit">
-            <p class="font-['Jost',sans-serif] font-semibold text-xs uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-4">Logo</p>
-            <div class="size-32 rounded-full bg-black mx-auto mb-4 overflow-hidden border border-[#3d2f6e]">
-              <img v-if="logoPreview" :src="logoPreview" :alt="store?.name" class="w-full h-full object-cover" />
-            </div>
-            <label class="block w-full text-center px-4 py-2 rounded-[6px] border border-[#3d2f6e] text-sm text-white font-['Jost',sans-serif] cursor-pointer hover:border-[#c9a84c] transition-colors">
-              Choose image
-              <input type="file" accept="image/*" class="hidden" @change="onLogoChange" />
-            </label>
-            <p v-if="form.errors.logo" class="text-xs text-red-400 mt-2">{{ form.errors.logo }}</p>
-            <p class="font-['Jost',sans-serif] text-[11px] text-[#71717a] mt-3 text-center">
-              Square, up to 2MB. We'll optimize it for you automatically.
-            </p>
-          </div>
-
+        <div class="grid gap-6">
           <!-- Details -->
-          <div class="lg:col-span-2 bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[12px] p-6">
+          <div class="bg-[#13101e] border border-[rgba(220,193,117,0.1)] rounded-[12px] p-6">
             <div class="mb-5">
               <label class="block font-['Jost',sans-serif] font-semibold text-xs uppercase tracking-wide text-[rgba(255,255,255,0.35)] mb-2">
                 Bio <span class="text-[#c9a84c]">*</span>
