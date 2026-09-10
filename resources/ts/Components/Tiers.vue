@@ -254,7 +254,7 @@
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-mythic"></span>Mythic</span>
-              <span class="text-white/50">2 <span class="text-white/80">· 0.6%</span></span>
+              <span class="text-white/50">3 <span class="text-white/80">· 0.6%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
               <div class="h-full rounded-full bar-mythic" style="width:0.6%"></div>
@@ -264,7 +264,7 @@
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-legendary"></span>Legendary</span>
-              <span class="text-white/50">10 <span class="text-white/80">· 1.2%</span></span>
+              <span class="text-white/50">6 <span class="text-white/80">· 1.2%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
               <div class="h-full rounded-full bar-legendary" style="width:1.2%"></div>
@@ -284,7 +284,7 @@
             <div class="flex items-center justify-between text-xs mb-1.5">
               <span class="flex items-center gap-2 text-white/80"><span
                   class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
-              <span class="text-white/50">60 <span class="text-white/80">· 12.6%</span></span>
+              <span class="text-white/50">63 <span class="text-white/80">· 12.6%</span></span>
             </div>
             <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
               <div class="h-full rounded-full bar-rare" style="width:12.6%"></div>
