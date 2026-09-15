@@ -48,7 +48,7 @@ return [
   'tier_distribution' => [
     Game::Pokemon->value => [
       BatchType::Sapphire->value => [
-        'common'    => ['tier_1' => 38, 'tier_2' => 38, 'tier_3' => 38],
+        'common'    => ['tier_1' => 45, 'tier_2' => 44, 'tier_3' => 25],
         'rare'      => ['tier_1' => 2,  'tier_2' => 2,  'tier_3' => 1],
         'super'     => ['tier_1' => 1,  'tier_2' => 1,  'tier_3' => 1],
         'legendary' => ['tier_1' => 1,  'tier_2' => 0,  'tier_3' => 1],
@@ -57,14 +57,14 @@ return [
         'mythic'    => ['tier_1' => 0,  'tier_2' => 1,  'tier_3' => 0],
       ],
       BatchType::Ruby->value => [
-        'common'    => ['tier_1' => 74, 'tier_2' => 73, 'tier_3' => 73],
+        'common'    => ['tier_1' => 100, 'tier_2' => 66, 'tier_3' => 50],
         'rare'      => ['tier_1' => 7,  'tier_2' => 7,  'tier_3' => 6],
         'super'     => ['tier_1' => 2,  'tier_2' => 2,  'tier_3' => 1],
         'legendary' => ['tier_1' => 1,  'tier_2' => 1,  'tier_3' => 1],
         'mythic'    => ['tier_1' => 1,  'tier_2' => 1,  'tier_3' => 0],
       ],
       BatchType::Diamond->value => [
-        'common'    => ['tier_1' => 140, 'tier_2' => 140, 'tier_3' => 140],
+        'common'    => ['tier_1' => 145, 'tier_2' => 160, 'tier_3' => 115],
         'rare'      => ['tier_1' => 30,  'tier_2' => 18,  'tier_3' => 15],
         'super'     => ['tier_1' => 3,   'tier_2' => 3,   'tier_3' => 2],
         'legendary' => ['tier_1' => 3,   'tier_2' => 1,   'tier_3' => 2],
