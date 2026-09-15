@@ -21,6 +21,7 @@ class EditBatch extends EditRecord
             BatchResource::sendInvoiceAction()->iconButton()->tooltip('Send invoice'),
             BatchResource::publishAction()->iconButton()->tooltip('Put it live'),
             BatchResource::markShippedAction()->iconButton()->tooltip('Mark as shipped'),
+            BatchResource::returnBatchAction()->iconButton()->tooltip('Mark as returned'),
             BatchResource::sendToWarehouseAction()->iconButton()->tooltip('Send to warehouse'),
             BatchResource::qrSheetAction()->iconButton()->tooltip('QR sheet'),
             BatchResource::regenerateQrSheetAction()->iconButton()->tooltip('Regenerate QR sheet'),

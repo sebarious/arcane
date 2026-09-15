@@ -78,4 +78,37 @@ class StoreCreditService
             return $toApply;
         });
     }
+
+    /**
+     * Gives back whatever credit deductForInvoice() previously applied to this
+     * invoice — used when an invoice is voided (e.g. a shipped batch gets
+     * returned) so the store doesn't permanently lose credit for a batch it
+     * never actually kept. Deliberately leaves the invoice's own
+     * credit_applied_pence/total_pence untouched — those stay the historical
+     * record of what was originally billed; the reversal is its own ledger
+     * entry, not a rewrite of the past. A no-op if nothing was ever applied.
+     */
+    public function reverseInvoiceCredit(Invoice $invoice, string $reason, ?User $performedBy = null): ?StoreCreditTransaction
+    {
+        if ($invoice->credit_applied_pence <= 0) {
+            return null;
+        }
+
+        return DB::transaction(function () use ($invoice, $reason, $performedBy) {
+            $locked = Store::query()->whereKey($invoice->store_id)->lockForUpdate()->firstOrFail();
+
+            $newBalance = $locked->credit_balance_pence + $invoice->credit_applied_pence;
+            $locked->update(['credit_balance_pence' => $newBalance]);
+
+            return StoreCreditTransaction::create([
+                'store_id'            => $locked->id,
+                'type'                => 'credit',
+                'amount_pence'        => $invoice->credit_applied_pence,
+                'balance_after_pence' => $newBalance,
+                'reason'              => $reason,
+                'invoice_id'          => $invoice->id,
+                'created_by_user_id'  => $performedBy?->id,
+            ]);
+        });
+    }
 }

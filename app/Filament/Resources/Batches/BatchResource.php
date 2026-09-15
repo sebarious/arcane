@@ -18,6 +18,7 @@ use App\Services\Batches\BatchDesign;
 use App\Services\Batches\BatchGenerator;
 use App\Services\Batches\BatchMerger;
 use App\Services\Batches\BatchReroller;
+use App\Services\Batches\BatchReturner;
 use App\Services\Batches\CardSwapper;
 use App\Services\Batches\PremadeBatchAssigner;
 use App\Support\Money;
@@ -633,6 +634,53 @@ class BatchResource extends Resource
                 Notification::make()
                     ->title('Seller notified')
                     ->body("Emailed {$record->store->contact_email} with tracking details.")
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * The store sent a shipped batch back — nothing sold, packs still sealed.
+     * Voids the invoice (reversing any wallet credit that was auto-applied to
+     * it, then issuing a credit note for whatever's still outstanding — see
+     * BatchReturner) and drops the batch back into the unassigned premade
+     * pool so it can be handed to a store again via assignToStoreAction()
+     * without regenerating anything.
+     */
+    public static function returnBatchAction(): Action
+    {
+        return Action::make('returnBatch')
+            ->label('Mark as returned')
+            ->icon(Heroicon::OutlinedArrowUturnLeft)
+            ->color('danger')
+            ->visible(fn (Batch $record) => $record->status === 'dispatched'
+                && ! $record->packs()->where('status', 'sold')->exists())
+            ->requiresConfirmation()
+            ->modalHeading('Mark this batch as returned')
+            ->modalDescription('Voids the invoice — reversing any wallet credit applied to it and issuing a credit note for anything still outstanding — and puts this batch back into the unassigned premade pool, ready to be assigned to a store again. Only use this for a clean return — nothing sold.')
+            ->schema([
+                Forms\Components\Textarea::make('reason')
+                    ->label('Reason')
+                    ->rows(2)
+                    ->maxLength(500)
+                    ->helperText('Recorded in this batch\'s admin notes and on the credit note, if one is issued.'),
+            ])
+            ->action(function (Batch $record, array $data, BatchReturner $returner) {
+                try {
+                    $returner->returnBatch($record, $data['reason'] ?: null, auth()->user());
+                } catch (\RuntimeException $e) {
+                    Notification::make()
+                        ->title('Could not mark as returned')
+                        ->body($e->getMessage())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Batch returned')
+                    ->body("{$record->reference} is unassigned and back in the premade pool. Its invoice has been voided.")
                     ->success()
                     ->send();
             });
