@@ -14,7 +14,7 @@ import { ShieldCheck, Globe } from 'lucide-vue-next';
 import PullsSlider from '@/Components/PullsSlider.vue';
 import Footer from '@/Components/Layout/Footer.vue';
 
-type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic';
+type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic' | 'chase';
 
 interface Store {
   id: number;

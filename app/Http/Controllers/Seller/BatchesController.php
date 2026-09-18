@@ -72,7 +72,7 @@ class BatchesController extends Controller
         $batch->load(['store', 'packs.card', 'invoice', 'mergedInto', 'mergeRequestBatch']);
 
         $bands = [];
-        foreach (['mythic', 'legendary', 'super', 'rare', 'common'] as $band) {
+        foreach (['chase', 'mythic', 'legendary', 'super', 'rare', 'common'] as $band) {
             $bandPacks = $batch->packs->filter(fn ($pack) => $pack->card?->rarity_band === $band);
 
             $bands[$band] = $bandPacks->map(function ($pack) {

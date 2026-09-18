@@ -30,7 +30,7 @@ class TestBatchController extends Controller
         $cardsByBand = collect($snapshot['cards'])->groupBy('band');
 
         $bands = [];
-        foreach (['mythic', 'legendary', 'super', 'rare', 'common'] as $band) {
+        foreach (['chase', 'mythic', 'legendary', 'super', 'rare', 'common'] as $band) {
             $cards = $cardsByBand->get($band, collect());
             $bands[$band] = [
                 'count' => $cards->count(),

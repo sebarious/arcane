@@ -11,12 +11,13 @@ class PackagingStock extends Model
 
     /**
      * Every row that should exist, seeded once in the create-table migration
-     * (bags/inserts) or a later one (toploaders/sleeves — see
-     * 2026_09_18_093000_add_toploaders_and_sleeves_to_packaging_stocks). Bags
-     * and inserts are deducted automatically by BatchGenerator; toploaders
-     * and sleeves are tracked the same way but only ever adjusted manually
-     * (see PackagingStockResource::adjustStockAction) — there's no per-batch
-     * formula for them.
+     * (bags/inserts) or a later one (toploaders/sleeves, then insert_chase —
+     * see the migrations dated 2026_09_18 and after). Bags and inserts
+     * (insert_chase included, once a rarity_band of 'chase' exists — see
+     * config/banding.php's Premium entry) are deducted automatically by
+     * BatchGenerator; toploaders and sleeves are tracked the same way but
+     * only ever adjusted manually (see PackagingStockResource::
+     * adjustStockAction) — there's no per-batch formula for them.
      */
     public const LABELS = [
         'bag' => 'Arcane bags',
@@ -25,6 +26,7 @@ class PackagingStock extends Model
         'insert_super' => 'Super inserts',
         'insert_legendary' => 'Legendary inserts',
         'insert_mythic' => 'Mythic inserts',
+        'insert_chase' => 'Chase inserts',
         'toploader' => 'Toploaders',
         'sleeve' => 'Sleeves',
     ];

@@ -122,6 +122,7 @@ class CardInventoryResource extends Resource
                             'super' => 'Super',
                             'legendary' => 'Legendary',
                             'mythic' => 'Mythic',
+                            'chase' => 'Chase',
                         ]),
 
                     Forms\Components\Select::make('status')
@@ -220,6 +221,7 @@ class CardInventoryResource extends Resource
                         'super' => 'Super',
                         'legendary' => 'Legendary',
                         'mythic' => 'Mythic',
+                        'chase' => 'Chase',
                         default => 'Unbanded',
                     })
                     ->color(fn (?string $state) => match ($state) {
@@ -228,6 +230,7 @@ class CardInventoryResource extends Resource
                         'super' => 'primary',
                         'legendary' => 'warning',
                         'mythic' => 'danger',
+                        'chase' => 'chase',
                         default => 'danger',
                     }),
 
@@ -287,6 +290,7 @@ class CardInventoryResource extends Resource
                         'super' => 'Super',
                         'legendary' => 'Legendary',
                         'mythic' => 'Mythic',
+                        'chase' => 'Chase',
                         'unbanded' => 'Unbanded',
                     ])
                     // The 'unbanded' option has no literal column value to match —

@@ -60,7 +60,7 @@ class BatchListController extends Controller
         $bands = [];
         $pulledBands = [];
 
-        foreach (['mythic', 'legendary', 'super', 'rare', 'common'] as $band) {
+        foreach (['chase', 'mythic', 'legendary', 'super', 'rare', 'common'] as $band) {
             $liveCards = $remaining[$band] ?? collect();
             $bands[$band] = [
                 'count' => $liveCards->count(),

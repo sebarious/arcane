@@ -24,6 +24,7 @@ class DashboardStats extends BaseWidget
         'super'     => 'primary',
         'legendary' => 'warning',
         'mythic'    => 'danger',
+        'chase'     => 'chase',
     ];
 
     protected function getStats(): array

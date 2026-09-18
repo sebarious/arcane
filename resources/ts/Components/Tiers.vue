@@ -7,7 +7,7 @@
         Flexible Selling <HoloText>Tiers</HoloText>
       </h2>
       <p class="text-base leading-relaxed text-white/80">
-        Built to Grow With You. Arcane offers three transparent pricing tiers designed to suit all sellers and buyers.
+        Built to Grow With You. Arcane offers four transparent pricing tiers designed to suit all sellers and buyers.
       </p>
     </div>
 
@@ -69,7 +69,7 @@
 
     </div> -->
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
       <!-- Sapphire -->
       <div
         class="card-sapphire p-8 border bg-[#0e0e1d]/60 relative overflow-hidden group rounded transition-colors duration-500">
@@ -302,6 +302,88 @@
           </div>
         </div>
       </div>
+
+      <!-- Premium -->
+      <div class="card-premium p-8 relative overflow-hidden group rounded">
+        <div
+          class="absolute inset-0 bg-gradient-to-br from-pink-500/0 to-amber-500/0 group-hover:from-pink-500/10 group-hover:to-amber-500/5 transition-all duration-500">
+        </div>
+
+        <span
+          class="premium-flag absolute top-0 right-0 px-3 py-1 text-[10px] font-bold tracking-[0.18em] uppercase text-white rounded-bl">
+          New
+        </span>
+
+        <div class="tier-chip-premium inline-flex items-center gap-2 px-3 py-1.5 rounded-md mb-6">
+          <span class="text-lg leading-none">👑</span>
+          <span class="text-[11px] font-bold tracking-[0.12em] uppercase text-white">Premium &mdash; The Ultimate
+            Chase</span>
+        </div>
+
+        <p class="text-sm text-white/80 leading-relaxed mb-6">
+          No commons at all — every pack is a hit, headlined by a single chase card.
+        </p>
+
+        <div class="space-y-3 border-t border-white/10 pt-6">
+          <div class="flex items-baseline justify-between">
+            <span class="text-[11px] text-white/50 tracking-[0.15em] uppercase">Batch Size</span>
+            <span class="text-sm text-white">500 packs</span>
+          </div>
+        </div>
+
+        <div class="space-y-3 border-t border-white/10 pt-6">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-chase"></span>Chase</span>
+              <span class="text-white/50">1 <span class="text-white/80">· 0.2%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full rounded-full bar-chase" style="width:0.2%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-mythic"></span>Mythic</span>
+              <span class="text-white/50">5 <span class="text-white/80">· 1.0%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full rounded-full bar-mythic" style="width:1%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-legendary"></span>Legendary</span>
+              <span class="text-white/50">24 <span class="text-white/80">· 4.8%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full rounded-full bar-legendary" style="width:4.8%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-super"></span>Super</span>
+              <span class="text-white/50">110 <span class="text-white/80">· 22%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full rounded-full bar-super" style="width:22%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="flex items-center gap-2 text-white/80"><span
+                  class="w-2 h-2 rounded-full dot-rare"></span>Rare</span>
+              <span class="text-white/50">360 <span class="text-white/80">· 72%</span></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full rounded-full bar-rare" style="width:72%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -351,6 +433,13 @@ import HoloText from './HoloText.vue';
   border: 1px solid rgba(210, 230, 255, 0.55);
   box-shadow: rgba(0, 0, 0, 0.6) 0px 4px 24px, rgba(200, 220, 255, 0.5) 0px 0px 18px;
 }
+.tier-chip-premium {
+  background: linear-gradient(120deg, #f59e0b, #ec4899, #a855f7, #f59e0b);
+  background-size: 300% 100%;
+  border: 1px solid rgba(236, 72, 153, 0.55);
+  box-shadow: rgba(0, 0, 0, 0.6) 0px 4px 24px, rgba(236, 72, 153, 0.5) 0px 0px 18px;
+  animation: gradientShift 5s ease infinite;
+}
 
 .card-sapphire {
   border-color: rgba(96, 165, 250, 0.25);
@@ -369,6 +458,36 @@ import HoloText from './HoloText.vue';
 }
 .card-diamond:hover {
   border-color: rgba(210, 230, 255, 0.55);
+}
+
+/* Premium is deliberately louder than the other three — it carries the only
+   chase slot, so it gets a moving gradient border (two backgrounds: the card
+   fill clipped to padding-box, the gradient to border-box) and a breathing
+   glow, rather than the flat border-colour treatment above. */
+.card-premium {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgba(14, 14, 29, 0.92), rgba(14, 14, 29, 0.92)) padding-box,
+    linear-gradient(120deg, #f59e0b, #ec4899, #a855f7, #f59e0b) border-box;
+  background-size: 100% 100%, 300% 100%;
+  animation: premium-border 6s linear infinite, premium-glow 3.5s ease-in-out infinite;
+}
+@keyframes premium-border {
+  from { background-position: 0% 0%, 0% 50%; }
+  to { background-position: 0% 0%, 300% 50%; }
+}
+@keyframes premium-glow {
+  0%, 100% {
+    box-shadow: 0 0 34px -10px rgba(236, 72, 153, 0.45), 0 0 70px -24px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 52px -8px rgba(236, 72, 153, 0.7), 0 0 96px -18px rgba(245, 158, 11, 0.45);
+  }
+}
+.premium-flag {
+  background: linear-gradient(120deg, #f59e0b, #ec4899, #a855f7, #f59e0b);
+  background-size: 300% 100%;
+  animation: gradientShift 5s ease infinite;
 }
 
 .rate-sapphire {
@@ -401,6 +520,16 @@ import HoloText from './HoloText.vue';
 .dot-mythic,
 .bar-mythic {
   background: #c9a84c;
+}
+.dot-chase {
+  background: #ec4899;
+}
+/* The one chase slot per Premium batch — a moving gradient rather than the
+   flat fills above, to match the card's own border treatment. */
+.bar-chase {
+  background: linear-gradient(90deg, #f59e0b, #ec4899, #a855f7, #f59e0b);
+  background-size: 300% 100%;
+  animation: gradientShift 3s linear infinite;
 }
 
 .price-card {

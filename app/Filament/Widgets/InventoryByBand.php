@@ -20,7 +20,7 @@ class InventoryByBand extends ChartWidget
 
     protected function getData(): array
     {
-        $bands = ['common', 'rare', 'super', 'legendary', 'mythic'];
+        $bands = ['common', 'rare', 'super', 'legendary', 'mythic', 'chase'];
 
         $data = $this->applyGameFilter(CardInventory::query()
             ->where('status', 'in_stock')

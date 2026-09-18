@@ -46,6 +46,9 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => '#512b74',
                 'gray' => Color::Slate,
+                // The chase rarity band (Premium batches only) — its own colour
+                // so it reads as a step above mythic's red rather than sharing it.
+                'chase' => Color::Pink,
             ])
             ->font('Inter')
             ->favicon(asset('images/logo.png'))

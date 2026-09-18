@@ -91,6 +91,11 @@ const RARITY_COLORS: Record<
     shimmer: 'rgba(201, 168, 76, 0.2)',
     badge: '#c9a84c',
   },
+  chase: {
+    glow: 'rgba(236,72,153,0.85)',
+    shimmer: 'rgba(236,72,153,0.18)',
+    badge: '#ec4899',
+  },
 };
 
 const colors = computed( () => RARITY_COLORS[props.pull.card.band] );

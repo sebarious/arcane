@@ -27,6 +27,14 @@ return [
         'legendary' => 6,
         'mythic'    => 3,
       ],
+      BatchType::Premium->value => [
+        'common'    => 0,
+        'rare'      => 360,
+        'super'     => 110,
+        'legendary' => 24,
+        'mythic'    => 5,
+        'chase'     => 1,
+      ],
     ],
 
     // Game::Magic->value, etc. can be customised later
@@ -76,6 +84,18 @@ return [
         // vs. ~40% for Sapphire (why Sapphire's mythic is pinned to tier_2
         // above) — so Diamond doesn't need reining in the same way.
       ],
+      BatchType::Premium->value => [
+        // No common slots at all (see distribution above), so no tier line
+        // needed here.
+        'rare'      => ['tier_1' => 120, 'tier_2' => 120, 'tier_3' => 120],
+        'super'     => ['tier_1' => 75,  'tier_2' => 18,  'tier_3' => 17],
+        'legendary' => ['tier_1' => 8,   'tier_2' => 8,   'tier_3' => 8],
+        'mythic'    => ['tier_1' => 3,   'tier_2' => 1,   'tier_3' => 1],
+        // Single chase card — deliberately left unconfigured, so it
+        // auto-splits (lands in tier_2, the middle third of the £450–£750
+        // chase range — see CandidateSelector::autoSplitTierTargets())
+        // rather than being pinned to one end.
+      ],
     ],
   ],
 
@@ -86,5 +106,6 @@ return [
     'super'     => 1,
     'legendary' => 1,
     'mythic'    => 1,
+    'chase'     => 1,
   ],
 ];

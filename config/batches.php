@@ -25,6 +25,12 @@ return [
         'price_per_pack_pence'  => 700,  // £7.00
         'target_margin_on_cost' => 0.15, // 15%
       ],
+      BatchType::Premium->value => [
+        'label'                 => 'Premium',
+        'packs'                 => 500,
+        'price_per_pack_pence'  => 2500, // £25.00
+        'target_margin_on_cost' => 0.15, // 15%
+      ],
     ],
 
     Game::Magic->value    => [],

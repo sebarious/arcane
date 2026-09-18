@@ -21,7 +21,7 @@ export interface Store {
     name: string
 }
 
-export type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic'
+export type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic' | 'chase'
 
 /**
  * Props every Inertia page receives via HandleInertiaRequests middleware.

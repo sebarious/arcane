@@ -7,6 +7,7 @@ enum BatchType: string
   case Sapphire = 'sapphire';
   case Ruby     = 'ruby';
   case Diamond  = 'diamond';
+  case Premium  = 'premium';
 
   protected function config(): array
   {

@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
 
-type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic'
+type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic' | 'chase'
 
 interface BatchMeta {
   type: string | null
@@ -51,6 +51,19 @@ const ogTitle = 'Diamond Batch Preview | Arcane'
 const ogDescription = 'A live preview of what a 500-pack Diamond batch looks like — built from our current real stock and refreshed weekly.'
 
 const bandOrder: { key: Rarity; label: string, colors: Record<string, string> }[] = [
+  {
+    key: 'chase',
+    label: 'Chase',
+    colors: {
+      border: 'rgba(220,193,117,0.1)',
+      gradient_from: 'rgba(236,72,153,0.1)',
+      text: '#ec4899',
+      background: 'rgba(236,72,153,0.13)',
+      inner_border: 'rgba(236,72,153,0.27)',
+      shadow: 'rgba(236,72,153,0.13)',
+      card_border: 'rgba(236,72,153,0.25)'
+    }
+  },
   {
     key: 'mythic',
     label: 'Mythic',
@@ -119,7 +132,7 @@ const bandOrder: { key: Rarity; label: string, colors: Record<string, string> }[
 ];
 
 const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
-  band === 'mythic' || band === 'legendary' ? 'eager' : 'lazy'
+  band === 'chase' || band === 'mythic' || band === 'legendary' ? 'eager' : 'lazy'
 </script>
 
 <template>
@@ -209,6 +222,21 @@ const imageLoading = (band: Rarity): 'lazy' | 'eager' =>
               class="absolute border border-[rgba(220,193,117,0.1)] border-solid inset-0 pointer-events-none rounded-[12px]" />
             <div class="content-stretch flex flex-col gap-[20px] items-start p-[24px] relative size-full">
               <div class="content-start flex flex-wrap gap-[12px] items-start relative shrink-0 w-full">
+                <div v-if="odds.chase"
+                  class="content-stretch flex gap-[8px] items-center px-[16px] py-[8px] relative rounded-[40px] shrink-0"
+                  :style="{
+                    backgroundImage: 'linear-gradient(163.443deg, rgba(236, 72, 153, 0.25) 0%, rgba(236, 72, 153, 0.08) 100%)'
+                  }">
+                  <div aria-hidden
+                    class="absolute border border-[rgba(236,72,153,0.35)] border-solid inset-0 pointer-events-none rounded-[40px]" />
+                  <p
+                    class="[word-break:break-word] font-['Cinzel',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#ec4899] text-[12px] whitespace-nowrap">
+                    CHASE</p>
+                  <div class="bg-[#ec4899] opacity-50 relative rounded-[2px] shrink-0 size-[4px]" />
+                  <p
+                    class="[word-break:break-word] font-['Jost',sans-serif] font-semibold leading-[normal] relative shrink-0 text-[#ec4899] text-[12px] whitespace-nowrap">
+                    {{ ((odds.chase / totalOdds) * 100).toFixed(1) }}%</p>
+                </div>
                 <div
                   class="content-stretch flex gap-[8px] items-center px-[16px] py-[8px] relative rounded-[40px] shrink-0"
                   :style="{

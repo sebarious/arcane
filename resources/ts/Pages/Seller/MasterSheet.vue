@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import SellerLayout from '@/Layouts/SellerLayout.vue';
 import QrCodeCanvas from '@/Components/QrCodeCanvas.vue';
 
-type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic';
+type Rarity = 'common' | 'rare' | 'super' | 'legendary' | 'mythic' | 'chase';
 
 interface Card {
   sequence: number;
@@ -33,6 +33,7 @@ const props = defineProps<{
 const search = ref('');
 
 const bandOrder: { key: Rarity; label: string; text: string }[] = [
+  { key: 'chase', label: 'Chase', text: '#ec4899' },
   { key: 'mythic', label: 'Mythic', text: '#c9a84c' },
   { key: 'legendary', label: 'Legendary', text: '#7b4fe9' },
   { key: 'super', label: 'Super', text: '#2dd4bf' },

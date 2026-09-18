@@ -910,6 +910,7 @@ class BatchResource extends Resource
                         'super' => 'Super',
                         'legendary' => 'Legendary',
                         'mythic' => 'Mythic',
+                        'chase' => 'Chase',
                     ])
                     ->required()
                     ->live()
