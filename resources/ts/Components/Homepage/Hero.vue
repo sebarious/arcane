@@ -47,15 +47,15 @@
 
         <!-- CTAs -->
         <div class="grid grid-cols-2 md:flex gap-4 md:flex-wrap">
-          <Link href="/rips"
+          <Link href="/apply"
             class="text-center md:px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-          Buy a Pack
+          Apply now
           </Link>
-          <Link href="/apply"
+          <Link href="/stores"
             class="text-center md:px-8 py-3.5 text-[#DCC175]/70 text-xs tracking-[0.22em] uppercase border border-[#DCC175]/25 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-300 backdrop-blur-sm"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-            Apply Now
+            Browse stores
           </Link>
         </div>
       </div>
