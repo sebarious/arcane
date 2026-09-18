@@ -12,6 +12,7 @@ use App\Models\Invoice;
 use App\Models\Pack;
 use App\Services\Banding\Distribution;
 use App\Services\Banding\RarityBander;
+use App\Services\Packaging\PackagingStockService;
 use App\Services\PulseApi\CardPriceSyncer;
 use App\Services\Stores\StoreCreditService;
 use App\Services\Verification\SeededRandom;
@@ -26,6 +27,7 @@ class BatchGenerator
         protected StoreCreditService $creditService,
         protected CardPriceSyncer $priceSyncer,
         protected CandidateSelector $selector,
+        protected PackagingStockService $packagingStock,
     ) {}
 
     /**
@@ -117,6 +119,11 @@ class BatchGenerator
             }
         }
 
+        // Fail fast on physical packaging shortfalls too — before burning any
+        // time on card selection below — one bag per pack, one insert per
+        // card in each rarity band.
+        $this->packagingStock->assertAvailable($bandDistribution, $packCount);
+
         $thresholds = (new RarityBander)->thresholds();
 
         $poolData = $pool->map(fn (CardInventory $card) => [
@@ -193,7 +200,14 @@ class BatchGenerator
 
         $snapshotPath = $this->writeVerificationSnapshot($batch, $poolData, $bandDistribution, $tierDistribution, $duplicateLimits, $thresholds, $targetSale, $targetMargin, $targetValue, $packCount, $best['selected_ids']);
 
-        DB::transaction(function () use ($batch, $cards, $totalCost, $totalMarket, $targetSale, $marginAtCost, $vatOnMargin, $snapshotPath) {
+        DB::transaction(function () use ($batch, $cards, $totalCost, $totalMarket, $targetSale, $marginAtCost, $vatOnMargin, $snapshotPath, $bandDistribution, $packCount) {
+            // Physically consumes bags/inserts for this batch. Re-checked
+            // (and locked) here rather than trusting the pre-flight
+            // assertAvailable() above, since stock could have moved between
+            // that check and this transaction (e.g. a concurrent batch) —
+            // a shortfall here rolls the whole batch back.
+            $this->packagingStock->deductForBatch($batch, $bandDistribution, $packCount);
+
             $packs = collect();
             for ($i = 1; $i <= $batch->pack_count; $i++) {
                 $packs->push(
