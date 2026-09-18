@@ -92,7 +92,7 @@ return [
         'legendary' => ['tier_1' => 8,   'tier_2' => 8,   'tier_3' => 8],
         'mythic'    => ['tier_1' => 3,   'tier_2' => 1,   'tier_3' => 1],
         // Single chase card — deliberately left unconfigured, so it
-        // auto-splits (lands in tier_2, the middle third of the £450–£750
+        // auto-splits (lands in tier_2, the middle third of the £425–£750
         // chase range — see CandidateSelector::autoSplitTierTargets())
         // rather than being pinned to one end.
       ],

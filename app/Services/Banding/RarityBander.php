@@ -13,12 +13,19 @@ class RarityBander
      *   super:     £10.50 – £49.99
      *   legendary: £50.00 – £149.99
      *   mythic:    £150.00 – £349.99
-     *   chase:     £450.00 – £750.00
+     *   chase:     £425.00 – £750.00
      *
-     * Note the gap between mythic's ceiling and chase's floor (£350–£449.99)
-     * — deliberate, not a bug: chase is Premium-only (see config/banding.php)
-     * and its range was specified on its own, independent of mythic's. A
-     * card priced in that gap simply isn't eligible for either band.
+     * Chase (Premium batches only — see config/banding.php) deliberately does
+     * NOT start where mythic stops: £350.00–£424.99 belongs to no band, and a
+     * card priced there is left unbanded on purpose rather than being widened
+     * into either one. Mythic's ceiling is load-bearing for Sapphire/Ruby/
+     * Diamond economics, and £425 is the floor the chase slot is sold on, so
+     * the gap is the price of keeping both honest — don't "fix" it by
+     * stretching one of the two to meet the other. Anything above chase's
+     * £750 ceiling is likewise unbanded: too rich for any slot we sell.
+     *
+     * Unbanded cards can't be picked up by batch generation at all (its pool
+     * query requires rarity_band IS NOT NULL), so they need pricing by hand.
      */
     public const DEFAULT_THRESHOLDS = [
         'common'    => ['min' => 1,    'max' => 499],
@@ -26,7 +33,7 @@ class RarityBander
         'super'     => ['min' => 1050,  'max' => 4999],
         'legendary' => ['min' => 5000,  'max' => 14999],
         'mythic'    => ['min' => 15000,  'max' => 34999],
-        'chase'     => ['min' => 45000,  'max' => 75000],
+        'chase'     => ['min' => 42500,  'max' => 75000],
     ];
 
     /** @param array<string, array{min:int,max:int}>|null $thresholds */
