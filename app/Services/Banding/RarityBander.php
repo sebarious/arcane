@@ -26,6 +26,14 @@ class RarityBander
      *
      * Unbanded cards can't be picked up by batch generation at all (its pool
      * query requires rarity_band IS NOT NULL), so they need pricing by hand.
+     *
+     * Key order is load-bearing, not cosmetic: bandFor() returns the first
+     * range that matches, and SellOfferCalculator reuses this list with
+     * mythic's ceiling raised to the sell-offer cap (~£1,000) — an override
+     * that swallows chase's whole range. Mythic sitting above chase here is
+     * what keeps a £500 sell quote resolving to mythic. Moving chase first
+     * would silently reprice those quotes and start writing 'chase' into
+     * customer_sell_submission_items.band, which is still a five-band enum.
      */
     public const DEFAULT_THRESHOLDS = [
         'common'    => ['min' => 1,    'max' => 499],
