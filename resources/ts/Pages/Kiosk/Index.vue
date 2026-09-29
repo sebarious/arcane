@@ -14,6 +14,8 @@ onMounted(() => {
       // Not fatal — the page still works, it just won't be installable.
     });
   }
+
+  loadFilterOptions();
 });
 
 interface SearchResult {
@@ -47,6 +49,31 @@ const hasSearched = ref(false);
 
 const LETTERS = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 
+const activeSet = ref<string | null>(null);
+const activeRarity = ref<string | null>(null);
+const filterSets = ref<string[]>([]);
+const filterRarities = ref<string[]>([]);
+const showFilterPicker = ref(false);
+const setSearch = ref('');
+
+const hasFilters = computed(() => activeSet.value !== null || activeRarity.value !== null);
+
+// 80-odd sets is far too many to thumb through on a tablet, so the picker
+// narrows as you type.
+const visibleSets = computed(() => {
+  const q = setSearch.value.trim().toLowerCase();
+  return q ? filterSets.value.filter((s) => s.toLowerCase().includes(q)) : filterSets.value;
+});
+
+// Params both the search and browse endpoints take, so a filter applies
+// whichever mode produced the current list.
+function filterParams(): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (activeSet.value) params.set = activeSet.value;
+  if (activeRarity.value) params.rarity = activeRarity.value;
+  return params;
+}
+
 const showLetterPicker = ref(false);
 const browseLetter = ref<string | null>(null);
 const browseResults = ref<SearchResult[]>([]);
@@ -54,10 +81,15 @@ const browsePage = ref(1);
 const browseHasMore = ref(true);
 const browseLoading = ref(false);
 
+// Browse (paginated) backs both the A-Z picker and filter-only listings —
+// picking a set with nothing typed should show that set, not an empty panel.
+const browseActive = computed(() =>
+  browseLetter.value !== null || (hasFilters.value && query.value.trim().length < 2));
+
 // Whichever mode is active — typed search or A-Z browse — the results panel
 // renders from the same list, so add-to-basket/preview don't need to know
 // which one produced it.
-const displayResults = computed(() => (browseLetter.value ? browseResults.value : results.value));
+const displayResults = computed(() => (browseActive.value ? browseResults.value : results.value));
 
 // Results-grid zoom. Sized with inline styles rather than dynamic Tailwind
 // classes on purpose — arbitrary-value classes built from a data object at
@@ -105,6 +137,9 @@ const previewCard = ref<SearchResult | null>(null);
 const orderReference = ref('');
 const orderTotalPence = ref(0);
 const payError = ref('');
+const currentOrderId = ref<number | null>(null);
+const cancelling = ref(false);
+const cancelError = ref('');
 
 const totalPence = computed(() => basket.value.reduce((sum, item) => sum + item.price_pence, 0));
 
@@ -126,6 +161,9 @@ async function runSearch() {
   if (q.length < 2) {
     results.value = [];
     hasSearched.value = false;
+    // Nothing typed but a filter is on — fall back to listing what that
+    // filter matches rather than emptying the panel.
+    if (hasFilters.value) restartBrowse();
     return;
   }
 
@@ -133,7 +171,7 @@ async function runSearch() {
   hasSearched.value = true;
 
   try {
-    const { data } = await axios.get('/kiosk/search', { params: { q } });
+    const { data } = await axios.get('/kiosk/search', { params: { q, ...filterParams() } });
     results.value = data.data ?? [];
   } catch {
     results.value = [];
@@ -169,14 +207,24 @@ function clearBrowse() {
   browseHasMore.value = true;
 }
 
+/** The "Clear" next to the letter chip — drops the letter but keeps any filters, reloading what they still match. */
+function clearLetter() {
+  clearBrowse();
+  if (hasFilters.value) restartBrowse();
+}
+
 async function loadBrowsePage() {
-  if (!browseLetter.value || browseLoading.value || !browseHasMore.value) return;
+  if (!browseActive.value || browseLoading.value || !browseHasMore.value) return;
 
   browseLoading.value = true;
 
   try {
     const { data } = await axios.get('/kiosk/browse', {
-      params: { letter: browseLetter.value, page: browsePage.value },
+      params: {
+        ...(browseLetter.value ? { letter: browseLetter.value } : {}),
+        page: browsePage.value,
+        ...filterParams(),
+      },
     });
     browseResults.value.push(...(data.data ?? []));
     browseHasMore.value = Boolean(data.has_more);
@@ -188,10 +236,62 @@ async function loadBrowsePage() {
   }
 }
 
+/** Reloads the browse list from page 1 — after a filter change, or when a filter replaces a search. */
+function restartBrowse() {
+  browseResults.value = [];
+  browsePage.value = 1;
+  browseHasMore.value = true;
+  loadBrowsePage();
+}
+
+async function loadFilterOptions() {
+  try {
+    const { data } = await axios.get('/kiosk/filters');
+    filterSets.value = data.data?.sets ?? [];
+    filterRarities.value = data.data?.rarities ?? [];
+  } catch {
+    // Non-fatal — search and browse still work unfiltered.
+  }
+}
+
+/** Re-runs whichever view is showing, so a filter change is reflected immediately. */
+function applyFilters() {
+  if (query.value.trim().length >= 2) {
+    runSearch();
+    return;
+  }
+
+  if (hasFilters.value || browseLetter.value) {
+    restartBrowse();
+    return;
+  }
+
+  // Last filter cleared with nothing typed and no letter — back to a blank slate.
+  browseResults.value = [];
+}
+
+function toggleRarity(rarity: string) {
+  activeRarity.value = activeRarity.value === rarity ? null : rarity;
+  applyFilters();
+}
+
+function selectSet(set: string | null) {
+  activeSet.value = set;
+  showFilterPicker.value = false;
+  setSearch.value = '';
+  applyFilters();
+}
+
+function clearFilters() {
+  activeSet.value = null;
+  activeRarity.value = null;
+  applyFilters();
+}
+
 // Infinite scroll — fetch the next page a little before the user actually
 // hits the bottom, so it's already loaded by the time they get there.
 function onResultsScroll(event: Event) {
-  if (!browseLetter.value) return;
+  if (!browseActive.value) return;
 
   const el = event.target as HTMLElement;
   const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
@@ -207,10 +307,10 @@ async function addToBasket(card: SearchResult) {
     const { data } = await axios.post('/kiosk/basket', { card_inventory_id: card.id });
     basket.value = data.data;
 
-    if (browseLetter.value) {
+    if (browseActive.value) {
       // Stay in browse mode — just drop the now-reserved card and keep
-      // scroll position, so picking several cards off the same letter
-      // doesn't mean re-opening the picker each time.
+      // scroll position, so picking several cards off the same letter or
+      // filter doesn't mean re-opening the picker each time.
       browseResults.value = browseResults.value.filter((c) => c.id !== card.id);
     } else {
       query.value = '';
@@ -246,12 +346,14 @@ async function checkout() {
 
   screen.value = 'paying';
   payError.value = '';
+  cancelError.value = '';
   resetZoom();
 
   try {
     const { data } = await axios.post('/kiosk/checkout');
     orderReference.value = data.data.reference;
     orderTotalPence.value = data.data.total_pence;
+    currentOrderId.value = data.data.order_id;
     pollOrder(data.data.order_id);
   } catch (e: any) {
     payError.value = e?.response?.data?.message ?? 'Could not start checkout — please try again.';
@@ -261,8 +363,13 @@ async function checkout() {
 
 let pollTimer: ReturnType<typeof setTimeout> | undefined;
 const POLL_TIMEOUT_MS = 3 * 60 * 1000;
+// Kept so a cancel that fails can pick polling back up where it left off,
+// rather than handing the customer a fresh 3 minutes at the reader.
+let pollElapsedMs = 0;
 
 function pollOrder(orderId: number, elapsedMs = 0) {
+  pollElapsedMs = elapsedMs;
+
   if (elapsedMs > POLL_TIMEOUT_MS) {
     payError.value = 'This took too long — please ask a member of staff for help.';
     screen.value = 'declined';
@@ -297,6 +404,8 @@ function startNewOrder() {
   orderReference.value = '';
   orderTotalPence.value = 0;
   payError.value = '';
+  cancelError.value = '';
+  currentOrderId.value = null;
   resetZoom();
   screen.value = 'shopping';
 }
@@ -308,8 +417,44 @@ function backToBasket() {
   orderReference.value = '';
   orderTotalPence.value = 0;
   payError.value = '';
+  cancelError.value = '';
+  currentOrderId.value = null;
   resetZoom();
   screen.value = 'shopping';
+}
+
+/**
+ * Abandons payment from the reader screen. The basket is left alone on
+ * purpose — the cards are still held for this session, so "cancel" means
+ * back to the basket to edit or retry, not start again from nothing.
+ */
+async function cancelPayment() {
+  if (currentOrderId.value === null || cancelling.value) return;
+
+  cancelling.value = true;
+  cancelError.value = '';
+  if (pollTimer) clearTimeout(pollTimer);
+
+  try {
+    const { data } = await axios.post(`/kiosk/orders/${currentOrderId.value}/cancel`);
+
+    // They got their card in just as they hit cancel — the payment stands,
+    // so show it as the sale it is rather than bouncing them to the basket.
+    if (data.data.status === 'paid') {
+      orderReference.value = data.data.reference;
+      screen.value = 'success';
+      return;
+    }
+
+    backToBasket();
+  } catch {
+    // Couldn't reach the server to call it off, so the reader may well still
+    // be live — keep watching instead of stranding them on a dead screen.
+    cancelError.value = 'Could not cancel — please follow the reader, or ask a member of staff.';
+    pollOrder(currentOrderId.value, pollElapsedMs);
+  } finally {
+    cancelling.value = false;
+  }
 }
 
 async function clearBasket() {
@@ -327,7 +472,9 @@ async function clearBasket() {
   query.value = '';
   results.value = [];
   hasSearched.value = false;
-  clearBrowse();
+  // Keeps any set/rarity filter — that's a browsing preference, not basket
+  // state — so the list has to be reloaded rather than just emptied.
+  clearLetter();
   resetZoom();
 }
 </script>
@@ -345,14 +492,7 @@ async function clearBasket() {
   <div class="fixed inset-0 bg-[#0d0b14] overflow-hidden font-['Jost',sans-serif] select-none">
     <!-- Shopping -->
     <div v-if="screen === 'shopping'" class="h-full flex flex-col">
-      <div class="px-8 pt-8 pb-4 shrink-0">
-        <p class="font-['Cinzel',sans-serif] font-bold text-white text-[32px]">
-          Buy <span class="text-[#c9a84c]">singles</span>
-        </p>
-        <p class="text-[#a3a3a3] text-[16px] mt-1">Search for a card, add it to your basket, then pay at the reader.</p>
-      </div>
-
-      <div class="flex-1 flex gap-6 px-8 pb-8 min-h-0">
+      <div class="flex-1 flex gap-6 px-8 py-8 min-h-0">
         <!-- Search + results -->
         <div class="flex-[2] flex flex-col min-h-0">
           <div class="flex gap-3 shrink-0">
@@ -367,6 +507,13 @@ async function clearBasket() {
                 : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
               {{ browseLetter ?? 'A-Z' }}
             </button>
+            <button type="button" @click="showFilterPicker = true"
+              class="shrink-0 px-5 h-[64px] rounded-[10px] border font-semibold uppercase text-[14px] transition-colors"
+              :class="hasFilters
+                ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+                : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+              Filter
+            </button>
             <div class="shrink-0 flex border border-[#3d2f6e] rounded-[10px] h-[64px] overflow-hidden">
               <button type="button" @click="zoomOut" :disabled="zoomIndex === 0"
                 class="w-[44px] h-full flex items-center justify-center text-white text-[22px] font-bold hover:bg-[#1a1628] disabled:opacity-30 border-r border-[#3d2f6e]">
@@ -379,16 +526,29 @@ async function clearBasket() {
             </div>
           </div>
 
-          <div v-if="browseLetter" class="flex items-center gap-2 mt-3 shrink-0">
-            <p class="text-[#a3a3a3] text-[13px]">Browsing cards starting with "{{ browseLetter }}"</p>
-            <button type="button" @click="clearBrowse" class="text-[#c9a84c] text-[13px] underline">Clear</button>
+          <div v-if="browseLetter || hasFilters" class="flex items-center flex-wrap gap-2 mt-3 shrink-0">
+            <span v-if="browseLetter"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#3d2f6e] bg-[#1a1628] text-white text-[13px]">
+              Starting with "{{ browseLetter }}"
+              <button type="button" @click="clearLetter" class="text-[#a3a3a3] hover:text-white text-[16px] leading-none">×</button>
+            </span>
+            <span v-if="activeSet"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#c9a84c] bg-[rgba(201,168,76,0.1)] text-[#c9a84c] text-[13px]">
+              {{ activeSet }}
+              <button type="button" @click="selectSet(null)" class="hover:text-white text-[16px] leading-none">×</button>
+            </span>
+            <span v-if="activeRarity"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#c9a84c] bg-[rgba(201,168,76,0.1)] text-[#c9a84c] text-[13px] capitalize">
+              {{ activeRarity }}
+              <button type="button" @click="toggleRarity(activeRarity)" class="hover:text-white text-[16px] leading-none">×</button>
+            </span>
           </div>
 
           <div class="flex-1 overflow-y-auto mt-4 min-h-0" @scroll="onResultsScroll">
             <p v-if="searching" class="text-[#a3a3a3] text-[15px] px-2">Searching…</p>
-            <p v-else-if="!browseLetter && hasSearched && results.length === 0" class="text-[#a3a3a3] text-[15px] px-2">No matches in stock.</p>
-            <p v-else-if="browseLetter && !browseLoading && browseResults.length === 0" class="text-[#a3a3a3] text-[15px] px-2">
-              No cards in stock starting with "{{ browseLetter }}".
+            <p v-else-if="!browseActive && hasSearched && results.length === 0" class="text-[#a3a3a3] text-[15px] px-2">No matches in stock.</p>
+            <p v-else-if="browseActive && !browseLoading && browseResults.length === 0" class="text-[#a3a3a3] text-[15px] px-2">
+              Nothing in stock matches that{{ hasFilters ? ' — try removing a filter.' : '.' }}
             </p>
 
             <div :style="{ display: 'grid', gridTemplateColumns: `repeat(${zoom.cols}, minmax(0, 1fr))`, gap: '12px' }">
@@ -410,7 +570,7 @@ async function clearBasket() {
               </div>
             </div>
 
-            <p v-if="browseLetter && browseLoading" class="text-[#a3a3a3] text-[13px] text-center py-4">Loading more…</p>
+            <p v-if="browseActive && browseLoading" class="text-[#a3a3a3] text-[13px] text-center py-4">Loading more…</p>
           </div>
         </div>
 
@@ -462,6 +622,14 @@ async function clearBasket() {
       <div class="w-16 h-16 rounded-full border-4 border-[#3d2f6e] border-t-[#c9a84c] animate-spin mb-8" />
       <p class="font-['Cinzel',sans-serif] font-bold text-white text-[28px]">Tap, insert, or swipe your card</p>
       <p class="text-[#a3a3a3] text-[16px] mt-3">{{ formatPence(orderTotalPence) }} — follow the reader's prompts</p>
+
+      <button type="button" :disabled="cancelling" @click="cancelPayment"
+        class="mt-10 px-8 h-[52px] rounded-[6px] border border-[#3d2f6e] text-[#a3a3a3] font-semibold uppercase text-[14px] hover:border-[#ef4444] hover:text-[#ef4444] disabled:opacity-40 transition-colors">
+        {{ cancelling ? 'Cancelling…' : 'Cancel payment' }}
+      </button>
+      <p class="text-[#a3a3a3] text-[13px] mt-4">Your basket will be kept.</p>
+
+      <p v-if="cancelError" class="text-[#ef4444] text-[14px] mt-4 max-w-sm">{{ cancelError }}</p>
     </div>
 
     <!-- Success -->
@@ -546,6 +714,60 @@ async function clearBasket() {
           class="w-full h-[48px] mt-5 rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[13px] hover:border-[#c9a84c] transition-colors">
           Cancel
         </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div v-if="showFilterPicker" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+      @click="showFilterPicker = false">
+      <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-lg w-full flex flex-col max-h-[80vh]"
+        @click.stop>
+        <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center mb-5 shrink-0">Filter cards</p>
+
+        <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Rarity</p>
+        <div class="flex flex-wrap gap-2 mb-5 shrink-0">
+          <button v-for="rarity in filterRarities" :key="rarity" type="button" @click="toggleRarity(rarity)"
+            class="px-4 h-[44px] rounded-[8px] border text-[15px] capitalize transition-colors"
+            :class="activeRarity === rarity
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            {{ rarity }}
+          </button>
+        </div>
+
+        <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Set</p>
+        <input v-model="setSearch" type="text" placeholder="Find a set…"
+          class="w-full h-[48px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] text-white text-[15px] px-4 mb-2 shrink-0 outline-none placeholder:opacity-40 placeholder:text-white focus:ring-0" />
+
+        <div class="flex-1 overflow-y-auto min-h-0 space-y-1.5">
+          <button type="button" @click="selectSet(null)"
+            class="w-full text-left px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
+            :class="activeSet === null
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            All sets
+          </button>
+          <button v-for="set in visibleSets" :key="set" type="button" @click="selectSet(set)"
+            class="w-full text-left px-4 h-[44px] rounded-[8px] border text-[15px] truncate transition-colors"
+            :class="activeSet === set
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            {{ set }}
+          </button>
+          <p v-if="visibleSets.length === 0" class="text-[#71717a] text-[14px] px-1 py-2">No sets match that.</p>
+        </div>
+
+        <div class="flex gap-3 mt-5 shrink-0">
+          <button type="button" :disabled="!hasFilters" @click="clearFilters"
+            class="flex-1 h-[48px] rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[13px] hover:border-[#c9a84c] disabled:opacity-30 transition-colors">
+            Clear all
+          </button>
+          <button type="button" @click="showFilterPicker = false"
+            class="flex-1 h-[48px] rounded-[6px] text-[#0d0b14] font-bold uppercase text-[13px]"
+            style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
+            Done
+          </button>
+        </div>
       </div>
     </div>
   </div>

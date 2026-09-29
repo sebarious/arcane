@@ -61,6 +61,16 @@ class StripeTerminalClient
     }
 
     /**
+     * Voids the PaymentIntent itself, so it can't still be completed after the
+     * customer has walked away. Clearing the reader action alone isn't enough
+     * — that stops the prompt, not the intent behind it.
+     */
+    public function cancelPaymentIntent(string $paymentIntentId): PaymentIntent
+    {
+        return $this->client()->paymentIntents->cancel($paymentIntentId);
+    }
+
+    /**
      * Test mode only — simulates a card being tapped/inserted on the
      * configured reader, completing whatever PaymentIntent it's currently
      * processing. Stripe's test_helpers endpoints reject calls made with a

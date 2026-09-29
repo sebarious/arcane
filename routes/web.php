@@ -21,6 +21,7 @@ use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\Kiosk\BasketController;
 use App\Http\Controllers\Kiosk\BrowseController;
 use App\Http\Controllers\Kiosk\CheckoutController;
+use App\Http\Controllers\Kiosk\FilterOptionsController;
 use App\Http\Controllers\Kiosk\OrderStatusController;
 use App\Http\Controllers\Kiosk\PageController as KioskPageController;
 use App\Http\Controllers\Kiosk\SearchController as KioskSearchController;
@@ -136,6 +137,9 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::get('/browse', BrowseController::class)
         ->middleware('throttle:60,1')
         ->name('browse');
+    Route::get('/filters', FilterOptionsController::class)
+        ->middleware('throttle:60,1')
+        ->name('filters');
 
     // The actual kiosk checkout flow — gated behind Stripe actually being
     // configured, see EnsureKioskConfigured.
@@ -155,6 +159,9 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
         Route::get('/orders/{order}/status', OrderStatusController::class)
             ->middleware('throttle:60,1')
             ->name('orders.status');
+        Route::post('/orders/{order}/cancel', [CheckoutController::class, 'cancel'])
+            ->middleware('throttle:20,1')
+            ->name('orders.cancel');
     });
 });
 

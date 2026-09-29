@@ -20,7 +20,10 @@ class KioskCheckoutService
 
     public function priceFor(CardInventory $card): int
     {
-        return (int) round(($card->market_value_pence ?? 0) * (float) config('kiosk.markup_multiplier'));
+        $marked = ($card->market_value_pence ?? 0) * (float) config('kiosk.markup_multiplier');
+        $step = max(1, (int) config('kiosk.price_rounding_pence'));
+
+        return (int) (ceil($marked / $step) * $step);
     }
 
     /** The shared card shape search/browse/basket responses send to the kiosk frontend. */
@@ -94,6 +97,56 @@ class KioskCheckoutService
 
             return $order;
         });
+    }
+
+    /**
+     * Customer-initiated abandon from the pay screen: clears the reader
+     * prompt, voids the PaymentIntent so a late tap can't charge someone
+     * who's already walked away, and marks the order cancelled.
+     *
+     * Deliberately leaves the basket holds in place, for the same reason a
+     * decline does (see the kiosk's backToBasket()) — the cards are still
+     * this session's for the rest of the reservation window, so the customer
+     * can go straight back and pay again.
+     *
+     * Returns the order as it actually ended up, which isn't always
+     * cancelled: if the card landed in the gap between them pressing cancel
+     * and this reaching Stripe, the payment stands and gets finalized rather
+     * than written off. Money already taken is never cancelled away.
+     */
+    public function cancel(KioskOrder $order): KioskOrder
+    {
+        if ($order->status !== 'pending_payment') {
+            return $order;
+        }
+
+        // Best-effort, as in ExpireStaleKioskOrdersCommand — the reader may
+        // not be mid-action at all, which throws and is fine either way.
+        try {
+            $this->stripe->cancelReaderAction();
+        } catch (\Throwable) {
+        }
+
+        if ($order->stripe_payment_intent_id) {
+            if ($this->stripe->retrievePaymentIntent($order->stripe_payment_intent_id)->status === 'succeeded') {
+                return $this->finalize($order);
+            }
+
+            try {
+                $this->stripe->cancelPaymentIntent($order->stripe_payment_intent_id);
+            } catch (\Throwable) {
+                // Most likely it succeeded in the moment between the check
+                // above and this call. Re-read rather than assume, so a real
+                // payment never gets recorded as a cancellation.
+                if ($this->stripe->retrievePaymentIntent($order->stripe_payment_intent_id)->status === 'succeeded') {
+                    return $this->finalize($order);
+                }
+            }
+        }
+
+        $order->update(['status' => 'cancelled']);
+
+        return $order->fresh();
     }
 
     /**
