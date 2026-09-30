@@ -120,6 +120,9 @@ Route::get('/verified', VerifiedController::class)->name('pages.verified');
 // kiosk's search/browse endpoints (Kiosk\SearchController/BrowseController),
 // which never mutate anything, so there's no basket/reservation involved.
 Route::get('/catalogue', CataloguePageController::class)->name('pages.catalogue');
+// Same stock, built for an in-store tablet — see the controller for why it's
+// a separate page rather than a flag on the public one.
+Route::get('/catalogue/kiosk', [CataloguePageController::class, 'kiosk'])->name('pages.catalogue.kiosk');
 Route::get('/api-docs', ApiDocsController::class)->name('pages.api-docs');
 Route::get('/terms', TermsController::class)->name('pages.terms');
 Route::get('/privacy', PrivacyPolicyController::class)->name('pages.privacy');

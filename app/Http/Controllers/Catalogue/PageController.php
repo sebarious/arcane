@@ -13,4 +13,19 @@ class PageController extends Controller
     {
         return Inertia::render('Catalogue/Index');
     }
+
+    /**
+     * GET /catalogue/kiosk — the same stock, laid out for a tablet standing
+     * in the shop: full height, no site header or footer, bigger touch
+     * targets. Its own page rather than a mode of the one above, which stays
+     * the public page customers open on their own phones.
+     *
+     * Look-only, exactly like /catalogue — taking money is the till at
+     * /kiosk, which is PIN-gated. Nothing here needs gating: it shows the
+     * same stock list anyone can already see on the website.
+     */
+    public function kiosk(): Response
+    {
+        return Inertia::render('Catalogue/Kiosk');
+    }
 }
