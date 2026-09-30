@@ -62,6 +62,16 @@ function openLetterPicker() {
   showLetterPicker.value = true;
 }
 
+// Two columns of card rows is unreadable on a phone, whatever the zoom
+// level is set to — the tiles end up ~150px wide with an image, a name, a
+// set and a price in them. Below the sm breakpoint it's always one.
+const isNarrow = ref(false);
+const gridCols = computed(() => (isNarrow.value ? 1 : zoom.value.cols));
+
+function syncViewport() {
+  isNarrow.value = window.innerWidth < 640;
+}
+
 // This is a normal scrollable page (not a fixed-height panel like the
 // kiosk's), so infinite scroll watches the window instead of a container.
 function onWindowScroll() {
@@ -74,9 +84,14 @@ function onWindowScroll() {
 
 onMounted(() => {
   window.addEventListener('scroll', onWindowScroll);
+  window.addEventListener('resize', syncViewport);
+  syncViewport();
   initStock();
 });
-onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
+onUnmounted(() => {
+  window.removeEventListener('scroll', onWindowScroll);
+  window.removeEventListener('resize', syncViewport);
+});
 </script>
 
 <template>
@@ -84,14 +99,14 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
 
   <main class="bg-[#0d0b14] overflow-x-hidden min-h-screen">
     <div class="relative shrink-0">
-      <div class="flex items-center justify-between px-8 lg:px-[64px] py-[20px] relative w-full">
+      <div class="flex items-center justify-between px-5 sm:px-8 lg:px-[64px] py-[20px] relative w-full">
         <div class="h-[49px] relative shrink-0 w-full">
           <Nav />
         </div>
       </div>
     </div>
 
-    <div class="px-8 lg:px-[64px] pt-[40px] pb-[16px] max-w-5xl mx-auto">
+    <div class="px-5 sm:px-8 lg:px-[64px] pt-[40px] pb-[16px] max-w-5xl mx-auto">
       <p class="font-['Cinzel',sans-serif] font-bold text-[40px] lg:text-[48px] text-white leading-tight">
         Browse our <span class="text-[#c9a84c]">stock</span>
       </p>
@@ -100,35 +115,40 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
       </p>
     </div>
 
-    <div class="px-8 lg:px-[64px] pb-[100px] max-w-5xl mx-auto">
-      <div class="flex gap-3">
-        <div class="flex-1 bg-[#1a1628] border border-[#3d2f6e] rounded-[10px] h-[56px]">
+    <div class="px-5 sm:px-8 lg:px-[64px] pb-[100px] max-w-5xl mx-auto">
+      <!-- Search takes the full width on a phone with the controls on their
+           own row beneath; from sm up they sit on one line as before. -->
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <div class="w-full sm:flex-1 bg-[#1a1628] border border-[#3d2f6e] rounded-[10px] h-[56px]">
           <input v-model="query" @input="scheduleSearch" type="text" placeholder="Card name, e.g. Charizard ex"
             class="w-full h-full bg-transparent border-none outline-none text-[16px] text-white px-5 placeholder:opacity-40 placeholder:text-white focus:ring-0" />
         </div>
-        <button type="button" @click="openLetterPicker"
-          class="shrink-0 w-[56px] h-[56px] rounded-[10px] border font-['Cinzel',sans-serif] font-bold text-[16px] transition-colors"
-          :class="browseLetter
-            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
-            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
-          {{ browseLetter ?? 'A-Z' }}
-        </button>
-        <button type="button" @click="showFilterPicker = true"
-          class="shrink-0 px-4 h-[56px] rounded-[10px] border font-semibold uppercase text-[13px] font-['Jost',sans-serif] transition-colors"
-          :class="hasFilters
-            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
-            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
-          Filter
-        </button>
-        <div class="shrink-0 flex border border-[#3d2f6e] rounded-[10px] h-[56px] overflow-hidden">
-          <button type="button" @click="zoomOut" :disabled="zoomIndex === 0"
-            class="w-[40px] h-full flex items-center justify-center text-white text-[20px] font-bold hover:bg-[#1a1628] disabled:opacity-30 border-r border-[#3d2f6e]">
-            −
+
+        <div class="flex gap-3">
+          <button type="button" @click="openLetterPicker"
+            class="shrink-0 w-[56px] h-[56px] rounded-[10px] border font-['Cinzel',sans-serif] font-bold text-[16px] transition-colors"
+            :class="browseLetter
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            {{ browseLetter ?? 'A-Z' }}
           </button>
-          <button type="button" @click="zoomIn" :disabled="zoomIndex === ZOOM_LEVELS.length - 1"
-            class="w-[40px] h-full flex items-center justify-center text-white text-[20px] font-bold hover:bg-[#1a1628] disabled:opacity-30">
-            +
+          <button type="button" @click="showFilterPicker = true"
+            class="flex-1 sm:flex-none sm:shrink-0 px-4 h-[56px] rounded-[10px] border font-semibold uppercase text-[13px] font-['Jost',sans-serif] transition-colors"
+            :class="hasFilters
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            Filter
           </button>
+          <div class="shrink-0 flex border border-[#3d2f6e] rounded-[10px] h-[56px] overflow-hidden">
+            <button type="button" @click="zoomOut" :disabled="zoomIndex === 0"
+              class="w-[40px] h-full flex items-center justify-center text-white text-[20px] font-bold hover:bg-[#1a1628] disabled:opacity-30 border-r border-[#3d2f6e]">
+              −
+            </button>
+            <button type="button" @click="zoomIn" :disabled="zoomIndex === ZOOM_LEVELS.length - 1"
+              class="w-[40px] h-full flex items-center justify-center text-white text-[20px] font-bold hover:bg-[#1a1628] disabled:opacity-30">
+              +
+            </button>
+          </div>
         </div>
       </div>
 
@@ -169,7 +189,7 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
           <template v-else>Nothing in stock matches that{{ hasFilters ? ' — try removing a filter.' : '.' }}</template>
         </p>
 
-        <div :style="{ display: 'grid', gridTemplateColumns: `repeat(${zoom.cols}, minmax(0, 1fr))`, gap: '12px' }">
+        <div :style="{ display: 'grid', gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`, gap: '12px' }">
           <button v-for="card in displayResults" :key="card.id" type="button" @click="previewCard = card"
             class="flex items-center gap-3 p-3 rounded-[10px] border border-[#3d2f6e] bg-[#13101e] hover:border-[#c9a84c] transition-colors text-left">
             <img v-if="card.image_url" :src="card.image_url" class="object-cover rounded-[4px] shrink-0"
@@ -190,7 +210,7 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
   <Footer />
 
   <!-- Card preview -->
-  <div v-if="previewCard" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+  <div v-if="previewCard" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 sm:p-8"
     @click="previewCard = null">
     <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-sm w-full flex flex-col items-center"
       @click.stop>
@@ -220,7 +240,7 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
   </div>
 
   <!-- Letter picker -->
-  <div v-if="showLetterPicker" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+  <div v-if="showLetterPicker" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 sm:p-8"
     @click="showLetterPicker = false">
     <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-lg w-full" @click.stop>
       <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center mb-5">Browse by letter</p>
@@ -239,7 +259,7 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
   </div>
 
   <!-- Filters -->
-  <div v-if="showFilterPicker" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+  <div v-if="showFilterPicker" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 sm:p-8"
     @click="showFilterPicker = false">
     <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-lg w-full flex flex-col max-h-[80vh] font-['Jost',sans-serif]"
       @click.stop>

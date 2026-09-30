@@ -4,6 +4,7 @@ use App\Http\Middleware\AuthenticateStoreApiToken;
 use App\Http\Middleware\EnforceStoreDailyApiLimit;
 use App\Http\Middleware\EnsureAffiliateIsApproved;
 use App\Http\Middleware\EnsureKioskConfigured;
+use App\Http\Middleware\EnsureKioskUnlocked;
 use App\Http\Middleware\EnsureMarkAsSoldEnabled;
 use App\Http\Middleware\EnsureSellerStoreIsPublic;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -60,6 +61,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'store.api.mark-sold' => EnsureMarkAsSoldEnabled::class,
             'store.api.log' => LogStoreApiRequest::class,
             'kiosk.enabled' => EnsureKioskConfigured::class,
+            'kiosk.unlocked' => EnsureKioskUnlocked::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -73,8 +75,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // e.g. /kiosk/browse would redirect instead of returning JSON, since
         // Laravel's own detection gets overridden by the branded-error-page
         // logic below regardless of what Accept header the client actually sent.
+        // card-photo/* is the phone's upload endpoint (see PhonePhotoController)
+        // — only ever called with fetch(), never browsed. Without it here a
+        // failed upload redirects or renders the branded HTML error page, so
+        // the phone has nothing useful to show the person holding it.
         $isJsonOnly = fn (Request $request) => $request->is('api/*')
             || $request->is('webhooks/*')
+            || $request->is('card-photo/*/upload')
             || ($request->is('kiosk/*') && $request->expectsJson());
 
         $exceptions->shouldRenderJsonWhen($isJsonOnly);

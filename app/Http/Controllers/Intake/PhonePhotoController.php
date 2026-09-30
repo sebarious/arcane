@@ -30,19 +30,18 @@ class PhonePhotoController extends Controller
             return response()->json(['status' => 'expired'], 410);
         }
 
-        $validated = $request->validate([
-            'image' => ['required', 'string'],
+        // A real multipart upload rather than a base64 JSON body: base64
+        // inflates a photo by about a third and rides on post_max_size, and
+        // when that's exceeded PHP discards the whole body before Laravel
+        // sees it — taking the CSRF token with it, so the failure surfaces as
+        // a confusing 419/500 rather than "that photo was too big".
+        $request->validate([
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:12288'],
         ]);
-
-        $path = $store->storeDataUrl($validated['image']);
-
-        if ($path === null) {
-            return response()->json(['status' => 'error', 'message' => 'That photo could not be read.'], 422);
-        }
 
         // Last one wins — retaking on the phone before the desktop has polled
         // should replace the earlier attempt, not queue up behind it.
-        $sessions->put($token, $path);
+        $sessions->put($token, $store->storeUpload($request->file('image')));
 
         return response()->json(['status' => 'stored']);
     }

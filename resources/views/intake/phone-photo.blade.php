@@ -117,8 +117,10 @@
       video.srcObject = stream;
     }
 
-    document.getElementById('capture').addEventListener('click', () => {
+    document.getElementById('capture').addEventListener('click', async (event) => {
       if (!video.videoWidth) return;
+
+      event.target.disabled = true;
 
       // Cap the long edge — a full-resolution phone frame is far larger than
       // a catalogue image needs and slow to post over mobile data.
@@ -128,8 +130,19 @@
       canvas.height = video.videoHeight * scale;
       canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      pending = canvas.toDataURL('image/jpeg', 0.85);
-      shot.src = pending;
+      // A Blob, not a data URL: it posts as a normal file upload, which is
+      // about a third smaller than base64 and doesn't risk overrunning
+      // post_max_size on a big photo. Awaited, so tapping "Use this photo"
+      // straight away can't find nothing there.
+      pending = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      event.target.disabled = false;
+
+      if (!pending) {
+        status('Could not process that photo — try again.', 'err');
+        return;
+      }
+
+      shot.src = URL.createObjectURL(pending);
 
       // Review before sending — a blurred or half-cropped card is the whole
       // reason to do this on a phone rather than trusting one blind shot.
@@ -156,13 +169,18 @@
       status('Sending…', 'ok');
 
       try {
+        const body = new FormData();
+        body.append('image', pending, 'card.jpg');
+
         const response = await fetch(@json(route('card-photo.store', $token)), {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            // Without this a failure comes back as a redirect or an HTML
+            // error page, and there'd be nothing useful to show here.
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
           },
-          body: JSON.stringify({ image: pending }),
+          body,
         });
 
         if (response.status === 410) {
@@ -170,8 +188,22 @@
           return;
         }
 
+        if (response.status === 419) {
+          status('This page has been open too long — reload it and try again.', 'err');
+          event.target.disabled = false;
+          return;
+        }
+
         if (!response.ok) {
-          status('Could not send that photo — try again.', 'err');
+          // Show what the server actually said, so a rejected photo explains
+          // itself instead of failing silently.
+          let detail = '';
+          try {
+            const payload = await response.json();
+            detail = payload.message || (payload.errors?.image?.[0] ?? '');
+          } catch (e) { /* not JSON — fall back to the generic message */ }
+
+          status(detail || `Could not send that photo (error ${response.status}).`, 'err');
           event.target.disabled = false;
           return;
         }

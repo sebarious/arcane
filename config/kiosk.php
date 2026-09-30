@@ -18,6 +18,14 @@ return [
     // stock in the newest sets gets thin.
     'featured_recent_sets' => (int) env('KIOSK_FEATURED_RECENT_SETS', 8),
 
+    // Whether a tablet has to be unlocked with the day's PIN before the kiosk
+    // will open (the PIN is shown in the admin topbar — see KioskDailyPin).
+    // On by default: the kiosk can take payments and apply discounts, and it
+    // has no login of its own, so without this anyone holding it can discount
+    // their own basket. Only turn it off if the tablet lives behind the
+    // counter and is never handed to a customer.
+    'require_pin' => (bool) env('KIOSK_REQUIRE_PIN', true),
+
     // How long adding a card to a basket holds it before it's released back
     // to general stock (and to BatchGenerator's candidate pool) — see
     // App\Services\Kiosk\KioskBasketService.

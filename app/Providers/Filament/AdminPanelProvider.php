@@ -90,6 +90,13 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::BODY_START,
                 fn () => view('filament.impersonation-banner'),
+            )
+            // Today's kiosk unlock code, beside the global search — staff on
+            // the shop floor ask for this, so it wants to be somewhere every
+            // admin page already shows.
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn () => view('filament.kiosk-daily-pin'),
             );
 
         return $panel;

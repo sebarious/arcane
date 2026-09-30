@@ -26,6 +26,7 @@ use App\Http\Controllers\Kiosk\FilterOptionsController;
 use App\Http\Controllers\Kiosk\OrderStatusController;
 use App\Http\Controllers\Kiosk\PageController as KioskPageController;
 use App\Http\Controllers\Kiosk\SearchController as KioskSearchController;
+use App\Http\Controllers\Kiosk\UnlockController;
 use App\Http\Controllers\Pages\AffiliateProgramController;
 use App\Http\Controllers\Pages\ApiDocsController;
 use App\Http\Controllers\Pages\PrivacyPolicyController;
@@ -142,9 +143,21 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
         ->middleware('throttle:60,1')
         ->name('filters');
 
-    // The actual kiosk checkout flow — gated behind Stripe actually being
-    // configured, see EnsureKioskConfigured.
+    // Unlocking sits inside kiosk.enabled but outside kiosk.unlocked, or
+    // there'd be no way to reach the PIN screen.
     Route::middleware('kiosk.enabled')->group(function () {
+        Route::get('/unlock', [UnlockController::class, 'show'])->name('unlock.show');
+        Route::post('/unlock', [UnlockController::class, 'store'])
+            ->middleware('throttle:20,1')
+            ->name('unlock.store');
+        Route::post('/lock', [UnlockController::class, 'destroy'])->name('lock');
+    });
+
+    // The actual kiosk checkout flow — gated behind Stripe actually being
+    // configured (EnsureKioskConfigured) and behind the day's PIN
+    // (EnsureKioskUnlocked). The shared search/browse/filter lookups above
+    // stay outside this group: the public catalogue calls them too.
+    Route::middleware(['kiosk.enabled', 'kiosk.unlocked'])->group(function () {
         Route::get('/', KioskPageController::class)->name('index');
         Route::get('/basket', [BasketController::class, 'index'])->name('basket.index');
         Route::post('/basket', [BasketController::class, 'store'])
@@ -254,7 +267,9 @@ Route::post('/rapid-intake-scan/{token}/frame', [PhoneScanController::class, 'fr
 // token-scoped handoff as the scanner above, see PhonePhotoController.
 Route::get('/card-photo/{token}', [PhonePhotoController::class, 'show'])
     ->name('card-photo.show');
-Route::post('/card-photo/{token}', [PhonePhotoController::class, 'store'])
+// Its own path segment, so the JSON-only error rule in bootstrap/app.php can
+// target the upload without also catching the page above.
+Route::post('/card-photo/{token}/upload', [PhonePhotoController::class, 'store'])
     ->middleware('throttle:30,1')
     ->name('card-photo.store');
 
