@@ -45,9 +45,9 @@ const showFilterPicker = ref(false);
 const {
   query, results, searching, hasSearched,
   browseLetter, browseLoading,
-  activeSet, activeRarity, gradedOnly, filterSets, filterRarities, hasGradedStock, setSearch,
+  activeSet, activeRarity, gradedFilter, filterSets, filterRarities, hasGradedStock, setSearch,
   hasFilters, isFeatured, listMode, displayResults, visibleSets,
-  scheduleSearch, selectLetter, clearLetter, toggleRarity, selectSet, toggleGraded,
+  scheduleSearch, selectLetter, clearLetter, toggleRarity, selectSet, setGraded, clearGraded,
   clearFilters, onScroll, removeFromResults, reset: resetStock, init: initStock,
 } = useCardStock();
 
@@ -351,10 +351,10 @@ async function clearBasket() {
               {{ activeRarity }}
               <button type="button" @click="toggleRarity(activeRarity)" class="hover:text-white text-[16px] leading-none">×</button>
             </span>
-            <span v-if="gradedOnly"
+            <span v-if="gradedFilter"
               class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#c9a84c] bg-[rgba(201,168,76,0.1)] text-[#c9a84c] text-[13px]">
-              Graded
-              <button type="button" @click="toggleGraded" class="hover:text-white text-[16px] leading-none">×</button>
+              {{ gradedFilter === 'only' ? 'Graded only' : 'No graded' }}
+              <button type="button" @click="clearGraded" class="hover:text-white text-[16px] leading-none">×</button>
             </span>
           </div>
 
@@ -551,18 +551,25 @@ async function clearBasket() {
           </button>
         </div>
 
-        <template v-if="hasGradedStock">
-          <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Condition</p>
-          <div class="mb-5 shrink-0">
-            <button type="button" @click="toggleGraded"
-              class="px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
-              :class="gradedOnly
-                ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
-                : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
-              Graded slabs only
-            </button>
-          </div>
-        </template>
+        <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Graded</p>
+        <div class="flex flex-wrap gap-2 mb-2 shrink-0">
+          <button type="button" @click="setGraded('only')"
+            class="px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
+            :class="gradedFilter === 'only'
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            Graded only
+          </button>
+          <button type="button" @click="setGraded('exclude')"
+            class="px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
+            :class="gradedFilter === 'exclude'
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            Hide graded
+          </button>
+        </div>
+        <p v-if="!hasGradedStock" class="text-[#71717a] text-[12px] mb-5 shrink-0">No graded cards in stock right now.</p>
+        <div v-else class="mb-5"></div>
 
         <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Set</p>
         <input v-model="setSearch" type="text" placeholder="Find a set…"

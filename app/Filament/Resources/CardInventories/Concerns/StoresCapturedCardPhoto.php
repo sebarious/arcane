@@ -36,9 +36,20 @@ trait StoresCapturedCardPhoto
 
         $url = route('card-photo.show', $this->cardPhotoToken);
 
+        // Cast, don't pass through: generate() hands back an HtmlString, which
+        // json_encodes to {} and reaches the browser as "[object Object]".
+        // Rapid Intake gets away with the object because it renders server
+        // side via Blade ({!! $svg !!}); this crosses the Livewire JSON
+        // boundary, so it has to be a real string.
+        //
+        // The XML prolog goes too — harmless in a Blade-rendered document,
+        // but pointless noise when the markup is injected with x-html.
+        $svg = (string) QrCode::format('svg')->size(200)->margin(1)->generate($url);
+        $svg = preg_replace('/^<\?xml[^>]*\?>\s*/', '', $svg);
+
         return [
             'url' => $url,
-            'svg' => QrCode::format('svg')->size(200)->margin(1)->generate($url),
+            'svg' => $svg,
         ];
     }
 

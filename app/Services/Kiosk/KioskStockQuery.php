@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 class KioskStockQuery
 {
     /**
-     * @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string, featured?: bool}  $filters
+     * @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string, graded?: ?string, featured?: bool}  $filters
      */
     public function build(array $filters = []): Builder
     {
@@ -86,9 +86,10 @@ class KioskStockQuery
         return [
             'sets' => array_values($sets),
             'rarities' => $rarities,
-            // Lets the pickers hide the graded toggle entirely when there are
-            // no slabs in stock, rather than offering a filter that can only
-            // return nothing.
+            // The graded filter is always offered — hiding it made the feature
+            // look missing whenever stock happened to have no slabs in it.
+            // This just lets the picker say so, rather than leaving someone
+            // wondering why "Graded only" came back empty.
             'has_graded' => CardInventory::query()->available()->whereGraded()->exists(),
         ];
     }
@@ -123,7 +124,7 @@ class KioskStockQuery
         return $dates->last();
     }
 
-    /** @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string, featured?: bool}  $filters */
+    /** @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string, graded?: ?string, featured?: bool}  $filters */
     private function filtered(array $filters): Builder
     {
         return CardInventory::query()
@@ -147,6 +148,10 @@ class KioskStockQuery
             ->when($filters['letter'] ?? null, fn (Builder $q, string $letter) => $q->whereRaw('LOWER(card_name) LIKE ?', [strtolower($letter).'%']))
             ->when($filters['set'] ?? null, fn (Builder $q, string $set) => $q->where('set_name', $set))
             ->when($filters['rarity'] ?? null, fn (Builder $q, string $rarity) => $q->where('rarity_band', $rarity))
-            ->when($filters['graded'] ?? false, fn (Builder $q) => $q->whereGraded());
+            // 'only' or 'exclude' — absent means graded and raw alike, which
+            // is what most people want most of the time.
+            ->when($filters['graded'] ?? null, fn (Builder $q, string $mode) => $mode === 'only'
+                ? $q->whereGraded()
+                : $q->whereNot(fn (Builder $inner) => $inner->whereGraded()));
     }
 }

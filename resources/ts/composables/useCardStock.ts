@@ -36,7 +36,8 @@ export function useCardStock() {
 
   const activeSet = ref<string | null>(null);
   const activeRarity = ref<string | null>(null);
-  const gradedOnly = ref(false);
+  // null = graded and raw alike, 'only' = slabs only, 'exclude' = raw only.
+  const gradedFilter = ref<'only' | 'exclude' | null>(null);
   const filterSets = ref<string[]>([]);
   const filterRarities = ref<string[]>([]);
   const hasGradedStock = ref(false);
@@ -48,7 +49,7 @@ export function useCardStock() {
   const seed = Math.floor(Math.random() * 999999) + 1;
 
   const searchMode = computed(() => query.value.trim().length >= 2);
-  const hasFilters = computed(() => activeSet.value !== null || activeRarity.value !== null || gradedOnly.value);
+  const hasFilters = computed(() => activeSet.value !== null || activeRarity.value !== null || gradedFilter.value !== null);
 
   /** The landing view: nothing typed, no letter, no filters. */
   const isFeatured = computed(() => !searchMode.value && browseLetter.value === null && !hasFilters.value);
@@ -69,7 +70,7 @@ export function useCardStock() {
     const params: Record<string, string> = {};
     if (activeSet.value) params.set = activeSet.value;
     if (activeRarity.value) params.rarity = activeRarity.value;
-    if (gradedOnly.value) params.graded = '1';
+    if (gradedFilter.value) params.graded = gradedFilter.value;
     return params;
   }
 
@@ -180,15 +181,21 @@ export function useCardStock() {
     applyFilters();
   }
 
-  function toggleGraded() {
-    gradedOnly.value = !gradedOnly.value;
+  /** Tapping the active mode again clears it, back to showing both. */
+  function setGraded(mode: 'only' | 'exclude') {
+    gradedFilter.value = gradedFilter.value === mode ? null : mode;
+    applyFilters();
+  }
+
+  function clearGraded() {
+    gradedFilter.value = null;
     applyFilters();
   }
 
   function clearFilters() {
     activeSet.value = null;
     activeRarity.value = null;
-    gradedOnly.value = false;
+    gradedFilter.value = null;
     applyFilters();
   }
 
@@ -224,10 +231,10 @@ export function useCardStock() {
   return {
     query, results, searching, hasSearched,
     browseLetter, browseResults, browseLoading, browseHasMore,
-    activeSet, activeRarity, gradedOnly, filterSets, filterRarities, hasGradedStock, setSearch,
+    activeSet, activeRarity, gradedFilter, filterSets, filterRarities, hasGradedStock, setSearch,
     searchMode, hasFilters, isFeatured, listMode, displayResults, visibleSets,
     scheduleSearch, runSearch, loadPage, restartList, selectLetter, clearLetter,
-    loadFilterOptions, applyFilters, toggleRarity, selectSet, toggleGraded, clearFilters,
+    loadFilterOptions, applyFilters, toggleRarity, selectSet, setGraded, clearGraded, clearFilters,
     reset, onScroll, removeFromResults, init,
   };
 }
