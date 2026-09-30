@@ -65,32 +65,6 @@
           </div>
         </div>
       </div>
-
-      <!-- tier boxes restored -->
-      <div class="gap-3 mt-8 hidden lg:flex">
-        <div v-for=" tier in PACK_TIERS " :key="tier.name"
-          class="px-4 py-3 backdrop-blur-xl flex flex-col items-center min-w-[96px] transition-transform duration-300 hover:scale-105"
-          :style="{
-            borderRadius: '6px',
-            background: tier.bg,
-            border: `1px solid ${tier.border}`,
-            boxShadow: `0 4px 24px rgba(0,0,0,0.55), 0 0 18px ${tier.glow}`,
-          }">
-          <span class="text-[11px] font-bold tracking-[0.12em] uppercase" :style="{
-            color: tier.color,
-            fontFamily: 'Cinzel, serif',
-            textShadow: `0 0 10px ${tier.glow}`,
-          }">
-            {{ tier.name }}
-          </span>
-          <span class="text-[9px] tracking-widest mt-1" :style="{
-            color: `${tier.color}90`,
-            fontFamily: 'Jost, sans-serif',
-          }">
-            {{ tier.qty }}
-          </span>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -140,33 +114,6 @@ const RARITY_COLORS: Record<
     badge: '#ec4899',
   },
 };
-
-const PACK_TIERS = [
-  {
-    name: 'Sapphire',
-    qty: 'x125',
-    color: '#93c5fd',
-    glow: 'rgba(59,130,246,0.7)',
-    bg: 'linear-gradient(135deg, #0c1f6e 0%, #1a4db5 100%)',
-    border: 'rgba(96,165,250,0.5)',
-  },
-  {
-    name: 'Ruby',
-    qty: 'x250',
-    color: '#fca5a5',
-    glow: 'rgba(220,38,38,0.7)',
-    bg: 'linear-gradient(135deg, #6e0c0c 0%, #b91c1c 100%)',
-    border: 'rgba(248,113,113,0.5)',
-  },
-  {
-    name: 'Diamond',
-    qty: 'x500',
-    color: '#e8f0ff',
-    glow: 'rgba(200,220,255,0.8)',
-    bg: 'rgba(255,255,255,0.18)',
-    border: 'rgba(210,230,255,0.55)',
-  },
-] as const;
 
 const cardIndex = ref( 0 );
 

@@ -47,15 +47,15 @@
 
         <!-- CTAs -->
         <div class="grid grid-cols-2 md:flex gap-4 md:flex-wrap">
-          <Link href="/apply"
+          <Link href="/rips"
             class="text-center md:px-8 py-3.5 bg-[#DCC175] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#e8d49a] transition-colors duration-300"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-          Apply now
+          Buy a pack
           </Link>
-          <Link href="/stores"
+          <Link href="/card-lists"
             class="text-center md:px-8 py-3.5 text-[#DCC175]/70 text-xs tracking-[0.22em] uppercase border border-[#DCC175]/25 hover:border-[#DCC175]/50 hover:text-[#DCC175] transition-all duration-300 backdrop-blur-sm"
             :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-            Browse stores
+            View card lists
           </Link>
         </div>
       </div>
@@ -80,34 +80,6 @@ import { Link } from '@inertiajs/vue3';
 const props = defineProps<{
   totalAvailableCards: number;
 }>();
-
-// --- local PACK_TIERS (same as React) ---------------------------------------
-const PACK_TIERS = [
-  {
-    name: 'Sapphire',
-    qty: 'x125',
-    color: '#93c5fd',
-    glow: 'rgba(59,130,246,0.7)',
-    bg: 'linear-gradient(135deg, #0c1f6e 0%, #1a4db5 100%)',
-    border: 'rgba(96,165,250,0.5)',
-  },
-  {
-    name: 'Ruby',
-    qty: 'x250',
-    color: '#fca5a5',
-    glow: 'rgba(220,38,38,0.7)',
-    bg: 'linear-gradient(135deg, #6e0c0c 0%, #b91c1c 100%)',
-    border: 'rgba(248,113,113,0.5)',
-  },
-  {
-    name: 'Diamond',
-    qty: 'x500',
-    color: '#e8f0ff',
-    glow: 'rgba(200,220,255,0.8)',
-    bg: 'rgba(255,255,255,0.18)',
-    border: 'rgba(210,230,255,0.55)',
-  },
-];
 
 // --- scroll-based parallax replacement for useScroll/useTransform -----------
 

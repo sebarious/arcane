@@ -417,7 +417,8 @@ import HoloText from './HoloText.vue';
   }
 }
 
-/* Tier accent colors — pulled from the hero's Sapphire/Ruby/Diamond pills */
+/* Tier accent colors — originally taken from the hero's Sapphire/Ruby/Diamond
+   pills, which the hero no longer shows; these are now the only place they live. */
 .tier-chip-sapphire {
   background: linear-gradient(135deg, rgb(12, 31, 110) 0%, rgb(26, 77, 181) 100%);
   border: 1px solid rgba(96, 165, 250, 0.5);
