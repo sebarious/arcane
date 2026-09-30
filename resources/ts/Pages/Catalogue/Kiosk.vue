@@ -138,7 +138,10 @@ function startOver() {
     </div>
 
     <!-- Results: the panel scrolls, the page never does -->
-    <div class="flex-1 overflow-y-auto min-h-0 px-6 pt-5 pb-6" @scroll="onScroll">
+    <!-- No bottom padding here on purpose: the gap above the line below is
+         the line's own padding, so it reads the same whether or not the list
+         is scrolled to the end. -->
+    <div class="flex-1 overflow-y-auto min-h-0 px-6 pt-5" @scroll="onScroll">
       <p v-if="searching" class="text-[#a3a3a3] text-[17px] px-1">Searching…</p>
       <p v-else-if="!listMode && hasSearched && results.length === 0" class="text-[#a3a3a3] text-[17px] px-1">
         No matches in stock.
@@ -164,7 +167,7 @@ function startOver() {
       <p v-if="listMode && browseLoading" class="text-[#a3a3a3] text-[14px] text-center py-5">Loading more…</p>
     </div>
 
-    <p class="shrink-0 text-center text-[#71717a] text-[12px] tracking-[0.14em] uppercase pb-4">
+    <p class="shrink-0 text-center text-[#e2dfea] text-[13px] tracking-[0.14em] uppercase py-4">
       Ask a member of staff to buy any of these
     </p>
   </div>
