@@ -21,6 +21,15 @@ class EditCardInventory extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        // Switching a card to manual has to actually cut the PulseAPI link.
+        // The product_id field is hidden in that mode, and a hidden field
+        // simply isn't submitted — so without this the old product would stay
+        // attached and the next price sync would overwrite the details that
+        // were just typed in by hand.
+        if ($this->data['is_manual'] ?? false) {
+            $data['product_id'] = null;
+        }
+
         if (isset($data['cost_pounds'])) {
             $data['cost_pence'] = Money::toPence($data['cost_pounds']);
             unset($data['cost_pounds']);

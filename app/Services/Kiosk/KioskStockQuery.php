@@ -40,9 +40,19 @@ class KioskStockQuery
         // row, even where they share a product_id. PulseAPI usually gives
         // graded variants their own product_id anyway, but a slab added by
         // hand is looked up against the raw card, so this can't rely on that.
+        // The trailing CASE keeps manually-entered cards out of each other's
+        // way. They carry no product_id, and SQL puts every NULL in the same
+        // partition — so without it the whole manual catalogue would collapse
+        // to a single row. For a card that does have a product_id the CASE is
+        // NULL for every row, leaving the grouping above untouched.
         $ranked = $this->filtered($filters)
             ->select('id')
-            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY product_id, graded_by, grade ORDER BY market_value_pence DESC, id ASC) AS rn');
+            ->selectRaw(
+                'ROW_NUMBER() OVER ('
+                .'PARTITION BY product_id, graded_by, grade, CASE WHEN product_id IS NULL THEN id ELSE NULL END '
+                .'ORDER BY market_value_pence DESC, id ASC'
+                .') AS rn'
+            );
 
         $bestPerProduct = DB::query()
             ->fromSub($ranked, 'ranked')

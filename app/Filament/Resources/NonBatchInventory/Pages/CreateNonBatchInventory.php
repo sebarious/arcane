@@ -25,6 +25,12 @@ class CreateNonBatchInventory extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        // Explicit rather than relying on the hidden field being absent, so a
+        // manual card can never be created still carrying a product_id.
+        if ($this->data['is_manual'] ?? false) {
+            $data['product_id'] = null;
+        }
+
         // Mirrors EditCardInventory::mutateFormDataBeforeSave() — the form
         // works in pounds, the table stores pence.
         if (isset($data['cost_pounds'])) {

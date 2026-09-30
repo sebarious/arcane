@@ -259,66 +259,84 @@ onUnmounted(() => {
   </div>
 
   <!-- Filters -->
-  <div v-if="showFilterPicker" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 sm:p-8"
+  <!-- Filters. A full-screen sheet on a phone: the sections used to be
+       fixed height with only the set list scrolling, which squeezed that
+       list to a couple of rows on a short screen. Now the whole body
+       scrolls as one, with the title and actions pinned. From sm up it's
+       the usual centred dialog. -->
+  <div v-if="showFilterPicker" class="fixed inset-0 z-50 bg-black/80 flex items-stretch justify-center p-0 sm:items-center sm:p-8"
     @click="showFilterPicker = false">
-    <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-lg w-full flex flex-col max-h-[80vh] font-['Jost',sans-serif]"
+    <div
+      class="bg-[#13101e] w-full h-full flex flex-col font-['Jost',sans-serif] sm:h-auto sm:max-h-[80vh] sm:max-w-lg sm:rounded-[16px] sm:border sm:border-[rgba(124,58,237,0.4)]"
       @click.stop>
-      <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center mb-5 shrink-0">Filter cards</p>
 
-      <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Rarity</p>
-      <div class="flex flex-wrap gap-2 mb-5 shrink-0">
-        <button v-for="rarity in filterRarities" :key="rarity" type="button" @click="toggleRarity(rarity)"
-          class="px-4 h-[44px] rounded-[8px] border text-[15px] capitalize transition-colors"
-          :class="activeRarity === rarity
-            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
-            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
-          {{ rarity }}
+      <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#3d2f6e] shrink-0">
+        <p class="font-['Cinzel',sans-serif] font-bold text-white text-[18px]">Filter cards</p>
+        <button type="button" @click="showFilterPicker = false" aria-label="Close filters"
+          class="w-[40px] h-[40px] -mr-2 flex items-center justify-center text-[#a3a3a3] hover:text-white text-[22px] leading-none">
+          &times;
         </button>
       </div>
 
-      <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Graded</p>
-      <div class="flex flex-wrap gap-2 mb-2 shrink-0">
-        <button type="button" @click="setGraded('only')"
-          class="px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
-          :class="gradedFilter === 'only'
-            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
-            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
-          Graded only
-        </button>
-        <button type="button" @click="setGraded('exclude')"
-          class="px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
-          :class="gradedFilter === 'exclude'
-            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
-            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
-          Hide graded
-        </button>
+      <!-- overscroll-contain so flicking past the end of this list doesn't
+           carry on scrolling the catalogue underneath — which would also
+           trip its infinite-scroll loader while the filters are covering it. -->
+      <div class="flex-1 overflow-y-auto overscroll-contain min-h-0 px-5 py-5">
+        <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2">Rarity</p>
+        <div class="flex flex-wrap gap-2 mb-5">
+          <button v-for="rarity in filterRarities" :key="rarity" type="button" @click="toggleRarity(rarity)"
+            class="px-4 h-[44px] rounded-[8px] border text-[15px] capitalize transition-colors"
+            :class="activeRarity === rarity
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            {{ rarity }}
+          </button>
+        </div>
+
+        <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2">Graded</p>
+        <div class="flex flex-wrap gap-2 mb-2">
+          <button type="button" @click="setGraded('only')"
+            class="px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
+            :class="gradedFilter === 'only'
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            Graded only
+          </button>
+          <button type="button" @click="setGraded('exclude')"
+            class="px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
+            :class="gradedFilter === 'exclude'
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            Hide graded
+          </button>
+        </div>
+        <p v-if="!hasGradedStock" class="text-[#71717a] text-[12px] mb-5">No graded cards in stock right now.</p>
+        <div v-else class="mb-5"></div>
+
+        <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2">Set</p>
+        <input v-model="setSearch" type="text" placeholder="Find a set…"
+          class="w-full h-[48px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] text-white text-[15px] px-4 mb-2 outline-none placeholder:opacity-40 placeholder:text-white focus:ring-0" />
+
+        <div class="space-y-1.5">
+          <button type="button" @click="selectSet(null)"
+            class="w-full text-left px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
+            :class="activeSet === null
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            All sets
+          </button>
+          <button v-for="set in visibleSets" :key="set" type="button" @click="selectSet(set)"
+            class="w-full text-left px-4 h-[44px] rounded-[8px] border text-[15px] truncate transition-colors"
+            :class="activeSet === set
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            {{ set }}
+          </button>
+          <p v-if="visibleSets.length === 0" class="text-[#71717a] text-[14px] px-1 py-2">No sets match that.</p>
+        </div>
       </div>
-      <p v-if="!hasGradedStock" class="text-[#71717a] text-[12px] mb-5 shrink-0">No graded cards in stock right now.</p>
-      <div v-else class="mb-5"></div>
 
-      <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Set</p>
-      <input v-model="setSearch" type="text" placeholder="Find a set…"
-        class="w-full h-[48px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] text-white text-[15px] px-4 mb-2 shrink-0 outline-none placeholder:opacity-40 placeholder:text-white focus:ring-0" />
-
-      <div class="flex-1 overflow-y-auto min-h-0 space-y-1.5">
-        <button type="button" @click="selectSet(null)"
-          class="w-full text-left px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
-          :class="activeSet === null
-            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
-            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
-          All sets
-        </button>
-        <button v-for="set in visibleSets" :key="set" type="button" @click="selectSet(set)"
-          class="w-full text-left px-4 h-[44px] rounded-[8px] border text-[15px] truncate transition-colors"
-          :class="activeSet === set
-            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
-            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
-          {{ set }}
-        </button>
-        <p v-if="visibleSets.length === 0" class="text-[#71717a] text-[14px] px-1 py-2">No sets match that.</p>
-      </div>
-
-      <div class="flex gap-3 mt-5 shrink-0">
+      <div class="flex gap-3 px-5 py-4 border-t border-[#3d2f6e] shrink-0">
         <button type="button" :disabled="!hasFilters" @click="clearFilters"
           class="flex-1 h-[48px] rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[13px] hover:border-[#c9a84c] disabled:opacity-30 transition-colors">
           Clear all

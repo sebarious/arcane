@@ -72,12 +72,56 @@ class CardInventoryResource extends Resource
                         ))
                         ->default(Game::Pokemon->value)
                         ->required(),
+                    // Not a column: a card is manual exactly when it has no
+                    // PulseAPI product behind it, which is already what every
+                    // sync path keys off (CardPriceSyncer::syncStale and
+                    // PulseApiPriceProvider both skip a blank product_id).
+                    // A flag as well would just be a second thing to disagree.
+                    Forms\Components\Toggle::make('is_manual')
+                        ->label('Enter this card manually')
+                        ->dehydrated(false)
+                        ->live()
+                        ->afterStateHydrated(fn (Forms\Components\Toggle $component, ?CardInventory $record) => $component->state($record ? blank($record->product_id) : false))
+                        ->helperText('For anything PulseAPI doesn\'t list — sealed product, oddities, a slab it doesn\'t carry. You fill in the details and set the price yourself, and nothing will ever overwrite them.')
+                        ->columnSpanFull(),
+
                     Forms\Components\Select::make('product_id')
                         ->label('Card')
                         ->searchable()
                         ->getSearchResultsUsing(fn (string $search) => PulseApiCardMapper::searchOptions($search))
                         ->getOptionLabelUsing(fn ($value) => PulseApiCardMapper::labelForProductId($value))
-                        ->required(),
+                        ->visible(fn ($get) => ! $get('is_manual'))
+                        ->required(fn ($get) => ! $get('is_manual')),
+
+                    // Normally filled from PulseAPI and left alone. On a manual
+                    // card they're the only source for the name shown in the
+                    // admin table and for what the kiosk and catalogue search
+                    // against, so they're editable and the name is required.
+                    Forms\Components\TextInput::make('card_name')
+                        ->label('Card name')
+                        ->maxLength(255)
+                        ->visible(fn ($get) => (bool) $get('is_manual'))
+                        ->required(fn ($get) => (bool) $get('is_manual'))
+                        ->helperText('What staff and customers search for.'),
+
+                    Forms\Components\TextInput::make('set_name')
+                        ->label('Set')
+                        ->maxLength(255)
+                        ->visible(fn ($get) => (bool) $get('is_manual'))
+                        ->helperText('Also searchable, and used by the set filter.'),
+
+                    Forms\Components\TextInput::make('card_number')
+                        ->label('Number')
+                        ->maxLength(50)
+                        ->visible(fn ($get) => (bool) $get('is_manual'))
+                        ->placeholder('e.g. 199/165'),
+
+                    Forms\Components\TextInput::make('rarity')
+                        ->label('Rarity (as printed)')
+                        ->maxLength(100)
+                        ->visible(fn ($get) => (bool) $get('is_manual'))
+                        ->placeholder('e.g. Illustration Rare')
+                        ->helperText('Cosmetic only — the price band is worked out from the market value below.'),
                 ]),
 
             Section::make('Acquisition')
