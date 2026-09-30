@@ -14,6 +14,7 @@
         "laravel/framework": "^13.8",
         "laravel/horizon": "^5.47",
         "laravel/reverb": "^1.10",
+        "laravel/socialite": "^5.30",
         "laravel/tinker": "^3.0",
         "resend/resend-php": "^1.3",
         "simplesoftwareio/simple-qrcode": "^4.2",

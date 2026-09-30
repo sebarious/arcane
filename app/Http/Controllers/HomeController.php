@@ -5,20 +5,19 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Pack;
+use App\Models\CardInventory;
 use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
     public function __invoke(Request $request)
     {
+        // Every card genuinely available to be pulled right now — physical
+        // batch or Digital Rip — not just ones already sealed into a pack.
+        // Same pool CardInventory::scopeAvailable()/whats_in_the_pool() draw
+        // from, so the "Live Pool" badge on the hero matches reality.
         $totalAvailableCards = Cache::remember('pulls.total-available', now()->addHour(), function () {
-            return Pack::query()
-                ->where('status', 'sealed')
-                ->whereHas('batch', function ($query) {
-                    $query->whereIn('status', ['committed', 'dispatched', 'completed']);
-                })
-                ->whereHas('card')
-                ->count();
+            return CardInventory::where('status', 'in_stock')->count();
         });
 
         $recentPulls = Cache::remember('pulls.recent', now()->addHour(), function () {

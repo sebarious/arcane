@@ -29,20 +29,30 @@ const sections = [
     ],
   },
   {
-    title: '4. Orders and payment',
+    title: '4. Digital Rips',
+    body: [
+      'Digital Rips is our online, direct-to-consumer digital pack line, purchased and opened at arcanepacks.com/rips. Digital Rips is only available to customers aged 18 or over — by purchasing a Digital Rips pack you confirm that you are at least 18 years old. We may ask you to verify your age at any time and may suspend or close an account where we reasonably believe this requirement isn\'t met.',
+      'Every Digital Rips pack always results in a genuine, real, physical trading card of real monetary value being allocated to you — there is no outcome in which you pay for a pack and receive nothing of value in return. The specific card is randomised, drawn using the same provably-fair, cryptographically-verifiable process described in section 2, and cannot be chosen, exchanged, or guaranteed in advance.',
+      'Once you\'ve opened a pack and seen your card, you choose either to keep it (we\'ll post the physical card to the shipping address on your account) or sell it back to us for the percentage of live market value shown on that pack at the time of purchase, credited to your Arcane wallet. A pack left open but undecided for 24 hours is automatically treated as kept.',
+      'Wallet balances can be withdrawn to a UK bank account once your balance exceeds the minimum shown on the withdrawal page, subject to the withdrawal fee disclosed at the time of your request. Wallet balances can also be spent on further Digital Rips packs. The wallet is a service we provide at our discretion and may amend, suspend, or withdraw, though any balance you hold will always remain redeemable or withdrawable.',
+      'We encourage you to treat Digital Rips as a collectibles purchase, not as a way to make money, and to only spend what you can comfortably afford. If you\'d like us to place a limit on your account or pause your access to Digital Rips, contact us and we\'ll do so.',
+    ],
+  },
+  {
+    title: '5. Orders and payment',
     body: [
       'All prices are shown in GBP and include any taxes unless stated otherwise. Payment is taken at the time of order. We reserve the right to cancel and refund an order if a card pool listing was inaccurate, out of stock, or mispriced due to an error.',
     ],
   },
   {
-    title: '5. Returns',
+    title: '6. Returns',
     body: [
       'If a pack or card arrives damaged, faulty, or not as described (for example, not sealed correctly or not matching its listed condition), contact us and we\'ll arrange a replacement, credit, or refund.',
       'This does not affect your statutory rights as a consumer under UK law.',
     ],
   },
   {
-    title: '6. Selling cards to us ("Sell to Us")',
+    title: '7. Selling cards to us ("Sell to Us")',
     body: [
       'We currently buy Full Art, Illustration Rare, or higher-tier English-language Pokémon cards, in near-mint condition or better, up to the price ceiling shown on the Sell to Us page at the time of your submission.',
       'The offer shown when you search for a card is indicative, based on live market pricing at that moment. Your final offer is confirmed once we\'ve received and inspected your cards — if a card doesn\'t match the condition or description used to generate the indicative offer, we\'ll contact you with a revised offer before proceeding.',
@@ -51,7 +61,7 @@ const sections = [
     ],
   },
   {
-    title: '7. Affiliate program',
+    title: '8. Affiliate program',
     body: [
       'Stores listed on Arcane are issued a unique affiliate code, shown on their public profile page. Anyone — including a store\'s own customers — can quote a valid affiliate code when submitting cards via "Sell to Us" to receive a bonus uplift on their offer, shown on the affiliate program page and applied automatically at submission.',
       'The affiliate bonus percentage may change from time to time; the rate applied is the one in effect at the time you submit your cards. We reserve the right to suspend or revoke an affiliate code, or the program itself, at any time.',
@@ -59,25 +69,25 @@ const sections = [
     ],
   },
   {
-    title: '8. Intellectual property',
+    title: '9. Intellectual property',
     body: [
       'Arcane is an independent business and is not affiliated with, endorsed by, or sponsored by The Pokémon Company, Nintendo, Creatures Inc., or Game Freak. Pokémon and all associated card names, artwork, and trademarks are the property of their respective owners.',
     ],
   },
   {
-    title: '9. Liability',
+    title: '10. Liability',
     body: [
       'Nothing in these terms limits our liability where it would be unlawful to do so (for example, for death or personal injury caused by negligence, or fraud). Subject to that, our liability to you is limited to the amount you paid for the relevant order or submission.',
     ],
   },
   {
-    title: '10. Changes to these terms',
+    title: '11. Changes to these terms',
     body: [
       'We may update these terms from time to time to reflect changes to our services or for legal or regulatory reasons. The version in effect at the time of your order or submission applies.',
     ],
   },
   {
-    title: '11. Governing law',
+    title: '12. Governing law',
     body: [
       'These terms are governed by the laws of England and Wales, and any disputes will be subject to the exclusive jurisdiction of the courts of England and Wales.',
     ],
@@ -118,7 +128,7 @@ const sections = [
 
         <section>
           <h2 class="font-['Cinzel',sans-serif] font-bold text-[20px] text-[#c9a84c] mb-[12px]">
-            12. Contact us
+            13. Contact us
           </h2>
           <p class="font-['Jost',sans-serif] text-[15px] leading-relaxed text-[#d8d3e0]">
             Questions about these terms? Email us at

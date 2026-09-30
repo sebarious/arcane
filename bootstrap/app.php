@@ -41,6 +41,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // CardInventory (no syncStale, no allocation); "every 7 days" per
         // the product ask.
         $schedule->command('arcane:refresh-test-batch')->weekly();
+        // Auto-keeps any Digital Rip left opened-but-undecided for 24 hours
+        // (see AutoKeepExpiredRipsCommand) — an overnight run per the product
+        // ask, so in the worst case (opened just after tonight's run) a pack
+        // could sit for up to ~48h rather than exactly 24h before being
+        // auto-kept; the disclaimer under the buy buttons says "within 24
+        // hours of opening" rather than promising an exact cutoff.
+        $schedule->command('arcane:auto-keep-expired-rips')->dailyAt('03:00');
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

@@ -19,10 +19,10 @@
             {{ label }}
           </a>
         </div>
-        <Link :href="dashboardHref"
+        <Link :href="ctaButton.href"
           class="text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-[#DCC175] text-black font-semibold hover:bg-[#e8d49a] transition-all duration-300"
           :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
-          {{ dashboardLabel }}
+          {{ ctaButton.label }}
         </Link>
       </div>
 
@@ -65,10 +65,10 @@
         </a>
       </nav>
       <div class="px-8 pb-12 pt-8">
-        <Link :href="dashboardHref" @click="close"
+        <Link :href="ctaButton.href" @click="close"
           class="block w-full text-center py-4 bg-[#DCC175] text-black text-sm font-bold tracking-[0.2em] uppercase hover:bg-[#e8d49a] transition-colors"
           :style="{ borderRadius: '4px', fontFamily: 'Jost, sans-serif' }">
-          {{ dashboardLabel }}
+          {{ ctaButton.label }}
         </Link>
       </div>
     </div>
@@ -87,27 +87,39 @@ const isLoggedIn = computed( () => !!(page?.props?.auth as any)?.user );
 const isHome = computed( () => (page?.props?.route as any)?.name === 'home' );
 const userRole = computed( () => (page?.props?.auth as any)?.user?.role as string | undefined );
 
-// Admins land on the seller dashboard link too (there's no separate admin
-// nav entry here) — only an affiliate gets its own label/destination.
-const dashboardHref = computed( () => {
-  if ( ! isLoggedIn.value ) return '/apply';
-  return userRole.value === 'affiliate' ? '/affiliate' : '/seller';
-} );
-
-const dashboardLabel = computed( () => {
-  if ( ! isLoggedIn.value ) return 'Become a Seller';
-  return userRole.value === 'affiliate' ? 'Affiliate Dashboard' : 'Seller Dashboard';
-} );
+// sellerWallet is shared globally (HandleInertiaRequests) and is only ever
+// non-null for a user with the seller role — reused here rather than adding
+// a new shared prop just to know "is this a seller".
+const isSeller = computed( () => (page?.props?.sellerWallet as number | null) !== null );
 
 const NAV_LINKS = computed( (): [string, string, boolean][] => [
+  ['Buy a Pack', '/rips', !!(page?.props?.route as any)?.name?.startsWith('rips')],
   ['Sell to Us', '/sell', !!(page?.props?.route as any)?.name?.startsWith('sell')],
   ['Stores', '/stores', !!(page?.props?.route as any)?.name?.startsWith('stores')],
   ['Card Lists', '/card-lists', !!(page?.props?.route as any)?.name?.startsWith('card-lists')],
   ['Affiliate', '/affiliate-program', !!(page?.props?.route as any)?.name?.startsWith('affiliate-program')],
+  // Only shown logged-out — once logged in, the equivalent destination
+  // becomes the button on the right (see ctaButton) rather than a plain link.
   ...( isLoggedIn.value
     ? []
-    : [['Log In', '/login', !!(page?.props?.route as any)?.name?.startsWith('login')] as [string, string, boolean]] ),
+    : [['Become a Seller', '/apply', !!(page?.props?.route as any)?.name?.startsWith('application')] as [string, string, boolean]] ),
 ] );
+
+// The single button on the right of the nav — always present, but what it
+// points to depends on who's looking at it. Ordered most specific first, so
+// another logged-in account kind is a one-line add.
+const ctaButton = computed( () => {
+  if ( !isLoggedIn.value ) return { label: 'Log In', href: '/login' };
+  // Affiliates get their own dashboard (routes/web.php, role:affiliate) and
+  // are checked before sellers, matching the precedence the nav used before
+  // Digital Rips introduced plain customers.
+  if ( userRole.value === 'affiliate' ) return { label: 'Affiliate Dashboard', href: '/affiliate' };
+  if ( isSeller.value ) return { label: 'Seller Dashboard', href: '/seller' };
+
+  // A plain Digital Rips customer — no seller role — lands on their rips,
+  // wallet is one click away from there via RipAccountLayout's own nav.
+  return { label: 'My Account', href: '/rips/my' };
+} );
 
 const scrolled = ref( false );
 const open = ref( false );

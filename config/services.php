@@ -58,6 +58,11 @@ return [
     // a PaymentIntent via the Stripe API, and Stripe webhooks the result back.
     // No client-side Stripe.js/publishable key involved at all.
     'stripe' => [
+        // Publishable key — safe to expose client-side, used by Digital Rips'
+        // online checkout (Stripe Payment Element, see StripeCheckoutClient).
+        // Was already reserved in .env.example but unused until now — the
+        // Kiosk integration below never needed it (server-driven Terminal).
+        'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         // The physical reader (Stripe Reader S700/S710, BBPOS WisePOS E, or
@@ -74,6 +79,16 @@ return [
         // (e.g. an unfamiliar promo layout), then back off; a live scan session
         // fires this every ~1.5s and the log line is per-frame.
         'debug_ocr' => env('RAPID_INTAKE_DEBUG_OCR', false),
+    ],
+
+    // "Continue with Google" on Digital Rips signup — see
+    // App\Http\Controllers\Auth\GoogleAuthController. Create an OAuth 2.0
+    // Client ID (Web application) in Google Cloud Console, with this app's
+    // /auth/google/callback URL added as an authorised redirect URI.
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
 ];

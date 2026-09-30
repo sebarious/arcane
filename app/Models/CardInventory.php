@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Game;
+use App\Enums\RipGradedPolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -14,7 +15,7 @@ class CardInventory extends Model
     protected $fillable = [
         'condition', 'cost_pence', 'acquired_at', 'acquired_from',
         'acquisition_lot', 'market_value_pence', 'market_value_updated_at', 'price_locked',
-        'rarity_band', 'pack_id', 'qr_token', 'status',
+        'rarity_band', 'pack_id', 'rip_id', 'qr_token', 'status',
         'allocated_sale_price_pence', 'margin_pence',
         'delisted_at', 'delisted_by_user_id', 'game', 'picked_at', 'reserved_until', 'reserved_by',
         'on_ebay', 'in_card_wall', 'not_for_batches',
@@ -43,6 +44,11 @@ class CardInventory extends Model
     public function pack()
     {
         return $this->belongsTo(Pack::class);
+    }
+
+    public function rip()
+    {
+        return $this->belongsTo(Rip::class);
     }
 
     public function delistedBy()
@@ -85,15 +91,17 @@ class CardInventory extends Model
 
     /**
      * Physically unclaimed stock — in the warehouse, not earmarked for a
-     * mystery pack, and not currently sitting in someone else's kiosk basket.
-     * The single definition of "available" shared by BatchGenerator's
-     * candidate pool and kiosk search/reservation, so the two channels can
-     * never both think they own the same physical card.
+     * mystery pack or a digital rip, and not currently sitting in someone
+     * else's kiosk basket. The single definition of "available" shared by
+     * BatchGenerator's candidate pool, RipDrawer's draw pool, and kiosk
+     * search/reservation, so none of those channels can ever think they own
+     * the same physical card at once.
      */
     public function scopeAvailable($q)
     {
         return $q->where('status', 'in_stock')
             ->whereNull('pack_id')
+            ->whereNull('rip_id')
             ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()));
     }
 
@@ -142,6 +150,35 @@ class CardInventory extends Model
     public function scopeBatchEligible($q)
     {
         return $q->available()->batchable();
+    }
+
+    /**
+     * What a Digital Rip pack may draw, given its graded_policy.
+     *
+     * A rip is the same blind promise as a sealed pack, so it draws from the
+     * same quality pool — anything held back from batches on condition
+     * (not_for_batches) is held back here too, whatever the policy says.
+     * Graded slabs are the only exception: batchable() bars them because a
+     * slab can't physically go in a pack, but a rip has no such constraint,
+     * so each pack chooses whether it wants them, and whether it wants
+     * nothing else.
+     *
+     * Pair with available() — as batchEligible() does — to get the pool that
+     * is both eligible and free to allocate right now.
+     */
+    public function scopeRipEligible($q, RipGradedPolicy|string|null $policy = null)
+    {
+        $policy = $policy instanceof RipGradedPolicy
+            ? $policy
+            : (RipGradedPolicy::tryFrom((string) $policy) ?? RipGradedPolicy::Exclude);
+
+        return match ($policy) {
+            // Identical to the batch pool by construction, rather than by a
+            // copy of its rules that could drift away from it later.
+            RipGradedPolicy::Exclude => $q->batchable(),
+            RipGradedPolicy::Allow => $q->where('not_for_batches', false),
+            RipGradedPolicy::Only => $q->where('not_for_batches', false)->whereGraded(),
+        };
     }
 
     /**

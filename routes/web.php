@@ -7,7 +7,9 @@ use App\Http\Controllers\Affiliate\DashboardController as AffiliateDashboardCont
 use App\Http\Controllers\Affiliate\SignupController as AffiliateSignupController;
 use App\Http\Controllers\Affiliate\WithdrawalController as AffiliateWithdrawalController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BatchQrSheetController;
 use App\Http\Controllers\Catalogue\PageController as CataloguePageController;
@@ -35,6 +37,19 @@ use App\Http\Controllers\Pages\PrivacyPolicyController;
 use App\Http\Controllers\Pages\TermsController;
 use App\Http\Controllers\Pages\VerifiedController;
 use App\Http\Controllers\QrScanController;
+use App\Http\Controllers\Rips\CheckoutController as RipCheckoutController;
+use App\Http\Controllers\Rips\DecisionController as RipDecisionController;
+use App\Http\Controllers\Rips\IndexController as RipIndexController;
+use App\Http\Controllers\Rips\MyRipsController;
+use App\Http\Controllers\Rips\OpenController as RipOpenController;
+use App\Http\Controllers\Rips\OrderController as RipOrderController;
+use App\Http\Controllers\Rips\ProfileController as RipProfileController;
+use App\Http\Controllers\Rips\ShowController as RipShowController;
+use App\Http\Controllers\Rips\UnopenedRipsController;
+use App\Http\Controllers\Rips\VerifyController as RipVerifyController;
+use App\Http\Controllers\Rips\WalletController as RipWalletController;
+use App\Http\Controllers\Rips\WalletTopupController as RipWalletTopupController;
+use App\Http\Controllers\Rips\WithdrawalController as RipWithdrawalController;
 use App\Http\Controllers\Sell\AffiliateCodeController;
 use App\Http\Controllers\Sell\AffiliateLinkController;
 use App\Http\Controllers\Sell\SellCardSearchController;
@@ -283,6 +298,71 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'store']);
 });
 Route::get('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+
+// Self-service account creation for Digital Rips customers — driven from
+// AuthModal.vue, not a dedicated page, so these aren't 'guest'-gated: a
+// stray double-submit from an already-logged-in tab should just no-op
+// rather than surface an unexpected redirect to an AJAX caller.
+Route::post('/register', [RegisterController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('register');
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+
+// Digital Rips — the B2C digital mystery-pack line. Browsing is public;
+// everything past checkout requires an account (AuthModal.vue handles that
+// in-context rather than a hard redirect to a login page).
+Route::prefix('rips')->name('rips.')->group(function () {
+    Route::get('/', RipIndexController::class)->name('index');
+
+    Route::post('/checkout', [RipCheckoutController::class, 'store'])
+        ->middleware(['auth', 'throttle:10,1'])
+        ->name('checkout');
+    Route::post('/checkout/wallet', [RipCheckoutController::class, 'payFromWallet'])
+        ->middleware(['auth', 'throttle:10,1'])
+        ->name('checkout.wallet');
+    Route::get('/checkout/{ripOrder:reference}/status', [RipCheckoutController::class, 'status'])
+        ->middleware(['auth', 'throttle:60,1'])
+        ->name('checkout.status');
+
+    // These are all single, static path segments — they MUST be declared
+    // before the /{ripPack:slug} wildcard below, or Laravel's router will
+    // try (and fail) to resolve e.g. "my"/"wallet" as a pack slug and 404
+    // before ever reaching the intended route.
+    Route::middleware('auth')->group(function () {
+        Route::get('/my', MyRipsController::class)->name('my');
+        // Static "unopened" segment — must be registered before the dynamic
+        // /my/{rip} below, or Laravel's router tries (and fails, since "un-
+        // opened" isn't a valid Rip id) to resolve it as one instead.
+        Route::get('/my/unopened', [UnopenedRipsController::class, 'show'])->name('my.unopened');
+        Route::get('/my/{rip}', [RipOpenController::class, 'show'])->name('my.show');
+        Route::post('/my/{rip}/open', [RipOpenController::class, 'open'])->name('my.open');
+        Route::post('/my/{rip}/decide', [RipDecisionController::class, 'store'])->name('my.decide');
+
+        Route::get('/orders/{ripOrder:reference}', [RipOrderController::class, 'show'])->name('orders.show');
+
+        Route::get('/profile', [RipProfileController::class, 'show'])->name('profile');
+        Route::post('/profile', [RipProfileController::class, 'update'])->name('profile.update');
+
+        Route::get('/wallet', [RipWalletController::class, 'show'])->name('wallet');
+        Route::post('/wallet/bank-details', [RipWalletController::class, 'updateBankDetails'])->name('wallet.bank-details');
+        Route::post('/wallet/topup', [RipWalletTopupController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('wallet.topup');
+        Route::get('/wallet/topup/{ripWalletTopup}/status', [RipWalletTopupController::class, 'status'])
+            ->middleware('throttle:60,1')
+            ->name('wallet.topup.status');
+        Route::get('/wallet/withdrawals', [RipWithdrawalController::class, 'show'])->name('wallet.withdrawals.show');
+        Route::post('/wallet/withdrawals', [RipWithdrawalController::class, 'store'])->name('wallet.withdrawals');
+    });
+
+    Route::get('/{rip}/verify', RipVerifyController::class)
+        ->whereNumber('rip')
+        ->name('verify');
+
+    // Wildcard pack-slug route — must stay last in this group (see note above).
+    Route::get('/{ripPack:slug}', RipShowController::class)->name('show');
+});
 
 Route::get('/q/{token}', QrScanController::class)->name('qr.scan');
 

@@ -22,6 +22,12 @@ class LoginController extends Controller
         ]);
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'errors' => ['email' => ['The provided credentials do not match our records.']],
+                ], 422);
+            }
+
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ]);
@@ -30,6 +36,13 @@ class LoginController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
+
+        // AuthModal.vue (Digital Rips) logs in via AJAX and stays on the
+        // current page rather than being redirected — it just needs the
+        // 200, and reloads Inertia's shared auth prop itself afterwards.
+        if ($request->wantsJson()) {
+            return response()->json(['data' => ['id' => $user->id]]);
+        }
 
         if ($user->hasRole('admin')) {
             return redirect()->intended('/admin');
