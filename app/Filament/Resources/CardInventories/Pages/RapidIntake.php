@@ -19,6 +19,7 @@ use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -317,7 +318,7 @@ class RapidIntake extends Page implements HasForms
 
                                 TextInput::make('card_name')
                                     ->label('Card name')
-                                    ->columnSpan(5)
+                                    ->columnSpan(4)
                                     ->placeholder('e.g. Charizard ex')
                                     // Not required — if the fetch can't find a match, leave this
                                     // and use the row's "Fill in manually" (✎) action instead.
@@ -347,6 +348,17 @@ class RapidIntake extends Page implements HasForms
                                     ->minValue(1)
                                     ->default(1)
                                     ->required(),
+
+                                Toggle::make('not_for_batches')
+                                    ->label('No batch')
+                                    ->columnSpan(1)
+                                    ->inline(false)
+                                    ->default(false)
+                                    ->helperText('Too rough for a pack')
+                                    ->hintIcon(
+                                        Heroicon::OutlinedInformationCircle,
+                                        tooltip: 'Keeps this card out of batch generation, while leaving it sellable at the kiosk, on the card wall and on eBay. Applies to every copy saved on this row.',
+                                    ),
 
                                 ImageEntry::make('preview_image')
                                     ->label('')
@@ -882,6 +894,7 @@ class RapidIntake extends Page implements HasForms
                         'acquisition_lot' => $state['acquisition_lot'] ?: null,
                         'status' => 'in_stock',
                         'game' => $attributes['game'] ?? $this->selectedGame()->value,
+                        'not_for_batches' => (bool) ($row['not_for_batches'] ?? false),
                     ]);
                     $created++;
                 }

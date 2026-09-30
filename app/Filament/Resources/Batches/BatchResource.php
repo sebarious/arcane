@@ -928,7 +928,7 @@ class BatchResource extends Resource
 
                         $missingValue = $missingCard->market_value_pence ?? 0;
 
-                        return CardInventory::available()
+                        return CardInventory::batchEligible()
                             ->where('rarity_band', $band)
                             ->where('game', $record->game->value)
                             ->get()

@@ -27,17 +27,27 @@ class BrowseController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
             'set' => ['nullable', 'string', 'max:120'],
             'rarity' => ['nullable', 'string', 'max:20'],
+            'featured' => ['nullable', 'boolean'],
+            // Supplied by the client once per visit and echoed back on every
+            // page, so one visitor's shuffle stays put while they scroll.
+            'seed' => ['nullable', 'integer', 'min:1', 'max:999999'],
         ]);
 
         $page = (int) ($validated['page'] ?? 1);
+        $featured = (bool) ($validated['featured'] ?? false);
 
         $query = $stock->build([
             'letter' => $validated['letter'] ?? null,
             'set' => $validated['set'] ?? null,
             'rarity' => $validated['rarity'] ?? null,
-        ])
-            ->orderBy('card_name')
-            ->orderBy('id');
+            'featured' => $featured,
+        ]);
+
+        // Featured is a shuffle of recent sets; everything else reads better
+        // alphabetically, which is also what the A-Z picker implies.
+        $featured
+            ? $stock->applyFeaturedOrder($query, (int) ($validated['seed'] ?? 1))
+            : $query->orderBy('card_name')->orderBy('id');
 
         $total = (clone $query)->count();
         $cards = $query->forPage($page, self::PER_PAGE)->get();

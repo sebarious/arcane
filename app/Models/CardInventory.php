@@ -16,7 +16,7 @@ class CardInventory extends Model
         'rarity_band', 'pack_id', 'qr_token', 'status',
         'allocated_sale_price_pence', 'margin_pence',
         'delisted_at', 'delisted_by_user_id', 'game', 'picked_at', 'reserved_until', 'reserved_by',
-        'on_ebay', 'in_card_wall',
+        'on_ebay', 'in_card_wall', 'not_for_batches',
         // PulseAPI card data
         'product_id', 'card_name', 'card_number', 'set_id', 'set_name', 'series',
         'release_date', 'material', 'promo_info', 'graded_by', 'grade',
@@ -36,6 +36,7 @@ class CardInventory extends Model
         'price_locked' => 'boolean',
         'on_ebay' => 'boolean',
         'in_card_wall' => 'boolean',
+        'not_for_batches' => 'boolean',
     ];
 
     public function pack()
@@ -76,6 +77,21 @@ class CardInventory extends Model
         return $q->where('status', 'in_stock')
             ->whereNull('pack_id')
             ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()));
+    }
+
+    /**
+     * Available stock that may also be drawn into a generated batch — i.e.
+     * everything available(), minus anything flagged as below pack quality.
+     *
+     * The kiosk, card wall and eBay deliberately use available() instead: a
+     * card can be too rough to seal into a mystery pack (where the buyer
+     * can't see what they're getting) and still be an honest sale face-up,
+     * where they can. Every batch-building path should go through this, so
+     * "not for batches" can't be quietly bypassed by a new query.
+     */
+    public function scopeBatchEligible($q)
+    {
+        return $q->available()->where('not_for_batches', false);
     }
 
     /**

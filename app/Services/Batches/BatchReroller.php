@@ -62,7 +62,7 @@ class BatchReroller
                 $limitPerCard = (int) ($duplicateLimits[$band] ?? 1);
                 $usedPerProduct = [];
 
-                $candidates = CardInventory::available()
+                $candidates = CardInventory::batchEligible()
                     ->where('game', $batch->game->value)
                     ->where('rarity_band', $band)
                     ->inRandomOrder()

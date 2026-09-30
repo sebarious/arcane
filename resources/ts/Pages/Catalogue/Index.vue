@@ -1,36 +1,25 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import axios from 'axios';
 import { Head } from '@inertiajs/vue3';
 import Footer from '@/Components/Layout/Footer.vue';
 import Nav from '@/Components/Layout/Nav.vue';
-
-interface StockCard {
-  id: number;
-  card_name: string;
-  set_name: string | null;
-  card_number: string | null;
-  rarity: string | null;
-  image_url: string | null;
-  price_pence: number;
-  product_badges: string[];
-}
-
-const query = ref('');
-const results = ref<StockCard[]>([]);
-const searching = ref(false);
-const hasSearched = ref(false);
+import { useCardStock, type StockCard } from '@/composables/useCardStock';
 
 const LETTERS = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 
 const showLetterPicker = ref(false);
-const browseLetter = ref<string | null>(null);
-const browseResults = ref<StockCard[]>([]);
-const browsePage = ref(1);
-const browseHasMore = ref(true);
-const browseLoading = ref(false);
+const showFilterPicker = ref(false);
 
-const displayResults = computed(() => (browseLetter.value ? browseResults.value : results.value));
+// Search, A-Z browse, filters and the featured landing view — shared with
+// the in-store kiosk so the two stay in step.
+const {
+  query, results, searching, hasSearched,
+  browseLetter, browseLoading,
+  activeSet, activeRarity, filterSets, filterRarities, setSearch,
+  hasFilters, isFeatured, listMode, displayResults, visibleSets,
+  scheduleSearch, selectLetter, clearLetter, toggleRarity, selectSet,
+  clearFilters, loadPage, init: initStock,
+} = useCardStock();
 
 // Same zoom levels as the kiosk (see resources/ts/Pages/Kiosk/Index.vue) —
 // sized with inline styles rather than dynamic Tailwind classes, since
@@ -69,91 +58,24 @@ function formatPence(pence: number): string {
   return '£' + (pence / 100).toFixed(2);
 }
 
-let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-
-function scheduleSearch() {
-  if (browseLetter.value) clearBrowse();
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(runSearch, 350);
-}
-
-async function runSearch() {
-  const q = query.value.trim();
-
-  if (q.length < 2) {
-    results.value = [];
-    hasSearched.value = false;
-    return;
-  }
-
-  searching.value = true;
-  hasSearched.value = true;
-
-  try {
-    const { data } = await axios.get('/kiosk/search', { params: { q } });
-    results.value = data.data ?? [];
-  } catch {
-    results.value = [];
-  } finally {
-    searching.value = false;
-  }
-}
-
 function openLetterPicker() {
   showLetterPicker.value = true;
-}
-
-function selectLetter(letter: string) {
-  showLetterPicker.value = false;
-
-  query.value = '';
-  results.value = [];
-  hasSearched.value = false;
-
-  browseLetter.value = letter;
-  browseResults.value = [];
-  browsePage.value = 1;
-  browseHasMore.value = true;
-  loadBrowsePage();
-}
-
-function clearBrowse() {
-  browseLetter.value = null;
-  browseResults.value = [];
-  browsePage.value = 1;
-  browseHasMore.value = true;
-}
-
-async function loadBrowsePage() {
-  if (!browseLetter.value || browseLoading.value || !browseHasMore.value) return;
-
-  browseLoading.value = true;
-
-  try {
-    const { data } = await axios.get('/kiosk/browse', {
-      params: { letter: browseLetter.value, page: browsePage.value },
-    });
-    browseResults.value.push(...(data.data ?? []));
-    browseHasMore.value = Boolean(data.has_more);
-    browsePage.value += 1;
-  } catch {
-    browseHasMore.value = false;
-  } finally {
-    browseLoading.value = false;
-  }
 }
 
 // This is a normal scrollable page (not a fixed-height panel like the
 // kiosk's), so infinite scroll watches the window instead of a container.
 function onWindowScroll() {
-  if (!browseLetter.value) return;
+  if (!listMode.value) return;
 
   const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 400;
 
-  if (nearBottom) loadBrowsePage();
+  if (nearBottom) loadPage();
 }
 
-onMounted(() => window.addEventListener('scroll', onWindowScroll));
+onMounted(() => {
+  window.addEventListener('scroll', onWindowScroll);
+  initStock();
+});
 onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
 </script>
 
@@ -191,6 +113,13 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
             : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
           {{ browseLetter ?? 'A-Z' }}
         </button>
+        <button type="button" @click="showFilterPicker = true"
+          class="shrink-0 px-4 h-[56px] rounded-[10px] border font-semibold uppercase text-[13px] font-['Jost',sans-serif] transition-colors"
+          :class="hasFilters
+            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+          Filter
+        </button>
         <div class="shrink-0 flex border border-[#3d2f6e] rounded-[10px] h-[56px] overflow-hidden">
           <button type="button" @click="zoomOut" :disabled="zoomIndex === 0"
             class="w-[40px] h-full flex items-center justify-center text-white text-[20px] font-bold hover:bg-[#1a1628] disabled:opacity-30 border-r border-[#3d2f6e]">
@@ -203,18 +132,36 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
         </div>
       </div>
 
-      <div v-if="browseLetter" class="flex items-center gap-2 mt-3">
-        <p class="text-[#a3a3a3] text-[13px] font-['Jost',sans-serif]">Browsing cards starting with "{{ browseLetter }}"</p>
-        <button type="button" @click="clearBrowse" class="text-[#c9a84c] text-[13px] underline">Clear</button>
+      <p v-if="isFeatured" class="text-[#a3a3a3] text-[13px] font-['Jost',sans-serif] mt-3">
+        A few fresh picks from the latest sets — search, browse A-Z, or filter to find something specific.
+      </p>
+
+      <div v-if="browseLetter || hasFilters" class="flex items-center flex-wrap gap-2 mt-3">
+        <span v-if="browseLetter"
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#3d2f6e] bg-[#1a1628] text-white text-[13px] font-['Jost',sans-serif]">
+          Starting with "{{ browseLetter }}"
+          <button type="button" @click="clearLetter" class="text-[#a3a3a3] hover:text-white text-[16px] leading-none">×</button>
+        </span>
+        <span v-if="activeSet"
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#c9a84c] bg-[rgba(201,168,76,0.1)] text-[#c9a84c] text-[13px] font-['Jost',sans-serif]">
+          {{ activeSet }}
+          <button type="button" @click="selectSet(null)" class="hover:text-white text-[16px] leading-none">×</button>
+        </span>
+        <span v-if="activeRarity"
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#c9a84c] bg-[rgba(201,168,76,0.1)] text-[#c9a84c] text-[13px] capitalize font-['Jost',sans-serif]">
+          {{ activeRarity }}
+          <button type="button" @click="toggleRarity(activeRarity)" class="hover:text-white text-[16px] leading-none">×</button>
+        </span>
       </div>
 
       <div class="mt-6">
         <p v-if="searching" class="text-[#a3a3a3] text-[14px] font-['Jost',sans-serif]">Searching…</p>
-        <p v-else-if="!browseLetter && hasSearched && results.length === 0" class="text-[#a3a3a3] text-[14px] font-['Jost',sans-serif]">
+        <p v-else-if="!listMode && hasSearched && results.length === 0" class="text-[#a3a3a3] text-[14px] font-['Jost',sans-serif]">
           No matches in stock.
         </p>
-        <p v-else-if="browseLetter && !browseLoading && browseResults.length === 0" class="text-[#a3a3a3] text-[14px] font-['Jost',sans-serif]">
-          No cards in stock starting with "{{ browseLetter }}".
+        <p v-else-if="listMode && !browseLoading && displayResults.length === 0" class="text-[#a3a3a3] text-[14px] font-['Jost',sans-serif]">
+          <template v-if="isFeatured">Nothing in stock right now.</template>
+          <template v-else>Nothing in stock matches that{{ hasFilters ? ' — try removing a filter.' : '.' }}</template>
         </p>
 
         <div :style="{ display: 'grid', gridTemplateColumns: `repeat(${zoom.cols}, minmax(0, 1fr))`, gap: '12px' }">
@@ -230,7 +177,7 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
           </button>
         </div>
 
-        <p v-if="browseLetter && browseLoading" class="text-[#a3a3a3] text-[13px] font-['Jost',sans-serif] text-center py-4">Loading more…</p>
+        <p v-if="listMode && browseLoading" class="text-[#a3a3a3] text-[13px] font-['Jost',sans-serif] text-center py-4">Loading more…</p>
       </div>
     </div>
   </main>
@@ -273,7 +220,8 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
     <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-lg w-full" @click.stop>
       <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center mb-5">Browse by letter</p>
       <div class="grid grid-cols-6 gap-2.5">
-        <button v-for="letter in LETTERS" :key="letter" type="button" @click="selectLetter(letter)"
+        <button v-for="letter in LETTERS" :key="letter" type="button"
+          @click="selectLetter(letter); showLetterPicker = false"
           class="aspect-square rounded-[8px] border border-[#3d2f6e] text-white font-['Cinzel',sans-serif] font-bold text-[18px] hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
           {{ letter }}
         </button>
@@ -282,6 +230,60 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
         class="w-full h-[48px] mt-5 rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[13px] hover:border-[#c9a84c] transition-colors font-['Jost',sans-serif]">
         Cancel
       </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div v-if="showFilterPicker" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+    @click="showFilterPicker = false">
+    <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-lg w-full flex flex-col max-h-[80vh] font-['Jost',sans-serif]"
+      @click.stop>
+      <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center mb-5 shrink-0">Filter cards</p>
+
+      <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Rarity</p>
+      <div class="flex flex-wrap gap-2 mb-5 shrink-0">
+        <button v-for="rarity in filterRarities" :key="rarity" type="button" @click="toggleRarity(rarity)"
+          class="px-4 h-[44px] rounded-[8px] border text-[15px] capitalize transition-colors"
+          :class="activeRarity === rarity
+            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+          {{ rarity }}
+        </button>
+      </div>
+
+      <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Set</p>
+      <input v-model="setSearch" type="text" placeholder="Find a set…"
+        class="w-full h-[48px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] text-white text-[15px] px-4 mb-2 shrink-0 outline-none placeholder:opacity-40 placeholder:text-white focus:ring-0" />
+
+      <div class="flex-1 overflow-y-auto min-h-0 space-y-1.5">
+        <button type="button" @click="selectSet(null)"
+          class="w-full text-left px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
+          :class="activeSet === null
+            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+          All sets
+        </button>
+        <button v-for="set in visibleSets" :key="set" type="button" @click="selectSet(set)"
+          class="w-full text-left px-4 h-[44px] rounded-[8px] border text-[15px] truncate transition-colors"
+          :class="activeSet === set
+            ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+            : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+          {{ set }}
+        </button>
+        <p v-if="visibleSets.length === 0" class="text-[#71717a] text-[14px] px-1 py-2">No sets match that.</p>
+      </div>
+
+      <div class="flex gap-3 mt-5 shrink-0">
+        <button type="button" :disabled="!hasFilters" @click="clearFilters"
+          class="flex-1 h-[48px] rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[13px] hover:border-[#c9a84c] disabled:opacity-30 transition-colors">
+          Clear all
+        </button>
+        <button type="button" @click="showFilterPicker = false"
+          class="flex-1 h-[48px] rounded-[6px] text-[#0d0b14] font-bold uppercase text-[13px]"
+          style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
+          Done
+        </button>
+      </div>
     </div>
   </div>
 </template>

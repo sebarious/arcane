@@ -12,6 +12,12 @@ return [
     // from KioskCheckoutService::priceFor().
     'price_rounding_pence' => (int) env('KIOSK_PRICE_ROUNDING_PENCE', 25),
 
+    // The landing view (no search, no letter, no filter) shows a shuffled
+    // sample drawn from this many of the most recently released sets, so
+    // there's something worth looking at before anyone types. Raise it if
+    // stock in the newest sets gets thin.
+    'featured_recent_sets' => (int) env('KIOSK_FEATURED_RECENT_SETS', 8),
+
     // How long adding a card to a basket holds it before it's released back
     // to general stock (and to BatchGenerator's candidate pool) — see
     // App\Services\Kiosk\KioskBasketService.

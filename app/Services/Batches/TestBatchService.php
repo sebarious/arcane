@@ -86,6 +86,10 @@ class TestBatchService
             ->whereIn('status', ['in_stock', 'allocated'])
             ->where('game', $game->value)
             ->whereNotNull('rarity_band')
+            // Still excluded here even though nothing is allocated — this is
+            // shown publicly as a representative batch, so padding it with
+            // cards that could never actually be in one would misrepresent it.
+            ->where('not_for_batches', false)
             ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()))
             ->orderBy('id')
             ->get();

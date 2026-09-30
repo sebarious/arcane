@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import axios from 'axios';
 import { Head } from '@inertiajs/vue3';
+import { useCardStock, type StockCard } from '@/composables/useCardStock';
 
 // Registers the no-op service worker Chrome requires before it'll offer
 // "Add to Home Screen" — see public/kiosk-sw.js. Installing that (rather than
@@ -15,19 +16,11 @@ onMounted(() => {
     });
   }
 
-  loadFilterOptions();
+  // Loads the filter options and the featured landing list.
+  initStock();
 });
 
-interface SearchResult {
-  id: number;
-  card_name: string;
-  set_name: string | null;
-  card_number: string | null;
-  rarity: string | null;
-  image_url: string | null;
-  price_pence: number;
-  product_badges: string[];
-}
+type SearchResult = StockCard;
 
 interface BasketItem {
   id: number;
@@ -42,54 +35,21 @@ type Screen = 'shopping' | 'paying' | 'success' | 'declined';
 
 const screen = ref<Screen>('shopping');
 
-const query = ref('');
-const results = ref<SearchResult[]>([]);
-const searching = ref(false);
-const hasSearched = ref(false);
-
 const LETTERS = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 
-const activeSet = ref<string | null>(null);
-const activeRarity = ref<string | null>(null);
-const filterSets = ref<string[]>([]);
-const filterRarities = ref<string[]>([]);
-const showFilterPicker = ref(false);
-const setSearch = ref('');
-
-const hasFilters = computed(() => activeSet.value !== null || activeRarity.value !== null);
-
-// 80-odd sets is far too many to thumb through on a tablet, so the picker
-// narrows as you type.
-const visibleSets = computed(() => {
-  const q = setSearch.value.trim().toLowerCase();
-  return q ? filterSets.value.filter((s) => s.toLowerCase().includes(q)) : filterSets.value;
-});
-
-// Params both the search and browse endpoints take, so a filter applies
-// whichever mode produced the current list.
-function filterParams(): Record<string, string> {
-  const params: Record<string, string> = {};
-  if (activeSet.value) params.set = activeSet.value;
-  if (activeRarity.value) params.rarity = activeRarity.value;
-  return params;
-}
-
 const showLetterPicker = ref(false);
-const browseLetter = ref<string | null>(null);
-const browseResults = ref<SearchResult[]>([]);
-const browsePage = ref(1);
-const browseHasMore = ref(true);
-const browseLoading = ref(false);
+const showFilterPicker = ref(false);
 
-// Browse (paginated) backs both the A-Z picker and filter-only listings —
-// picking a set with nothing typed should show that set, not an empty panel.
-const browseActive = computed(() =>
-  browseLetter.value !== null || (hasFilters.value && query.value.trim().length < 2));
-
-// Whichever mode is active — typed search or A-Z browse — the results panel
-// renders from the same list, so add-to-basket/preview don't need to know
-// which one produced it.
-const displayResults = computed(() => (browseActive.value ? browseResults.value : results.value));
+// Search, A-Z browse, filters and the featured landing view all come from
+// here — shared with the public catalogue so the two can't drift.
+const {
+  query, results, searching, hasSearched,
+  browseLetter, browseLoading,
+  activeSet, activeRarity, filterSets, filterRarities, setSearch,
+  hasFilters, isFeatured, listMode, displayResults, visibleSets,
+  scheduleSearch, selectLetter, clearLetter, toggleRarity, selectSet,
+  clearFilters, onScroll, removeFromResults, reset: resetStock, init: initStock,
+} = useCardStock();
 
 // Results-grid zoom. Sized with inline styles rather than dynamic Tailwind
 // classes on purpose — arbitrary-value classes built from a data object at
@@ -147,156 +107,8 @@ function formatPence(pence: number): string {
   return '£' + (pence / 100).toFixed(2);
 }
 
-let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-
-function scheduleSearch() {
-  if (browseLetter.value) clearBrowse();
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(runSearch, 350);
-}
-
-async function runSearch() {
-  const q = query.value.trim();
-
-  if (q.length < 2) {
-    results.value = [];
-    hasSearched.value = false;
-    // Nothing typed but a filter is on — fall back to listing what that
-    // filter matches rather than emptying the panel.
-    if (hasFilters.value) restartBrowse();
-    return;
-  }
-
-  searching.value = true;
-  hasSearched.value = true;
-
-  try {
-    const { data } = await axios.get('/kiosk/search', { params: { q, ...filterParams() } });
-    results.value = data.data ?? [];
-  } catch {
-    results.value = [];
-  } finally {
-    searching.value = false;
-  }
-}
-
 function openLetterPicker() {
   showLetterPicker.value = true;
-}
-
-function selectLetter(letter: string) {
-  showLetterPicker.value = false;
-
-  // Leaving search mode entirely — browsing replaces it, not the other way
-  // round (scheduleSearch() clears browse mode if the customer starts typing).
-  query.value = '';
-  results.value = [];
-  hasSearched.value = false;
-
-  browseLetter.value = letter;
-  browseResults.value = [];
-  browsePage.value = 1;
-  browseHasMore.value = true;
-  loadBrowsePage();
-}
-
-function clearBrowse() {
-  browseLetter.value = null;
-  browseResults.value = [];
-  browsePage.value = 1;
-  browseHasMore.value = true;
-}
-
-/** The "Clear" next to the letter chip — drops the letter but keeps any filters, reloading what they still match. */
-function clearLetter() {
-  clearBrowse();
-  if (hasFilters.value) restartBrowse();
-}
-
-async function loadBrowsePage() {
-  if (!browseActive.value || browseLoading.value || !browseHasMore.value) return;
-
-  browseLoading.value = true;
-
-  try {
-    const { data } = await axios.get('/kiosk/browse', {
-      params: {
-        ...(browseLetter.value ? { letter: browseLetter.value } : {}),
-        page: browsePage.value,
-        ...filterParams(),
-      },
-    });
-    browseResults.value.push(...(data.data ?? []));
-    browseHasMore.value = Boolean(data.has_more);
-    browsePage.value += 1;
-  } catch {
-    browseHasMore.value = false;
-  } finally {
-    browseLoading.value = false;
-  }
-}
-
-/** Reloads the browse list from page 1 — after a filter change, or when a filter replaces a search. */
-function restartBrowse() {
-  browseResults.value = [];
-  browsePage.value = 1;
-  browseHasMore.value = true;
-  loadBrowsePage();
-}
-
-async function loadFilterOptions() {
-  try {
-    const { data } = await axios.get('/kiosk/filters');
-    filterSets.value = data.data?.sets ?? [];
-    filterRarities.value = data.data?.rarities ?? [];
-  } catch {
-    // Non-fatal — search and browse still work unfiltered.
-  }
-}
-
-/** Re-runs whichever view is showing, so a filter change is reflected immediately. */
-function applyFilters() {
-  if (query.value.trim().length >= 2) {
-    runSearch();
-    return;
-  }
-
-  if (hasFilters.value || browseLetter.value) {
-    restartBrowse();
-    return;
-  }
-
-  // Last filter cleared with nothing typed and no letter — back to a blank slate.
-  browseResults.value = [];
-}
-
-function toggleRarity(rarity: string) {
-  activeRarity.value = activeRarity.value === rarity ? null : rarity;
-  applyFilters();
-}
-
-function selectSet(set: string | null) {
-  activeSet.value = set;
-  showFilterPicker.value = false;
-  setSearch.value = '';
-  applyFilters();
-}
-
-function clearFilters() {
-  activeSet.value = null;
-  activeRarity.value = null;
-  applyFilters();
-}
-
-// Infinite scroll — fetch the next page a little before the user actually
-// hits the bottom, so it's already loaded by the time they get there.
-function onResultsScroll(event: Event) {
-  if (!browseActive.value) return;
-
-  const el = event.target as HTMLElement;
-  const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
-
-  if (nearBottom) loadBrowsePage();
 }
 
 async function addToBasket(card: SearchResult) {
@@ -307,16 +119,10 @@ async function addToBasket(card: SearchResult) {
     const { data } = await axios.post('/kiosk/basket', { card_inventory_id: card.id });
     basket.value = data.data;
 
-    if (browseActive.value) {
-      // Stay in browse mode — just drop the now-reserved card and keep
-      // scroll position, so picking several cards off the same letter or
-      // filter doesn't mean re-opening the picker each time.
-      browseResults.value = browseResults.value.filter((c) => c.id !== card.id);
-    } else {
-      query.value = '';
-      results.value = [];
-      hasSearched.value = false;
-    }
+    // Drop the now-reserved card but keep the list and scroll position, so
+    // picking several off the same letter, filter or featured run doesn't
+    // mean starting the browse again each time.
+    removeFromResults(card.id);
   } catch (e: any) {
     basketError.value = e?.response?.data?.message ?? 'Could not add that card — please try again.';
   } finally {
@@ -406,6 +212,8 @@ function startNewOrder() {
   payError.value = '';
   cancelError.value = '';
   currentOrderId.value = null;
+  // Next customer starts from the featured view, not the last one's search.
+  resetStock();
   resetZoom();
   screen.value = 'shopping';
 }
@@ -469,12 +277,9 @@ async function clearBasket() {
     basketBusy.value = false;
   }
 
-  query.value = '';
-  results.value = [];
-  hasSearched.value = false;
-  // Keeps any set/rarity filter — that's a browsing preference, not basket
-  // state — so the list has to be reloaded rather than just emptied.
-  clearLetter();
+  // Back to the featured view. Keeps any set/rarity filter — that's a
+  // browsing preference, not basket state.
+  resetStock();
   resetZoom();
 }
 </script>
@@ -526,6 +331,10 @@ async function clearBasket() {
             </div>
           </div>
 
+          <p v-if="isFeatured" class="text-[#a3a3a3] text-[13px] mt-3 shrink-0">
+            Fresh picks from the latest sets — or search, browse A-Z, or filter.
+          </p>
+
           <div v-if="browseLetter || hasFilters" class="flex items-center flex-wrap gap-2 mt-3 shrink-0">
             <span v-if="browseLetter"
               class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#3d2f6e] bg-[#1a1628] text-white text-[13px]">
@@ -544,11 +353,12 @@ async function clearBasket() {
             </span>
           </div>
 
-          <div class="flex-1 overflow-y-auto mt-4 min-h-0" @scroll="onResultsScroll">
+          <div class="flex-1 overflow-y-auto mt-4 min-h-0" @scroll="onScroll">
             <p v-if="searching" class="text-[#a3a3a3] text-[15px] px-2">Searching…</p>
-            <p v-else-if="!browseActive && hasSearched && results.length === 0" class="text-[#a3a3a3] text-[15px] px-2">No matches in stock.</p>
-            <p v-else-if="browseActive && !browseLoading && browseResults.length === 0" class="text-[#a3a3a3] text-[15px] px-2">
-              Nothing in stock matches that{{ hasFilters ? ' — try removing a filter.' : '.' }}
+            <p v-else-if="!listMode && hasSearched && results.length === 0" class="text-[#a3a3a3] text-[15px] px-2">No matches in stock.</p>
+            <p v-else-if="listMode && !browseLoading && displayResults.length === 0" class="text-[#a3a3a3] text-[15px] px-2">
+              <template v-if="isFeatured">Nothing in stock right now.</template>
+              <template v-else>Nothing in stock matches that{{ hasFilters ? ' — try removing a filter.' : '.' }}</template>
             </p>
 
             <div :style="{ display: 'grid', gridTemplateColumns: `repeat(${zoom.cols}, minmax(0, 1fr))`, gap: '12px' }">
@@ -570,7 +380,7 @@ async function clearBasket() {
               </div>
             </div>
 
-            <p v-if="browseActive && browseLoading" class="text-[#a3a3a3] text-[13px] text-center py-4">Loading more…</p>
+            <p v-if="listMode && browseLoading" class="text-[#a3a3a3] text-[13px] text-center py-4">Loading more…</p>
           </div>
         </div>
 
@@ -705,7 +515,8 @@ async function clearBasket() {
       <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-lg w-full" @click.stop>
         <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center mb-5">Browse by letter</p>
         <div class="grid grid-cols-6 gap-2.5">
-          <button v-for="letter in LETTERS" :key="letter" type="button" @click="selectLetter(letter)"
+          <button v-for="letter in LETTERS" :key="letter" type="button"
+            @click="selectLetter(letter); showLetterPicker = false"
             class="aspect-square rounded-[8px] border border-[#3d2f6e] text-white font-['Cinzel',sans-serif] font-bold text-[18px] hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
             {{ letter }}
           </button>

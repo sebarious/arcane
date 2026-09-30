@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 class KioskStockQuery
 {
     /**
-     * @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string}  $filters
+     * @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string, featured?: bool}  $filters
      */
     public function build(array $filters = []): Builder
     {
@@ -81,11 +81,48 @@ class KioskStockQuery
         return ['sets' => array_values($sets), 'rarities' => $rarities];
     }
 
-    /** @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string}  $filters */
+    /**
+     * A deterministic shuffle: the same seed always produces the same order,
+     * which is what stops infinite scroll skipping or repeating cards between
+     * pages the way a plain random sort would. MOD() behaves the same on
+     * MySQL and Postgres; the id sort just breaks ties stably.
+     */
+    public function applyFeaturedOrder(Builder $query, int $seed): Builder
+    {
+        return $query->orderByRaw('MOD(id * ?, 104729)', [max(1, $seed)])->orderBy('id');
+    }
+
+    /**
+     * Release date of the Nth most recent set in stock — the floor for what
+     * counts as "recent" on the landing view. Falls back to the oldest stock
+     * we hold if there aren't that many sets, so the featured view is never
+     * empty just because the catalogue is small.
+     */
+    private function recentSetCutoff(): ?string
+    {
+        $dates = CardInventory::query()
+            ->available()
+            ->whereNotNull('release_date')
+            ->distinct()
+            ->orderByDesc('release_date')
+            ->limit(max(1, (int) config('kiosk.featured_recent_sets', 8)))
+            ->pluck('release_date');
+
+        return $dates->last();
+    }
+
+    /** @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string, featured?: bool}  $filters */
     private function filtered(array $filters): Builder
     {
         return CardInventory::query()
             ->available()
+            ->when($filters['featured'] ?? false, function (Builder $q) {
+                $cutoff = $this->recentSetCutoff();
+
+                if ($cutoff !== null) {
+                    $q->where('release_date', '>=', $cutoff);
+                }
+            })
             ->when($filters['search'] ?? null, function (Builder $q, string $term) {
                 $like = '%'.strtolower($term).'%';
 

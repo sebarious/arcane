@@ -36,7 +36,7 @@ class TheoreticalBatchesWidget extends BaseWidget
         $duplicateLimits = config('banding.duplicate_limits', []);
 
         $stockByBand = CardInventory::query()
-            ->available()
+            ->batchEligible()
             ->where('game', $game->value)
             ->whereNotNull('rarity_band')
             ->selectRaw('rarity_band, product_id, COUNT(*) as qty')

@@ -77,21 +77,21 @@ class BatchGenerator
         // on at the kiosk can't also get pulled into a batch here.
         $this->priceSyncer->syncStale(
             CardInventory::query()
-                ->inStock()
+                ->batchEligible()
                 ->where('game', $game->value)
-                ->whereNull('pack_id')
-                ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()))
         );
 
         // Pool for this game. Explicitly ordered — this feeds the snapshot that a
         // later verification replays against, so it needs a stable, reproducible
         // order rather than whatever an unordered scan happens to return.
+        //
+        // batchEligible() is available() plus the not_for_batches filter — cards
+        // held back as below pack quality stay sellable at the kiosk but never
+        // reach a sealed pack.
         $pool = CardInventory::query()
-            ->inStock()
+            ->batchEligible()
             ->where('game', $game->value)
             ->whereNotNull('rarity_band')
-            ->whereNull('pack_id')
-            ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()))
             ->orderBy('id')
             ->get();
 

@@ -93,6 +93,10 @@ class CardSwapper
             throw new \RuntimeException("{$replacement->card_name} is no longer available — it may already be allocated, sold, or reserved.");
         }
 
+        if ($replacement->not_for_batches) {
+            throw new \RuntimeException("{$replacement->card_name} is marked \"not for batches\" — it's held back from packs on quality. Clear that flag on the card first if it really should go in.");
+        }
+
         $requiredBand = $removalStatus === 'in_stock' ? $targetBand : $oldCard->rarity_band;
 
         if ($replacement->rarity_band !== $requiredBand) {

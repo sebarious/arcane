@@ -144,6 +144,10 @@ class CardInventoryResource extends Resource
                     Forms\Components\Toggle::make('in_card_wall')
                         ->label('In card wall')
                         ->helperText('This physical card is currently on display in the card wall rather than boxed — flagged on any picking sheet it appears on so staff know to pull it from there instead.'),
+
+                    Forms\Components\Toggle::make('not_for_batches')
+                        ->label('Not for batches')
+                        ->helperText('Holds this card back from batch generation — for anything below the condition we\'ll seal into a mystery pack. It stays fully sellable at the kiosk, on the card wall and on eBay, where the buyer can see what they\'re getting.'),
                 ]),
         ]);
     }
@@ -273,6 +277,10 @@ class CardInventoryResource extends Resource
                     ->label('Card wall')
                     ->toggleable(),
 
+                Tables\Columns\ToggleColumn::make('not_for_batches')
+                    ->label('No batches')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('acquisition_lot')
                     ->label('Lot')
                     ->toggleable(),
@@ -324,6 +332,8 @@ class CardInventoryResource extends Resource
                     ->label('On eBay'),
                 Tables\Filters\TernaryFilter::make('in_card_wall')
                     ->label('In card wall'),
+                Tables\Filters\TernaryFilter::make('not_for_batches')
+                    ->label('Not for batches'),
                 Tables\Filters\Filter::make('sold_between')
                     ->label('Sold between')
                     ->schema([
