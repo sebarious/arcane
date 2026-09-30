@@ -101,7 +101,127 @@ const currentOrderId = ref<number | null>(null);
 const cancelling = ref(false);
 const cancelError = ref('');
 
-const totalPence = computed(() => basket.value.reduce((sum, item) => sum + item.price_pence, 0));
+interface CustomLine {
+  id: string;
+  label: string;
+  price_pence: number;
+}
+
+interface Discount {
+  type: 'percent' | 'fixed';
+  value: number;
+}
+
+// Totals come back with every basket response rather than being added up
+// here — the figure on screen is then always the figure the reader will ask
+// for, discount and all.
+const customLines = ref<CustomLine[]>([]);
+const discount = ref<Discount | null>(null);
+const subtotalPence = ref(0);
+const discountPence = ref(0);
+const totalPence = ref(0);
+
+const showCustomItem = ref(false);
+const customLabel = ref('');
+const customAmount = ref('');
+const showDiscount = ref(false);
+const discountType = ref<'percent' | 'fixed'>('percent');
+const discountValue = ref('');
+
+/** Every basket endpoint returns the same shape, so one reader keeps them in step. */
+function applyBasket(payload: any) {
+  basket.value = payload.data ?? [];
+  customLines.value = payload.custom_lines ?? [];
+  discount.value = payload.discount ?? null;
+  subtotalPence.value = payload.subtotal_pence ?? 0;
+  discountPence.value = payload.discount_pence ?? 0;
+  totalPence.value = payload.total_pence ?? 0;
+}
+
+const discountLabel = computed(() => {
+  if (!discount.value) return '';
+  return discount.value.type === 'percent'
+    ? `${discount.value.value}% off`
+    : `${formatPence(discount.value.value)} off`;
+});
+
+const basketEmpty = computed(() => basket.value.length === 0 && customLines.value.length === 0);
+
+async function addCustomItem() {
+  if (!customLabel.value.trim() || !customAmount.value) return;
+
+  basketBusy.value = true;
+  basketError.value = '';
+
+  try {
+    const { data } = await axios.post('/kiosk/basket/custom', {
+      label: customLabel.value.trim(),
+      amount: customAmount.value,
+    });
+    applyBasket(data);
+    customLabel.value = '';
+    customAmount.value = '';
+    showCustomItem.value = false;
+  } catch (e: any) {
+    basketError.value = e?.response?.data?.message ?? 'Could not add that item.';
+  } finally {
+    basketBusy.value = false;
+  }
+}
+
+async function removeCustomLine(id: string) {
+  basketBusy.value = true;
+
+  try {
+    const { data } = await axios.delete(`/kiosk/basket/custom/${id}`);
+    applyBasket(data);
+  } finally {
+    basketBusy.value = false;
+  }
+}
+
+async function applyDiscount() {
+  if (!discountValue.value) return;
+
+  basketBusy.value = true;
+  basketError.value = '';
+
+  try {
+    const { data } = await axios.post('/kiosk/basket/discount', {
+      type: discountType.value,
+      value: discountValue.value,
+    });
+    applyBasket(data);
+    discountValue.value = '';
+    showDiscount.value = false;
+  } catch (e: any) {
+    basketError.value = e?.response?.data?.message ?? 'Could not apply that discount.';
+  } finally {
+    basketBusy.value = false;
+  }
+}
+
+async function removeDiscount() {
+  basketBusy.value = true;
+
+  try {
+    const { data } = await axios.delete('/kiosk/basket/discount');
+    applyBasket(data);
+  } finally {
+    basketBusy.value = false;
+  }
+}
+
+/** Locks the tablet when it's left unattended — needs today's PIN to reopen. */
+function lockKiosk() {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/kiosk/lock';
+  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+  form.innerHTML = `<input type="hidden" name="_token" value="${token}">`;
+  document.body.appendChild(form);
+  form.submit();
+}
 
 function formatPence(pence: number): string {
   return '£' + (pence / 100).toFixed(2);
@@ -117,7 +237,7 @@ async function addToBasket(card: SearchResult) {
 
   try {
     const { data } = await axios.post('/kiosk/basket', { card_inventory_id: card.id });
-    basket.value = data.data;
+    applyBasket(data);
 
     // Drop the now-reserved card but keep the list and scroll position, so
     // picking several off the same letter, filter or featured run doesn't
@@ -141,7 +261,7 @@ async function removeFromBasket(id: number) {
 
   try {
     const { data } = await axios.delete(`/kiosk/basket/${id}`);
-    basket.value = data.data;
+    applyBasket(data);
   } finally {
     basketBusy.value = false;
   }
@@ -272,7 +392,7 @@ async function clearBasket() {
 
   try {
     const { data } = await axios.delete('/kiosk/basket');
-    basket.value = data.data;
+    applyBasket(data);
   } finally {
     basketBusy.value = false;
   }
@@ -318,6 +438,16 @@ async function clearBasket() {
                 ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
                 : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
               Filter
+            </button>
+            <!-- Locks the tablet when it's left unattended; reopening needs
+                 today's PIN from the admin topbar. -->
+            <button type="button" @click="lockKiosk" title="Lock kiosk" aria-label="Lock kiosk"
+              class="shrink-0 w-[64px] h-[64px] rounded-[10px] border border-[#3d2f6e] text-[#a3a3a3] hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors flex items-center justify-center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
             </button>
             <div class="shrink-0 flex border border-[#3d2f6e] rounded-[10px] h-[64px] overflow-hidden">
               <button type="button" @click="zoomOut" :disabled="zoomIndex === 0"
@@ -393,7 +523,7 @@ async function clearBasket() {
         <div class="flex-1 flex flex-col bg-[#13101e] border border-[rgba(124,58,237,0.3)] rounded-[12px] p-5 min-h-0">
           <div class="flex items-center justify-between mb-3">
             <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px]">Basket</p>
-            <button type="button" :disabled="basket.length === 0 || basketBusy" @click="clearBasket"
+            <button type="button" :disabled="basketEmpty || basketBusy" @click="clearBasket"
               class="text-[#a3a3a3] hover:text-red-400 text-[13px] underline disabled:opacity-30 disabled:no-underline">
               Clear basket
             </button>
@@ -402,7 +532,7 @@ async function clearBasket() {
           <p v-if="basketError" class="text-red-400 text-[13px] mb-2">{{ basketError }}</p>
 
           <div class="flex-1 overflow-y-auto space-y-2 min-h-0">
-            <p v-if="basket.length === 0" class="text-[#71717a] text-[14px]">Nothing yet — tap a card to add it.</p>
+            <p v-if="basketEmpty" class="text-[#71717a] text-[14px]">Nothing yet — tap a card to add it.</p>
 
             <div v-for="item in basket" :key="item.id"
               class="flex items-center gap-3 p-2.5 rounded-[8px] border border-[#3d2f6e] bg-[#1a1628]">
@@ -415,14 +545,57 @@ async function clearBasket() {
               <button type="button" :disabled="basketBusy" @click="removeFromBasket(item.id)"
                 class="text-[#a3a3a3] hover:text-red-400 text-[20px] leading-none px-1 shrink-0">×</button>
             </div>
+
+            <!-- Manual lines: no card, no picture, just a label and a price. -->
+            <div v-for="line in customLines" :key="line.id"
+              class="flex items-center gap-3 p-2.5 rounded-[8px] border border-dashed border-[#3d2f6e] bg-[#1a1628]">
+              <div class="w-[36px] h-[50px] rounded-[4px] shrink-0 flex items-center justify-center text-[#71717a] text-[18px] border border-[#3d2f6e]">+</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-white text-[14px] truncate">{{ line.label }}</p>
+                <p class="text-[#a3a3a3] text-[11px]">Manual item</p>
+              </div>
+              <p class="text-[#c9a84c] text-[14px] shrink-0">{{ formatPence(line.price_pence) }}</p>
+              <button type="button" :disabled="basketBusy" @click="removeCustomLine(line.id)"
+                class="text-[#a3a3a3] hover:text-red-400 text-[20px] leading-none px-1 shrink-0">×</button>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-3 shrink-0">
+            <button type="button" @click="showCustomItem = true"
+              class="flex-1 h-[40px] rounded-[6px] border border-[#3d2f6e] text-white text-[13px] hover:border-[#c9a84c] transition-colors">
+              + Manual item
+            </button>
+            <button type="button" @click="showDiscount = true" :disabled="basketEmpty"
+              class="flex-1 h-[40px] rounded-[6px] border text-[13px] transition-colors disabled:opacity-30"
+              :class="discount
+                ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+                : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+              {{ discount ? discountLabel : 'Discount' }}
+            </button>
           </div>
 
           <div class="border-t border-[#3d2f6e] pt-4 mt-4 shrink-0">
+            <!-- Subtotal only appears once there's a discount to explain. -->
+            <template v-if="discountPence > 0">
+              <div class="flex items-center justify-between mb-1.5">
+                <p class="text-[#a3a3a3] text-[14px]">Subtotal</p>
+                <p class="text-[#a3a3a3] text-[14px]">{{ formatPence(subtotalPence) }}</p>
+              </div>
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-[#c9a84c] text-[14px] flex items-center gap-2">
+                  {{ discountLabel }}
+                  <button type="button" :disabled="basketBusy" @click="removeDiscount"
+                    class="text-[#a3a3a3] hover:text-red-400 text-[16px] leading-none">×</button>
+                </p>
+                <p class="text-[#c9a84c] text-[14px]">−{{ formatPence(discountPence) }}</p>
+              </div>
+            </template>
+
             <div class="flex items-center justify-between mb-4">
               <p class="text-white text-[16px]">Total</p>
               <p class="text-[#c9a84c] text-[24px] font-bold">{{ formatPence(totalPence) }}</p>
             </div>
-            <button type="button" :disabled="basket.length === 0" @click="checkout"
+            <button type="button" :disabled="basketEmpty" @click="checkout"
               class="w-full h-[56px] rounded-[6px] text-[#0d0b14] font-bold uppercase text-[16px] disabled:opacity-40"
               style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
               Pay now
@@ -602,6 +775,76 @@ async function clearBasket() {
             class="flex-1 h-[48px] rounded-[6px] text-[#0d0b14] font-bold uppercase text-[13px]"
             style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
             Done
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual item -->
+    <div v-if="showCustomItem" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+      @click="showCustomItem = false">
+      <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-sm w-full" @click.stop>
+        <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center mb-5">Add a manual item</p>
+
+        <label class="block text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2">Description</label>
+        <input v-model="customLabel" type="text" maxlength="80" placeholder="e.g. Sleeves, deposit"
+          class="w-full h-[52px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] text-white text-[16px] px-4 mb-4 outline-none placeholder:opacity-40 placeholder:text-white focus:ring-0" />
+
+        <label class="block text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2">Amount (£)</label>
+        <input v-model="customAmount" type="number" step="0.01" min="0.01" inputmode="decimal" placeholder="0.00"
+          class="w-full h-[52px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] text-white text-[16px] px-4 mb-5 outline-none placeholder:opacity-40 placeholder:text-white focus:ring-0" />
+
+        <div class="flex gap-3">
+          <button type="button" @click="showCustomItem = false"
+            class="flex-1 h-[48px] rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[13px] hover:border-[#c9a84c] transition-colors">
+            Cancel
+          </button>
+          <button type="button" :disabled="!customLabel.trim() || !customAmount || basketBusy" @click="addCustomItem"
+            class="flex-1 h-[48px] rounded-[6px] text-[#0d0b14] font-bold uppercase text-[13px] disabled:opacity-40"
+            style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Discount -->
+    <div v-if="showDiscount" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+      @click="showDiscount = false">
+      <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] p-6 max-w-sm w-full" @click.stop>
+        <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px] text-center mb-5">Discount</p>
+
+        <div class="flex gap-2 mb-4">
+          <button type="button" @click="discountType = 'percent'"
+            class="flex-1 h-[48px] rounded-[8px] border text-[15px] transition-colors"
+            :class="discountType === 'percent'
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            Percent (%)
+          </button>
+          <button type="button" @click="discountType = 'fixed'"
+            class="flex-1 h-[48px] rounded-[8px] border text-[15px] transition-colors"
+            :class="discountType === 'fixed'
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            Amount (£)
+          </button>
+        </div>
+
+        <input v-model="discountValue" type="number" step="0.01" min="0.01"
+          :max="discountType === 'percent' ? 100 : undefined" inputmode="decimal"
+          :placeholder="discountType === 'percent' ? 'e.g. 10' : 'e.g. 5.00'"
+          class="w-full h-[52px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] text-white text-[16px] px-4 mb-5 outline-none placeholder:opacity-40 placeholder:text-white focus:ring-0" />
+
+        <div class="flex gap-3">
+          <button type="button" @click="showDiscount = false"
+            class="flex-1 h-[48px] rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[13px] hover:border-[#c9a84c] transition-colors">
+            Cancel
+          </button>
+          <button type="button" :disabled="!discountValue || basketBusy" @click="applyDiscount"
+            class="flex-1 h-[48px] rounded-[6px] text-[#0d0b14] font-bold uppercase text-[13px] disabled:opacity-40"
+            style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
+            Apply
           </button>
         </div>
       </div>

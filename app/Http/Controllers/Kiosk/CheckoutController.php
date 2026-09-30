@@ -15,14 +15,23 @@ class CheckoutController extends Controller
     public function store(Request $request, KioskCheckoutService $checkout): JsonResponse
     {
         $ids = array_map('intval', (array) $request->session()->get('kiosk_basket', []));
+        $customLines = array_values((array) $request->session()->get('kiosk_custom_lines', []));
+        $discount = $request->session()->get('kiosk_discount');
 
-        if (empty($ids)) {
+        if (empty($ids) && empty($customLines)) {
             return response()->json(['message' => 'Your basket is empty.'], 422);
         }
 
         try {
-            $order = $checkout->startCheckout($ids, $request->session()->getId());
+            $order = $checkout->startCheckout(
+                $ids,
+                $request->session()->getId(),
+                $customLines,
+                is_array($discount) ? $discount : null,
+            );
         } catch (BasketItemsUnavailableException $e) {
+            // Must come first: this extends RuntimeException, so catching the
+            // parent above would swallow it and lose the pruned-basket reply.
             $request->session()->put(
                 'kiosk_basket',
                 array_values(array_diff($ids, $e->cardInventoryIds)),
@@ -32,6 +41,10 @@ class CheckoutController extends Controller
                 'message' => 'Some items in your basket are no longer available.',
                 'unavailable_card_ids' => $e->cardInventoryIds,
             ], 409);
+        } catch (\RuntimeException $e) {
+            // Discounted below what a card payment can take — the message
+            // says what to do about it.
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
         $request->session()->put('kiosk_current_order_id', $order->id);

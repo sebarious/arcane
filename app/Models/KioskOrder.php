@@ -8,10 +8,14 @@ class KioskOrder extends Model
 {
     protected $fillable = [
         'reference', 'status', 'total_pence', 'stripe_payment_intent_id', 'paid_at', 'fulfilled_at',
+        'subtotal_pence', 'discount_type', 'discount_value', 'discount_pence',
     ];
 
     protected $casts = [
         'total_pence' => 'integer',
+        'subtotal_pence' => 'integer',
+        'discount_value' => 'integer',
+        'discount_pence' => 'integer',
         'paid_at' => 'datetime',
         'fulfilled_at' => 'datetime',
     ];

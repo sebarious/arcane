@@ -167,6 +167,19 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
             ->whereNumber('cardInventoryId')
             ->name('basket.destroy');
         Route::delete('/basket', [BasketController::class, 'clear'])->name('basket.clear');
+        // Manual lines and the discount — see BasketController. Behind the
+        // same PIN as the rest of the till, so a customer can't discount
+        // their own basket.
+        Route::post('/basket/custom', [BasketController::class, 'storeCustom'])
+            ->middleware('throttle:30,1')
+            ->name('basket.custom.store');
+        Route::delete('/basket/custom/{lineId}', [BasketController::class, 'destroyCustom'])
+            ->name('basket.custom.destroy');
+        Route::post('/basket/discount', [BasketController::class, 'setDiscount'])
+            ->middleware('throttle:30,1')
+            ->name('basket.discount.store');
+        Route::delete('/basket/discount', [BasketController::class, 'clearDiscount'])
+            ->name('basket.discount.destroy');
         Route::post('/checkout', [CheckoutController::class, 'store'])
             ->middleware('throttle:10,1')
             ->name('checkout');

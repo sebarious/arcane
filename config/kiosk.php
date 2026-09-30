@@ -18,6 +18,11 @@ return [
     // stock in the newest sets gets thin.
     'featured_recent_sets' => (int) env('KIOSK_FEATURED_RECENT_SETS', 8),
 
+    // Stripe won't take a card payment below its own per-currency floor
+    // (30p for GBP), so a basket discounted under this can't be checked out
+    // — the kiosk says so rather than letting the reader fail.
+    'minimum_charge_pence' => (int) env('KIOSK_MINIMUM_CHARGE_PENCE', 30),
+
     // Whether a tablet has to be unlocked with the day's PIN before the kiosk
     // will open (the PIN is shown in the admin topbar — see KioskDailyPin).
     // On by default: the kiosk can take payments and apply discounts, and it

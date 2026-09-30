@@ -8,6 +8,8 @@ use App\Models\KioskOrder;
 use App\Models\KioskOrderItem;
 use App\Services\Batches\PickingSheetGenerator;
 use App\Services\Stripe\StripeTerminalClient;
+use App\Support\Money;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class KioskCheckoutService
@@ -42,16 +44,65 @@ class KioskCheckoutService
     }
 
     /**
+     * What a basket is worth, in one place — the basket endpoint and checkout
+     * both go through this, so what the customer is shown and what the reader
+     * asks for can't drift apart.
+     *
+     * @param  Collection<int, CardInventory>  $cards
+     * @param  array<int, array{id: string, label: string, price_pence: int}>  $customLines
+     * @param  array{type: string, value: int}|null  $discount
+     * @return array{data: array, custom_lines: array, subtotal_pence: int, discount: ?array, discount_pence: int, total_pence: int}
+     */
+    public function summarise(Collection $cards, array $customLines = [], ?array $discount = null): array
+    {
+        $items = $cards->map(fn (CardInventory $card) => $this->present($card))->values();
+        $subtotal = (int) $items->sum('price_pence') + (int) collect($customLines)->sum('price_pence');
+        $discountPence = $this->discountFor($subtotal, $discount);
+
+        return [
+            'data' => $items->all(),
+            'custom_lines' => array_values($customLines),
+            'subtotal_pence' => $subtotal,
+            'discount' => $discount,
+            'discount_pence' => $discountPence,
+            'total_pence' => max(0, $subtotal - $discountPence),
+        ];
+    }
+
+    /**
+     * @param  array{type: string, value: int}|null  $discount  value is a percentage for 'percent', pence for 'fixed'
+     */
+    public function discountFor(int $subtotalPence, ?array $discount): int
+    {
+        if (! $discount || $subtotalPence <= 0) {
+            return 0;
+        }
+
+        $value = max(0, (int) ($discount['value'] ?? 0));
+
+        $amount = ($discount['type'] ?? null) === 'percent'
+            ? (int) round($subtotalPence * min(100, $value) / 100)
+            : $value;
+
+        // Never worth more than the basket — £20 off a £5 basket is £5 off,
+        // not £15 owed back.
+        return min($amount, $subtotalPence);
+    }
+
+    /**
      * Starts checkout for a session's basket: re-verifies every card is still
      * genuinely held by this session (extending the hold to cover payment
      * processing), snapshots pricing into order items, creates the Stripe
      * PaymentIntent, and tells the reader to collect it.
      *
      * @param  int[]  $cardInventoryIds
+     * @param  array<int, array{id: string, label: string, price_pence: int}>  $customLines
+     * @param  array{type: string, value: int}|null  $discount
      *
      * @throws BasketItemsUnavailableException if any basket item's hold has lapsed and been claimed elsewhere
+     * @throws \RuntimeException if the discounted total is below what Stripe will take
      */
-    public function startCheckout(array $cardInventoryIds, string $sessionToken): KioskOrder
+    public function startCheckout(array $cardInventoryIds, string $sessionToken, array $customLines = [], ?array $discount = null): KioskOrder
     {
         $this->basket->extend($cardInventoryIds, $sessionToken);
 
@@ -62,7 +113,26 @@ class KioskCheckoutService
             throw new BasketItemsUnavailableException($missing);
         }
 
-        return DB::transaction(function () use ($cardInventoryIds) {
+        $summary = $this->summarise(
+            CardInventory::whereIn('id', $cardInventoryIds)->get(),
+            $customLines,
+            $discount,
+        );
+
+        // Stripe rejects anything under its per-currency floor, so catch it
+        // here with something the operator can act on rather than letting the
+        // reader throw an opaque error at the customer.
+        $minimum = (int) config('kiosk.minimum_charge_pence');
+
+        if ($summary['total_pence'] < $minimum) {
+            throw new \RuntimeException(sprintf(
+                'That comes to %s, which is below the %s minimum a card payment can take. Reduce the discount, or take this one at the till.',
+                Money::format($summary['total_pence']),
+                Money::format($minimum),
+            ));
+        }
+
+        return DB::transaction(function () use ($cardInventoryIds, $customLines, $discount, $summary) {
             $cards = CardInventory::whereIn('id', $cardInventoryIds)->get();
 
             $order = KioskOrder::create([
@@ -70,12 +140,7 @@ class KioskCheckoutService
                 'status' => 'pending_payment',
             ]);
 
-            $total = 0;
-
             foreach ($cards as $card) {
-                $unitPrice = $this->priceFor($card);
-                $total += $unitPrice;
-
                 KioskOrderItem::create([
                     'kiosk_order_id' => $order->id,
                     'card_inventory_id' => $card->id,
@@ -84,13 +149,31 @@ class KioskCheckoutService
                     'card_number' => $card->card_number,
                     'rarity' => $card->rarity_band ? ucfirst($card->rarity_band) : 'Unbanded',
                     'market_value_pence' => $card->market_value_pence,
-                    'unit_price_pence' => $unitPrice,
+                    'unit_price_pence' => $this->priceFor($card),
                 ]);
             }
 
-            $order->update(['total_pence' => $total]);
+            // Manual lines are ordinary order items with no inventory behind
+            // them — nothing to mark sold or pick, but they belong on the
+            // receipt and in the takings like everything else.
+            foreach ($customLines as $line) {
+                KioskOrderItem::create([
+                    'kiosk_order_id' => $order->id,
+                    'card_inventory_id' => null,
+                    'card_name' => $line['label'],
+                    'unit_price_pence' => (int) $line['price_pence'],
+                ]);
+            }
 
-            $paymentIntent = $this->stripe->createPaymentIntent($total);
+            $order->update([
+                'subtotal_pence' => $summary['subtotal_pence'],
+                'discount_type' => $discount['type'] ?? null,
+                'discount_value' => $discount['value'] ?? null,
+                'discount_pence' => $summary['discount_pence'],
+                'total_pence' => $summary['total_pence'],
+            ]);
+
+            $paymentIntent = $this->stripe->createPaymentIntent($summary['total_pence']);
             $order->update(['stripe_payment_intent_id' => $paymentIntent->id]);
 
             $this->stripe->processPaymentIntentOnReader($paymentIntent->id);
