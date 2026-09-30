@@ -18,6 +18,10 @@ onMounted(() => {
 
   // Loads the filter options and the featured landing list.
   initStock();
+  // The basket lives in the session, so it survives a refresh, a crashed
+  // tablet or the screen being locked and reopened — load it back rather
+  // than showing an empty one over the top of it.
+  loadBasket();
 });
 
 type SearchResult = StockCard;
@@ -146,6 +150,15 @@ const discountLabel = computed(() => {
 });
 
 const basketEmpty = computed(() => basket.value.length === 0 && customLines.value.length === 0);
+
+async function loadBasket() {
+  try {
+    const { data } = await axios.get('/kiosk/basket');
+    applyBasket(data);
+  } catch {
+    // Non-fatal — the basket just shows empty until the next change.
+  }
+}
 
 async function addCustomItem() {
   if (!customLabel.value.trim() || !customAmount.value) return;
@@ -386,7 +399,10 @@ async function cancelPayment() {
 }
 
 async function clearBasket() {
-  if (basket.value.length === 0) return;
+  // basketEmpty, not basket.length — a basket holding only manual items is
+  // still a basket, and before the load-on-mount below this guard was what
+  // made "Clear basket" look broken after a refresh.
+  if (basketEmpty.value) return;
 
   basketBusy.value = true;
 
