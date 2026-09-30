@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CardInventories\Concerns;
 
 use App\Services\Intake\CardPhotoSession;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 /**
@@ -80,7 +81,13 @@ trait StoresCapturedCardPhoto
         // Into form state, not the record — the photo is only committed when
         // the form itself is saved, so backing out of the page leaves the card
         // as it was (the file is orphaned, same as abandoning a normal upload).
-        $this->data['custom_image_path'] = $path;
+        //
+        // Keyed array, never a bare string: a FileUpload's state is
+        // [fileKey => path], and assigning the path on its own got as far as
+        // Livewire trying to serialise it ("No synthesizer found for key:
+        // card-photos/….jpg") and Filament's own validation rejecting it
+        // ("Argument #2 ($value) must be of type array, string given").
+        $this->data['custom_image_path'] = [(string) Str::uuid() => $path];
 
         $sessions->forget($this->cardPhotoToken);
         $this->cardPhotoToken = null;

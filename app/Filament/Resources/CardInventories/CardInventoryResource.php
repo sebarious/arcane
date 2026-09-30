@@ -27,6 +27,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 class CardInventoryResource extends Resource
@@ -269,7 +270,16 @@ class CardInventoryResource extends Resource
                         // getImageUrlAttribute() rewrites image_url for display;
                         // this field needs the raw stored path to recognise the
                         // existing file rather than showing empty and wiping it.
-                        ->afterStateHydrated(fn (Forms\Components\FileUpload $component, ?CardInventory $record) => $component->state($record?->getRawOriginal('custom_image_path'))),
+                        //
+                        // Given as [fileKey => path], never the bare path: a
+                        // FileUpload's state is always an array, and a string
+                        // reaches Livewire's serialiser and Filament's own
+                        // validation and save loop as the wrong type.
+                        ->afterStateHydrated(function (Forms\Components\FileUpload $component, ?CardInventory $record): void {
+                            $path = $record?->getRawOriginal('custom_image_path');
+
+                            $component->state(filled($path) ? [(string) Str::uuid() => $path] : []);
+                        }),
 
                     Forms\Components\ViewField::make('photo_capture')
                         ->label('')
