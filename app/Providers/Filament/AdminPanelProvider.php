@@ -12,6 +12,7 @@ use App\Filament\Widgets\MarginRealisedWidget;
 use App\Filament\Widgets\PacksSoldChart;
 use App\Filament\Widgets\StorePerformanceWidget;
 use App\Filament\Widgets\TheoreticalBatchesWidget;
+use App\Http\Middleware\RedirectKioskStaffFromAdmin;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -84,6 +85,9 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                // One gate for the whole panel — see the class for why this
+                // isn't done per resource.
+                RedirectKioskStaffFromAdmin::class,
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')

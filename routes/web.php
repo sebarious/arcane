@@ -26,6 +26,7 @@ use App\Http\Controllers\Kiosk\FilterOptionsController;
 use App\Http\Controllers\Kiosk\OrderStatusController;
 use App\Http\Controllers\Kiosk\PageController as KioskPageController;
 use App\Http\Controllers\Kiosk\SearchController as KioskSearchController;
+use App\Http\Controllers\Kiosk\StaffAccessController;
 use App\Http\Controllers\Kiosk\UnlockController;
 use App\Http\Controllers\Pages\AffiliateProgramController;
 use App\Http\Controllers\Pages\ApiDocsController;
@@ -142,6 +143,14 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::get('/filters', FilterOptionsController::class)
         ->middleware('throttle:60,1')
         ->name('filters');
+
+    // Where kiosk-role staff land after signing in — today's PIN and a
+    // one-tap unlock. Signed in and holding the role is itself the proof the
+    // PIN screen is asking for, so this skips it. Admins can use it too.
+    Route::middleware(['auth', 'role:kiosk|admin'])->group(function () {
+        Route::get('/access', [StaffAccessController::class, 'show'])->name('access');
+        Route::post('/access/apply', [StaffAccessController::class, 'apply'])->name('access.apply');
+    });
 
     // Unlocking sits inside kiosk.enabled but outside kiosk.unlocked, or
     // there'd be no way to reach the PIN screen.

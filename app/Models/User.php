@@ -45,7 +45,10 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->hasRole('admin');
+        // Kiosk staff are allowed through the panel's door only so they can
+        // use its login; RedirectKioskStaffFromAdmin sends them straight to
+        // the kiosk access page and keeps them out of everything else.
+        return $this->hasRole('admin') || $this->hasRole('kiosk');
     }
 
     // existing traits, fillables, etc.
