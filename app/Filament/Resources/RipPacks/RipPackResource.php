@@ -116,7 +116,7 @@ class RipPackResource extends Resource
                 ->columns(3),
 
             Section::make('Card pool')
-                ->description('Rips always draw batch-quality stock: anything marked "not for batches" is excluded whatever this is set to. Graded slabs are the one exception, because they can never go in a sealed pack but can go in a rip.')
+                ->description('For raw cards a rip draws exactly what a batch would — anything marked "not for batches" is excluded. Graded slabs are exempt from that: every slab is non-batchable by nature, so whether this pack wants them is decided here.')
                 ->columnSpanFull()
                 ->schema([
                     Forms\Components\Select::make('graded_policy')

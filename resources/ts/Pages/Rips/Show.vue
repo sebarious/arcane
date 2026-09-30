@@ -234,8 +234,16 @@ onBeforeUnmount(() => {
 
     <section class="relative px-8 lg:px-16 py-10 flex-1 mb-12">
       <div class="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12">
-        <div class="flex items-center justify-center bg-[#13101e] border border-[rgba(220,193,117,0.12)] rounded-[16px] p-10">
-          <img :src="pack.image_path ?? packFallback" :alt="pack.name" class="max-h-[420px] drop-shadow-[0_20px_60px_rgba(220,193,117,0.25)]" />
+        <!-- self-start: the grid would otherwise stretch this column to match the
+             taller buy column, stranding the pack in a tall empty panel. -->
+        <div class="relative lg:self-start flex items-center justify-center bg-[#13101e] border border-[rgba(220,193,117,0.12)] rounded-[16px] p-10 overflow-hidden min-h-[440px]">
+          <div class="absolute inset-0 pointer-events-none" :style="{
+            background: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.24) 0%, rgba(220,193,117,0.10) 44%, transparent 72%)',
+          }" />
+          <!-- max-w-full matters as much as max-h: without it a wide upload
+               ran straight out of the padded panel. -->
+          <img :src="pack.image_path ?? packFallback" :alt="pack.name"
+            class="relative max-h-[440px] max-w-full object-contain drop-shadow-[0_24px_70px_rgba(0,0,0,0.8)]" />
         </div>
 
         <div>

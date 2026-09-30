@@ -42,7 +42,14 @@ class RipCardEligibilityTest extends TestCase
 
     private function gradedCard(array $attributes = []): CardInventory
     {
-        return $this->card(array_merge(['graded_by' => 'PSA', 'grade' => '10'], $attributes));
+        // not_for_batches is deliberately ON: that is what the non-batch
+        // Inventory form (the only way a slab enters stock) actually writes,
+        // and a slab must stay rip-eligible in spite of it.
+        return $this->card(array_merge([
+            'graded_by' => 'PSA',
+            'grade' => '10',
+            'not_for_batches' => true,
+        ], $attributes));
     }
 
     private function pack(RipGradedPolicy $policy): RipPack
@@ -119,21 +126,41 @@ class RipCardEligibilityTest extends TestCase
     }
 
     /**
-     * The whole point of the feature: condition-rejected stock is out of
+     * The whole point of the feature: condition-rejected RAW stock is out of
      * rips no matter which policy the pack carries.
      */
-    public function test_not_for_batches_stock_is_excluded_under_every_policy(): void
+    public function test_condition_rejected_raw_stock_is_excluded_under_every_policy(): void
     {
         $this->card(['not_for_batches' => true]);
-        $this->gradedCard(['not_for_batches' => true]);
 
         foreach (RipGradedPolicy::cases() as $policy) {
             $this->assertSame(
                 0,
                 CardInventory::available()->ripEligible($policy)->count(),
-                "not_for_batches leaked into the {$policy->value} pool."
+                "not_for_batches raw stock leaked into the {$policy->value} pool."
             );
         }
+    }
+
+    /**
+     * Regression: every slab carries not_for_batches, because the form that
+     * creates it defaults the toggle on. Reading that flag as a condition
+     * signal for slabs excluded all of them and made graded packs undrawable.
+     */
+    public function test_a_slab_is_eligible_despite_carrying_not_for_batches(): void
+    {
+        $slab = $this->gradedCard();
+        $this->assertTrue($slab->fresh()->not_for_batches, 'Fixture should mirror the real form default.');
+
+        foreach ([RipGradedPolicy::Allow, RipGradedPolicy::Only] as $policy) {
+            $this->assertEquals(
+                [$slab->id],
+                CardInventory::available()->ripEligible($policy)->pluck('id')->all(),
+                "A slab was excluded from the {$policy->value} pool by its not_for_batches flag."
+            );
+        }
+
+        $this->assertSame(0, CardInventory::available()->ripEligible(RipGradedPolicy::Exclude)->count());
     }
 
     public function test_a_card_already_in_a_pack_or_rip_is_never_eligible(): void

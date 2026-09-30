@@ -64,8 +64,21 @@ const formatPct = (n: number) => (n * 100).toFixed(n < 0.01 ? 2 : 1) + '%';
             background: 'radial-gradient(ellipse at 50% 0%, rgba(220,193,117,0.12) 0%, transparent 65%)',
           }" />
 
-          <div class="relative aspect-[4/3] flex items-center justify-center bg-[#0d0b14] p-8">
-            <img :src="pack.image_path ?? packFallback" :alt="pack.name" class="h-full object-contain drop-shadow-[0_10px_40px_rgba(220,193,117,0.25)]" />
+          <!-- Square, so portrait pack art (the shape every pack render is)
+               fills the tile instead of floating in a letterboxed 4:3 band.
+               No background of its own: the old #0d0b14 cut a hard seam
+               across the card against its #13101e body. -->
+          <div class="relative aspect-square flex items-center justify-center p-7 overflow-hidden">
+            <!-- The pack art is near-black on a near-black ground, so it needs
+                 something behind it to read against — the same purple-into-gold
+                 wash the hero uses. -->
+            <div class="absolute inset-0 pointer-events-none" :style="{
+              background: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.22) 0%, rgba(220,193,117,0.10) 42%, transparent 70%)',
+            }" />
+            <!-- max-h/max-w both capped so any uploaded aspect ratio is
+                 contained rather than overflowing or being cropped. -->
+            <img :src="pack.image_path ?? packFallback" :alt="pack.name"
+              class="relative max-h-full max-w-full object-contain drop-shadow-[0_18px_44px_rgba(0,0,0,0.75)] transition-transform duration-500 group-hover:scale-[1.06]" />
             <span v-if="!pack.in_stock"
               class="absolute top-3 right-3 text-[9px] tracking-[0.15em] uppercase font-bold px-2.5 py-1 rounded bg-black/70 text-white/60 border border-white/10">
               Sold out

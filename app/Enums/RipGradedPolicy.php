@@ -5,11 +5,11 @@ namespace App\Enums;
 /**
  * Whether a Digital Rip pack may draw graded slabs.
  *
- * A rip sells the same promise as a sealed pack, so it draws from the same
- * quality pool: anything flagged not_for_batches is held back from both.
- * Graded cards are the single exception — they can never go into a batch
- * (CardInventory::scopeBatchable()), but a rip pack may well want them, so
- * each pack decides for itself.
+ * A rip sells the same promise as a sealed pack, so for raw cards it draws
+ * from the same quality pool: anything flagged not_for_batches is held back
+ * from both. Graded cards are exempt from that test altogether — every slab
+ * is non-batchable by nature and carries the flag as a matter of course (see
+ * CardInventory::scopeRipEligible()) — so each pack decides for itself.
  */
 enum RipGradedPolicy: string
 {
@@ -35,7 +35,7 @@ enum RipGradedPolicy: string
     {
         return match ($this) {
             self::Exclude => 'Draws batch-quality raw cards only.',
-            self::Allow => 'Draws raw cards and graded slabs from one pool.',
+            self::Allow => 'Draws batch-quality raw cards and graded slabs from one pool.',
             self::Only => 'Draws graded slabs exclusively.',
         };
     }

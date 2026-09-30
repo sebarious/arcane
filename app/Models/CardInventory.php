@@ -155,13 +155,17 @@ class CardInventory extends Model
     /**
      * What a Digital Rip pack may draw, given its graded_policy.
      *
-     * A rip is the same blind promise as a sealed pack, so it draws from the
-     * same quality pool — anything held back from batches on condition
-     * (not_for_batches) is held back here too, whatever the policy says.
-     * Graded slabs are the only exception: batchable() bars them because a
-     * slab can't physically go in a pack, but a rip has no such constraint,
-     * so each pack chooses whether it wants them, and whether it wants
-     * nothing else.
+     * A rip is the same blind promise as a sealed pack, so for raw cards it
+     * draws from exactly the same quality pool: anything held back on
+     * condition (not_for_batches) is held back here too.
+     *
+     * Graded slabs are exempt from that test entirely, not just from the
+     * "is it graded" half of it. Every slab is non-batchable by nature, and
+     * the only route one enters stock by — the non-batch Inventory list —
+     * defaults not_for_batches on (CardInventoryResource's toggle), so the
+     * flag carries no condition signal for a slab; reading it as one would
+     * silently exclude every graded card there is. Whether slabs are wanted
+     * at all is the pack's decision, via its graded_policy.
      *
      * Pair with available() — as batchEligible() does — to get the pool that
      * is both eligible and free to allocate right now.
@@ -176,8 +180,15 @@ class CardInventory extends Model
             // Identical to the batch pool by construction, rather than by a
             // copy of its rules that could drift away from it later.
             RipGradedPolicy::Exclude => $q->batchable(),
-            RipGradedPolicy::Allow => $q->where('not_for_batches', false),
-            RipGradedPolicy::Only => $q->where('not_for_batches', false)->whereGraded(),
+
+            // Batch-quality raw cards, plus any slab. Grouped so the OR can't
+            // escape and swallow the caller's other conditions.
+            RipGradedPolicy::Allow => $q->where(
+                fn ($q) => $q->where(fn ($q) => $q->batchable())
+                    ->orWhere(fn ($q) => $q->whereGraded())
+            ),
+
+            RipGradedPolicy::Only => $q->whereGraded(),
         };
     }
 
