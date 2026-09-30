@@ -88,8 +88,9 @@ class TestBatchService
             ->whereNotNull('rarity_band')
             // Still excluded here even though nothing is allocated — this is
             // shown publicly as a representative batch, so padding it with
-            // cards that could never actually be in one would misrepresent it.
-            ->where('not_for_batches', false)
+            // cards that could never actually be in one (held back on
+            // condition, or graded) would misrepresent it.
+            ->batchable()
             ->where(fn ($q) => $q->whereNull('reserved_until')->orWhere('reserved_until', '<', now()))
             ->orderBy('id')
             ->get();

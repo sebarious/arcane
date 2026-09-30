@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CardInventories\Pages;
 
 use App\Filament\Resources\CardInventories\CardInventoryResource;
+use App\Filament\Resources\CardInventories\Concerns\StoresCapturedCardPhoto;
 use App\Services\Banding\RarityBander;
 use App\Services\Pricing\PulseApiPriceProvider;
 use App\Support\Money;
@@ -14,6 +15,8 @@ use Filament\Support\Icons\Heroicon;
 
 class EditCardInventory extends EditRecord
 {
+    use StoresCapturedCardPhoto;
+
     protected static string $resource = CardInventoryResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

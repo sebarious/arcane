@@ -39,9 +39,25 @@ class CardInventoryResource extends Resource
 
     protected static ?int $navigationSort = 20;
 
-    protected static ?string $modelLabel = 'Inventory';
+    protected static ?string $modelLabel = 'Card';
 
-    protected static ?string $pluralModelLabel = 'Inventory';
+    protected static ?string $pluralModelLabel = 'Batch Inventory';
+
+    /**
+     * Which slice of stock this resource lists. Overridden by the sibling
+     * resources that show the other two views of the same table — see
+     * NonBatchInventoryResource and AllInventoryResource, which extend this
+     * one so the form, table, filters and actions are only defined once.
+     */
+    protected static function inventoryScope(Builder $query): Builder
+    {
+        return $query->batchable();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return static::inventoryScope(parent::getEloquentQuery());
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -148,6 +164,60 @@ class CardInventoryResource extends Resource
                     Forms\Components\Toggle::make('not_for_batches')
                         ->label('Not for batches')
                         ->helperText('Holds this card back from batch generation — for anything below the condition we\'ll seal into a mystery pack. It stays fully sellable at the kiosk, on the card wall and on eBay, where the buyer can see what they\'re getting.'),
+                ]),
+
+            Section::make('Grading & photo')
+                ->columnSpanFull()
+                ->description('For slabbed cards, and anything else where our own photo beats the stock artwork.')
+                ->schema([
+                    // Not a column of its own: a card is graded exactly when
+                    // it has both a grader and a grade (see
+                    // CardInventory::isGraded()). This only drives the form.
+                    Forms\Components\Toggle::make('is_graded')
+                        ->label('This card is graded')
+                        ->dehydrated(false)
+                        ->live()
+                        ->afterStateHydrated(fn (Forms\Components\Toggle $component, ?CardInventory $record) => $component->state((bool) $record?->isGraded()))
+                        ->helperText('Slabbed by PSA, Beckett, CGC and the like.'),
+
+                    Forms\Components\Select::make('graded_by')
+                        ->label('Grading company')
+                        ->options(config('grading.companies'))
+                        ->native(false)
+                        ->visible(fn ($get) => (bool) $get('is_graded'))
+                        ->required(fn ($get) => (bool) $get('is_graded'))
+                        // PulseAPI writes this column too and isn't limited to
+                        // our list, so keep whatever's already on the record
+                        // selectable rather than silently blanking it.
+                        ->getOptionLabelUsing(fn ($value) => config("grading.companies.{$value}", $value)),
+
+                    Forms\Components\TextInput::make('grade')
+                        ->label('Grade')
+                        ->numeric()
+                        ->step(0.5)
+                        ->minValue(1)
+                        ->maxValue(10)
+                        ->visible(fn ($get) => (bool) $get('is_graded'))
+                        ->required(fn ($get) => (bool) $get('is_graded'))
+                        ->helperText('e.g. 10, or 9.5 for a half grade.'),
+
+                    Forms\Components\FileUpload::make('custom_image_path')
+                        ->label('Our photo of this card')
+                        ->image()
+                        ->maxSize(8192)
+                        ->directory('card-photos')
+                        ->visibility('public')
+                        ->imageEditor()
+                        ->helperText('Replaces the stock artwork everywhere this card appears — kiosk, catalogue and card lists. Leave empty to keep using the artwork from PulseAPI.')
+                        // getImageUrlAttribute() rewrites image_url for display;
+                        // this field needs the raw stored path to recognise the
+                        // existing file rather than showing empty and wiping it.
+                        ->afterStateHydrated(fn (Forms\Components\FileUpload $component, ?CardInventory $record) => $component->state($record?->getRawOriginal('custom_image_path'))),
+
+                    Forms\Components\ViewField::make('photo_capture')
+                        ->label('')
+                        ->view('filament.forms.components.card-photo-capture')
+                        ->dehydrated(false),
                 ]),
         ]);
     }

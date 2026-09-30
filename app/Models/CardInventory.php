@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Game;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CardInventory extends Model
@@ -21,7 +22,7 @@ class CardInventory extends Model
         'product_id', 'card_name', 'card_number', 'set_id', 'set_name', 'series',
         'release_date', 'material', 'promo_info', 'graded_by', 'grade',
         'rarity', 'rarity_rank', 'language', 'illustrator', 'pokedex_number',
-        'image_url', 'slug', 'synced_at',
+        'image_url', 'custom_image_path', 'slug', 'synced_at',
     ];
 
     protected $casts = [
@@ -97,18 +98,50 @@ class CardInventory extends Model
     }
 
     /**
+     * Cards that may be sealed into a mystery pack at all, regardless of
+     * whether they happen to be free to allocate right now. Two things
+     * disqualify a card:
+     *
+     *   - not_for_batches: held back on condition.
+     *   - graded: a slab can't go in a pack, and the grade is most of what
+     *     the buyer is paying for — it belongs on the kiosk, card wall or
+     *     eBay where they can see exactly what they're getting.
+     *
+     * Graded is derived from the columns rather than needing the flag set by
+     * hand (see isGraded()), so a card graded by PulseAPI or by an admin is
+     * out of batches the moment it's marked, with nothing to remember.
+     */
+    public function scopeBatchable($q)
+    {
+        return $q->where('not_for_batches', false)->whereNot(fn ($q) => $q->whereGraded());
+    }
+
+    /** The inverse of batchable() — what the non-batch inventory view lists. */
+    public function scopeNotBatchable($q)
+    {
+        return $q->whereNot(fn ($q) => $q->where('not_for_batches', false)->whereNot(fn ($q) => $q->whereGraded()));
+    }
+
+    /** Both grading fields present and non-empty — the SQL form of isGraded(). */
+    public function scopeWhereGraded($q)
+    {
+        return $q->whereNotNull('graded_by')->where('graded_by', '<>', '')
+            ->whereNotNull('grade')->where('grade', '<>', '');
+    }
+
+    /**
      * Available stock that may also be drawn into a generated batch — i.e.
-     * everything available(), minus anything flagged as below pack quality.
+     * everything available(), minus anything batchable() rules out.
      *
      * The kiosk, card wall and eBay deliberately use available() instead: a
-     * card can be too rough to seal into a mystery pack (where the buyer
-     * can't see what they're getting) and still be an honest sale face-up,
-     * where they can. Every batch-building path should go through this, so
-     * "not for batches" can't be quietly bypassed by a new query.
+     * card can be unfit to seal into a mystery pack (where the buyer can't
+     * see what they're getting) and still be an honest sale face-up, where
+     * they can. Every batch-building path should go through this, so the
+     * exclusions can't be quietly bypassed by a new query.
      */
     public function scopeBatchEligible($q)
     {
-        return $q->available()->where('not_for_batches', false);
+        return $q->available()->batchable();
     }
 
     /**
@@ -178,6 +211,12 @@ class CardInventory extends Model
     {
         $badges = [];
 
+        if ($this->isGraded()) {
+            // Leads the list — on a slab the grade is the headline fact, and
+            // this is what the kiosk and storefront print on the card tile.
+            $badges[] = trim("{$this->graded_by} {$this->grade}");
+        }
+
         if ($this->product_id && str_contains($this->product_id, 'Pokémon Center')) {
             $badges[] = 'Pokémon Center';
         }
@@ -187,5 +226,42 @@ class CardInventory extends Model
         }
 
         return $badges;
+    }
+
+    /**
+     * Graded is derived, not stored: a card is graded exactly when it carries
+     * both a grader and a grade. Keeping a separate boolean would just be a
+     * third thing to disagree with those two — and PulseAPI populates them on
+     * slabs it knows about, without any flag for us to set.
+     */
+    public function isGraded(): bool
+    {
+        return filled($this->graded_by) && filled($this->grade);
+    }
+
+    /** Whether this card could ever go in a batch — the row-level form of scopeBatchable(). */
+    public function isBatchable(): bool
+    {
+        return ! $this->not_for_batches && ! $this->isGraded();
+    }
+
+    /**
+     * Our own photo when we've taken one, otherwise PulseAPI's stock artwork.
+     *
+     * Deliberately an override of image_url rather than a new field the rest
+     * of the app has to know about — kiosk, storefront, picking sheets and
+     * the admin tables all read image_url already, so a graded slab's real
+     * photo reaches every one of them without touching any of them. The raw
+     * PulseAPI value is still there via getRawOriginal('image_url'), which is
+     * what the upload field needs to show its current file (same pattern as
+     * Store::getLogoAttribute()).
+     */
+    public function getImageUrlAttribute(?string $value): ?string
+    {
+        if (filled($this->custom_image_path)) {
+            return Storage::disk('public')->url($this->custom_image_path);
+        }
+
+        return $value;
     }
 }

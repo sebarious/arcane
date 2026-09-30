@@ -93,6 +93,10 @@ class CardSwapper
             throw new \RuntimeException("{$replacement->card_name} is no longer available — it may already be allocated, sold, or reserved.");
         }
 
+        if ($replacement->isGraded()) {
+            throw new \RuntimeException("{$replacement->card_name} is a graded card ({$replacement->graded_by} {$replacement->grade}) — graded cards are never sealed into packs. Sell it through the kiosk, card wall or eBay instead.");
+        }
+
         if ($replacement->not_for_batches) {
             throw new \RuntimeException("{$replacement->card_name} is marked \"not for batches\" — it's held back from packs on quality. Clear that flag on the card first if it really should go in.");
         }
