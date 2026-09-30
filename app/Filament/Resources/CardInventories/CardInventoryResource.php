@@ -163,6 +163,10 @@ class CardInventoryResource extends Resource
 
                     Forms\Components\Toggle::make('not_for_batches')
                         ->label('Not for batches')
+                        // On by default for hand-added cards: the only create
+                        // route is the non-batch Inventory list, so a card
+                        // added there should stay in the list it came from.
+                        ->default(true)
                         ->helperText('Holds this card back from batch generation — for anything below the condition we\'ll seal into a mystery pack. It stays fully sellable at the kiosk, on the card wall and on eBay, where the buyer can see what they\'re getting.'),
                 ]),
 

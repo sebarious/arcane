@@ -15,9 +15,9 @@ const showFilterPicker = ref(false);
 const {
   query, results, searching, hasSearched,
   browseLetter, browseLoading,
-  activeSet, activeRarity, filterSets, filterRarities, setSearch,
+  activeSet, activeRarity, gradedOnly, filterSets, filterRarities, hasGradedStock, setSearch,
   hasFilters, isFeatured, listMode, displayResults, visibleSets,
-  scheduleSearch, selectLetter, clearLetter, toggleRarity, selectSet,
+  scheduleSearch, selectLetter, clearLetter, toggleRarity, selectSet, toggleGraded,
   clearFilters, loadPage, init: initStock,
 } = useCardStock();
 
@@ -152,6 +152,11 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
           {{ activeRarity }}
           <button type="button" @click="toggleRarity(activeRarity)" class="hover:text-white text-[16px] leading-none">×</button>
         </span>
+        <span v-if="gradedOnly"
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#c9a84c] bg-[rgba(201,168,76,0.1)] text-[#c9a84c] text-[13px] font-['Jost',sans-serif]">
+          Graded
+          <button type="button" @click="toggleGraded" class="hover:text-white text-[16px] leading-none">×</button>
+        </span>
       </div>
 
       <div class="mt-6">
@@ -250,6 +255,19 @@ onUnmounted(() => window.removeEventListener('scroll', onWindowScroll));
           {{ rarity }}
         </button>
       </div>
+
+      <template v-if="hasGradedStock">
+        <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Condition</p>
+        <div class="mb-5 shrink-0">
+          <button type="button" @click="toggleGraded"
+            class="px-4 h-[44px] rounded-[8px] border text-[15px] transition-colors"
+            :class="gradedOnly
+              ? 'border-[#c9a84c] text-[#c9a84c] bg-[rgba(201,168,76,0.1)]'
+              : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
+            Graded slabs only
+          </button>
+        </div>
+      </template>
 
       <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.1em] mb-2 shrink-0">Set</p>
       <input v-model="setSearch" type="text" placeholder="Find a set…"

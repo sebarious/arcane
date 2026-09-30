@@ -35,9 +35,14 @@ class KioskStockQuery
         // this; the filters live inside the subquery so the copy that wins is
         // the best one *within* the current filter, not one that's since been
         // filtered out.
+        // Partitioned by the grading fields as well as the product: a PSA 10
+        // and a raw copy are different things to a buyer and both deserve a
+        // row, even where they share a product_id. PulseAPI usually gives
+        // graded variants their own product_id anyway, but a slab added by
+        // hand is looked up against the raw card, so this can't rely on that.
         $ranked = $this->filtered($filters)
             ->select('id')
-            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY market_value_pence DESC, id ASC) AS rn');
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY product_id, graded_by, grade ORDER BY market_value_pence DESC, id ASC) AS rn');
 
         $bestPerProduct = DB::query()
             ->fromSub($ranked, 'ranked')
@@ -52,7 +57,7 @@ class KioskStockQuery
      * filter pickers offer, so the customer can never pick a combination
      * that returns nothing.
      *
-     * @return array{sets: list<string>, rarities: list<string>}
+     * @return array{sets: list<string>, rarities: list<string>, has_graded: bool}
      */
     public function filterOptions(): array
     {
@@ -78,7 +83,14 @@ class KioskStockQuery
             fn (string $band) => in_array($band, $present, true),
         ));
 
-        return ['sets' => array_values($sets), 'rarities' => $rarities];
+        return [
+            'sets' => array_values($sets),
+            'rarities' => $rarities,
+            // Lets the pickers hide the graded toggle entirely when there are
+            // no slabs in stock, rather than offering a filter that can only
+            // return nothing.
+            'has_graded' => CardInventory::query()->available()->whereGraded()->exists(),
+        ];
     }
 
     /**
@@ -134,6 +146,7 @@ class KioskStockQuery
             })
             ->when($filters['letter'] ?? null, fn (Builder $q, string $letter) => $q->whereRaw('LOWER(card_name) LIKE ?', [strtolower($letter).'%']))
             ->when($filters['set'] ?? null, fn (Builder $q, string $set) => $q->where('set_name', $set))
-            ->when($filters['rarity'] ?? null, fn (Builder $q, string $rarity) => $q->where('rarity_band', $rarity));
+            ->when($filters['rarity'] ?? null, fn (Builder $q, string $rarity) => $q->where('rarity_band', $rarity))
+            ->when($filters['graded'] ?? false, fn (Builder $q) => $q->whereGraded());
     }
 }

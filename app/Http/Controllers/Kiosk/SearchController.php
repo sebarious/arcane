@@ -18,6 +18,7 @@ class SearchController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'set' => ['nullable', 'string', 'max:120'],
             'rarity' => ['nullable', 'string', 'max:20'],
+            'graded' => ['nullable', 'boolean'],
         ]);
 
         $q = trim((string) ($validated['q'] ?? ''));
@@ -30,6 +31,7 @@ class SearchController extends Controller
             'search' => $q,
             'set' => $validated['set'] ?? null,
             'rarity' => $validated['rarity'] ?? null,
+            'graded' => (bool) ($validated['graded'] ?? false),
         ])
             ->orderBy('card_name')
             ->limit(30)

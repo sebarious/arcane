@@ -36,10 +36,22 @@ class NonBatchInventoryResource extends CardInventoryResource
         return $query->notBatchable();
     }
 
+    /**
+     * The parent hard-disables creation, because Rapid Intake is the only way
+     * cards enter batch stock. That rule doesn't hold here: a graded slab has
+     * a grade, a grader and a photo that only a person can supply, and none of
+     * it comes out of a PulseAPI lookup.
+     */
+    public static function canCreate(): bool
+    {
+        return true;
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListNonBatchInventory::route('/'),
+            'create' => Pages\CreateNonBatchInventory::route('/create'),
             'edit' => Pages\EditNonBatchInventory::route('/{record}/edit'),
         ];
     }

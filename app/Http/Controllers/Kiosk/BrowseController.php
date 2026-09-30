@@ -27,6 +27,7 @@ class BrowseController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
             'set' => ['nullable', 'string', 'max:120'],
             'rarity' => ['nullable', 'string', 'max:20'],
+            'graded' => ['nullable', 'boolean'],
             'featured' => ['nullable', 'boolean'],
             // Supplied by the client once per visit and echoed back on every
             // page, so one visitor's shuffle stays put while they scroll.
@@ -40,6 +41,7 @@ class BrowseController extends Controller
             'letter' => $validated['letter'] ?? null,
             'set' => $validated['set'] ?? null,
             'rarity' => $validated['rarity'] ?? null,
+            'graded' => (bool) ($validated['graded'] ?? false),
             'featured' => $featured,
         ]);
 

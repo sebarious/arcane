@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\AllInventory\Pages;
+namespace App\Filament\Resources\NonBatchInventory\Pages;
 
-use App\Filament\Resources\AllInventory\AllInventoryResource;
 use App\Filament\Resources\CardInventories\Concerns\StoresCapturedCardPhoto;
+use App\Filament\Resources\NonBatchInventory\NonBatchInventoryResource;
 use App\Services\Banding\RarityBander;
 use App\Support\Money;
 use Filament\Resources\Pages\CreateRecord;
@@ -13,15 +13,15 @@ use Filament\Resources\Pages\CreateRecord;
  * don't come through Rapid Intake: the grade, the grading company and our own
  * photo of the slab are all things only a person can supply.
  *
- * Deliberately lives on All Inventory rather than one of the two filtered
- * views. A new card may or may not be batch-eligible, and creating it from a
- * list it then doesn't belong in would look like the save had failed.
+ * Lives on the non-batch Inventory list because that's what's being added
+ * here — graded cards can never be batched at all, and the form defaults
+ * "not for batches" on, so a card created from this list belongs in it.
  */
-class CreateAllInventory extends CreateRecord
+class CreateNonBatchInventory extends CreateRecord
 {
     use StoresCapturedCardPhoto;
 
-    protected static string $resource = AllInventoryResource::class;
+    protected static string $resource = NonBatchInventoryResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {

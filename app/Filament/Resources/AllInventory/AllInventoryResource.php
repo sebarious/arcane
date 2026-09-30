@@ -35,9 +35,8 @@ class AllInventoryResource extends CardInventoryResource
     {
         return [
             'index' => Pages\ListAllInventory::route('/'),
-            // Only this view gets a create page — see CreateAllInventory for
-            // why it isn't on the two filtered ones.
-            'create' => Pages\CreateAllInventory::route('/create'),
+            // No create page here — manual entry lives on the non-batch
+            // Inventory list, which is where a hand-added card belongs.
             'edit' => Pages\EditAllInventory::route('/{record}/edit'),
         ];
     }
