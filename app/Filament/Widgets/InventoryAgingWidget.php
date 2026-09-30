@@ -36,7 +36,7 @@ class InventoryAgingWidget extends ChartWidget
 
         foreach ($buckets as [$from, $to]) {
             $q = CardInventory::query()
-                ->where('status', 'in_stock')
+                ->stockOnHand()
                 ->whereBetween('acquired_at', [$from->toDateString(), $to->toDateString()]);
 
             if ($this->gameFilter) {

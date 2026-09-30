@@ -60,6 +60,23 @@ class CardInventory extends Model
         return $q->whereIn('status', ['allocated', 'dispatched']);
     }
 
+    /**
+     * What we actually hold as loose stock: in stock, and not committed to a
+     * pack. Distinct from inStock(), which is the status on its own — status
+     * and pack_id are only kept in step by convention (BatchGenerator sets
+     * both together), so counting on the status alone would quietly overstate
+     * the shelf the moment anything left the two disagreeing.
+     *
+     * Deliberately still counts cards held in a kiosk basket: a 15-minute
+     * reservation is someone mid-purchase, not stock leaving the building,
+     * and excluding them would make dashboard totals flicker as people
+     * browse. Use available() where a live hold does matter.
+     */
+    public function scopeStockOnHand($q)
+    {
+        return $q->where('status', 'in_stock')->whereNull('pack_id');
+    }
+
     public function scopeForStore($q, int $storeId)
     {
         return $q->whereHas('pack.batch', fn ($b) => $b->where('store_id', $storeId));

@@ -23,7 +23,7 @@ class InventoryByBand extends ChartWidget
         $bands = ['common', 'rare', 'super', 'legendary', 'mythic', 'chase'];
 
         $data = $this->applyGameFilter(CardInventory::query()
-            ->where('status', 'in_stock')
+            ->stockOnHand()
             ->selectRaw('rarity_band,
                          COUNT(*) as count,
                          SUM(market_value_pence) as market,

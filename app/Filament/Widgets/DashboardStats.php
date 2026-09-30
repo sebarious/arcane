@@ -30,8 +30,11 @@ class DashboardStats extends BaseWidget
     protected function getStats(): array
     {
         // Inventory
+        // stockOnHand(), not inStock() — a card allocated to a batch isn't on
+        // the shelf, and every figure below (band breakdown, unbanded count,
+        // market/cost totals) is derived from this same base.
         $inStock = $this->applyGameFilter(
-            CardInventory::query()->where('status', 'in_stock')
+            CardInventory::query()->stockOnHand()
         );
         $inStockCount  = (clone $inStock)->count();
         $inStockMarket = (clone $inStock)->sum('market_value_pence');
