@@ -16,6 +16,7 @@ use App\Http\Controllers\Debug\ErrorPagePreviewController;
 use App\Http\Controllers\Debug\QrSheetPreviewController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\Intake\PhonePhotoController;
 use App\Http\Controllers\Intake\PhoneScanController;
 use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\Kiosk\BasketController;
@@ -248,6 +249,14 @@ Route::get('/rapid-intake-scan/{token}', [PhoneScanController::class, 'show'])
 Route::post('/rapid-intake-scan/{token}/frame', [PhoneScanController::class, 'frame'])
     ->middleware('throttle:60,1')
     ->name('rapid-intake.scan.frame');
+
+// Photograph a card with your phone while editing it on a desktop — same
+// token-scoped handoff as the scanner above, see PhonePhotoController.
+Route::get('/card-photo/{token}', [PhonePhotoController::class, 'show'])
+    ->name('card-photo.show');
+Route::post('/card-photo/{token}', [PhonePhotoController::class, 'store'])
+    ->middleware('throttle:30,1')
+    ->name('card-photo.store');
 
 Route::get('/stores', StoreIndexController::class)->name('stores.index');
 Route::get('/card-lists', CardListIndexController::class)->name('card-lists.index');

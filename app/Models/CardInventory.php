@@ -20,7 +20,7 @@ class CardInventory extends Model
         'on_ebay', 'in_card_wall', 'not_for_batches',
         // PulseAPI card data
         'product_id', 'card_name', 'card_number', 'set_id', 'set_name', 'series',
-        'release_date', 'material', 'promo_info', 'graded_by', 'grade',
+        'release_date', 'material', 'promo_info', 'graded_by', 'grade', 'grade_serial',
         'rarity', 'rarity_rank', 'language', 'illustrator', 'pokedex_number',
         'image_url', 'custom_image_path', 'slug', 'synced_at',
     ];

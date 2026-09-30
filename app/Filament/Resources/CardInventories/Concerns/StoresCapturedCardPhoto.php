@@ -2,58 +2,93 @@
 
 namespace App\Filament\Resources\CardInventories\Concerns;
 
+use App\Services\Intake\CardPhotoSession;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 /**
- * Receives a still from the card-photo camera field (see
- * resources/views/filament/forms/components/card-photo-capture.blade.php)
- * and writes it to the same disk and directory the ordinary file upload uses,
- * so from the form's point of view the two routes are indistinguishable.
+ * Desktop half of "photograph this card with your phone": mints a pairing
+ * session, hands back a QR code for it, and polls until the phone has
+ * uploaded something.
  *
- * Shared by the create and edit pages — both offer the camera.
+ * Mirrors Rapid Intake's "Scan with phone" handoff (see ScanSession and
+ * PhoneScanController) — the admin machine is usually a desktop with no
+ * usable camera, and the card is in someone's hand at the counter.
+ *
+ * Shared by the create and edit pages; both offer the camera.
  */
 trait StoresCapturedCardPhoto
 {
-    public function storeCapturedCardPhoto(string $dataUrl): void
+    public ?string $cardPhotoToken = null;
+
+    /**
+     * Starts a session and returns what the field needs to render the code.
+     *
+     * @return array{url: string, svg: string}
+     */
+    public function startCardPhotoSession(): array
     {
-        // data:image/jpeg;base64,xxxx — anything else didn't come from the
-        // capture field, so refuse rather than trying to interpret it.
-        if (! preg_match('/^data:image\/(jpeg|png|webp);base64,/', $dataUrl, $matches)) {
-            Notification::make()
-                ->title('That photo could not be read')
-                ->danger()
-                ->send();
+        $sessions = app(CardPhotoSession::class);
 
-            return;
+        if (! $this->cardPhotoToken || ! $sessions->exists($this->cardPhotoToken)) {
+            $this->cardPhotoToken = $sessions->create();
         }
 
-        $binary = base64_decode(substr($dataUrl, strpos($dataUrl, ',') + 1), true);
+        $url = route('card-photo.show', $this->cardPhotoToken);
 
-        if ($binary === false) {
-            Notification::make()
-                ->title('That photo could not be read')
-                ->danger()
-                ->send();
+        return [
+            'url' => $url,
+            'svg' => QrCode::format('svg')->size(200)->margin(1)->generate($url),
+        ];
+    }
 
-            return;
+    /**
+     * Polled by the field while a session is open. Returns the stored path
+     * once the phone has sent a photo, so the field can show it immediately.
+     */
+    public function pollCardPhoto(): ?string
+    {
+        if (! $this->cardPhotoToken) {
+            return null;
         }
 
-        $path = 'card-photos/'.Str::uuid().'.'.($matches[1] === 'jpeg' ? 'jpg' : $matches[1]);
+        $sessions = app(CardPhotoSession::class);
 
-        Storage::disk('public')->put($path, $binary);
+        if (! $sessions->exists($this->cardPhotoToken)) {
+            $this->cardPhotoToken = null;
 
-        // Straight into the form's state, not the record — the photo is only
-        // committed when the form itself is saved, so backing out of the page
-        // leaves the card as it was (the file is orphaned, which is the same
-        // outcome as abandoning a normal upload).
+            return null;
+        }
+
+        $path = $sessions->path($this->cardPhotoToken);
+
+        if (! $path) {
+            return null;
+        }
+
+        // Into form state, not the record — the photo is only committed when
+        // the form itself is saved, so backing out of the page leaves the card
+        // as it was (the file is orphaned, same as abandoning a normal upload).
         $this->data['custom_image_path'] = $path;
 
+        $sessions->forget($this->cardPhotoToken);
+        $this->cardPhotoToken = null;
+
         Notification::make()
-            ->title('Photo captured')
+            ->title('Photo received')
             ->body('It replaces the stock artwork for this card once you save.')
             ->success()
             ->send();
+
+        return $path;
+    }
+
+    public function endCardPhotoSession(): void
+    {
+        if ($this->cardPhotoToken) {
+            app(CardPhotoSession::class)->forget($this->cardPhotoToken);
+        }
+
+        $this->cardPhotoToken = null;
     }
 }

@@ -1,98 +1,103 @@
 {{--
-    Take a photo of the physical card with the device camera, for stock where
-    PulseAPI's artwork isn't what the buyer is actually getting (a graded slab
-    above all). Same getUserMedia + canvas approach as the rapid-intake
-    scanner, so there's one camera pattern in the admin rather than two.
+    Photograph a card with a phone while editing it on the desktop. The admin
+    machine is usually a desktop with no usable camera and the card is in
+    someone's hand at the counter, so the capture happens on the phone and
+    syncs back — the same handoff Rapid Intake uses for scanning.
 
-    Sits alongside the ordinary file upload rather than replacing it: on a
-    desktop with no camera the upload is the only route, and on a tablet the
-    camera is much faster than saving to the gallery first.
+    Sits alongside the ordinary file upload rather than replacing it: an
+    existing photo on disk still wants the plain uploader.
 --}}
 <div
     x-data="{
-        stream: null,
-        active: false,
-        busy: false,
+        starting: false,
+        url: null,
+        svg: null,
+        received: false,
         error: '',
+        pollId: null,
 
         async start() {
+            this.starting = true;
             this.error = '';
+            this.received = false;
 
             try {
-                // Rear camera, portrait-biased — cards and slabs are taller
-                // than they are wide.
-                this.stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1080 }, height: { ideal: 1440 } },
-                });
+                const session = await $wire.startCardPhotoSession();
+                this.url = session.url;
+                this.svg = session.svg;
+                this.poll();
             } catch (e) {
-                this.error = 'Camera unavailable — check the browser has permission, or use the upload above.';
-                return;
-            }
-
-            this.$refs.video.srcObject = this.stream;
-            this.active = true;
-        },
-
-        stop() {
-            this.active = false;
-            if (this.stream) {
-                this.stream.getTracks().forEach((t) => t.stop());
-                this.stream = null;
-            }
-        },
-
-        async capture() {
-            const video = this.$refs.video;
-            if (this.busy || !this.active || !video.videoWidth) return;
-
-            this.busy = true;
-
-            const canvas = this.$refs.canvas;
-            // Caps the long edge — a full-resolution frame is needlessly
-            // large for a catalogue thumbnail and slow to post back.
-            const maxWidth = 1200;
-            const scale = Math.min(1, maxWidth / video.videoWidth);
-            canvas.width = video.videoWidth * scale;
-            canvas.height = video.videoHeight * scale;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            try {
-                await this.$wire.storeCapturedCardPhoto(canvas.toDataURL('image/jpeg', 0.85));
-                this.stop();
-            } catch (e) {
-                this.error = 'Could not save that photo — please try again.';
+                this.error = 'Could not start a photo session — please try again.';
             } finally {
-                this.busy = false;
+                this.starting = false;
             }
+        },
+
+        poll() {
+            this.stopPolling();
+
+            // Polled rather than pushed: this is a two-device handoff over a
+            // cache-backed session, and three seconds is well inside how long
+            // it takes someone to line a card up and tap Capture.
+            this.pollId = setInterval(async () => {
+                const path = await $wire.pollCardPhoto();
+
+                if (path) {
+                    this.received = true;
+                    this.url = null;
+                    this.svg = null;
+                    this.stopPolling();
+                }
+            }, 3000);
+        },
+
+        stopPolling() {
+            if (this.pollId) clearInterval(this.pollId);
+            this.pollId = null;
+        },
+
+        async cancel() {
+            this.stopPolling();
+            this.url = null;
+            this.svg = null;
+            await $wire.endCardPhotoSession();
         },
     }"
-    x-on:livewire:navigating.window="stop()"
-    x-destroy="stop()"
+    x-on:livewire:navigating.window="stopPolling()"
+    x-destroy="stopPolling()"
     class="space-y-3"
 >
-    <div x-show="!active">
-        <x-filament::button type="button" color="gray" icon="heroicon-o-camera" x-on:click="start()">
-            Take photo with camera
+    <div x-show="!url && !received">
+        <x-filament::button type="button" color="gray" icon="heroicon-o-device-phone-mobile"
+            x-on:click="start()" x-bind:disabled="starting">
+            <span x-show="!starting">Take photo with phone</span>
+            <span x-show="starting" x-cloak>Starting…</span>
+        </x-filament::button>
+
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Opens a camera page on your phone — the photo appears here automatically.
+        </p>
+    </div>
+
+    <div x-show="url" x-cloak class="space-y-3">
+        <div class="inline-block rounded-lg bg-white p-3" x-html="svg"></div>
+
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+            Scan this with your phone, take the photo, and it'll drop in here. Waiting…
+        </p>
+
+        <p class="text-xs text-gray-400 dark:text-gray-500 break-all">
+            Or open: <span class="font-mono" x-text="url"></span>
+        </p>
+
+        <x-filament::button type="button" color="gray" size="sm" x-on:click="cancel()">
+            Cancel
         </x-filament::button>
     </div>
 
-    <div x-show="active" x-cloak class="space-y-3">
-        <video x-ref="video" autoplay playsinline muted
-            class="w-full max-w-xs rounded-lg border border-gray-300 dark:border-gray-700"></video>
-
-        <div class="flex gap-3">
-            <x-filament::button type="button" icon="heroicon-o-camera" x-on:click="capture()" x-bind:disabled="busy">
-                <span x-show="!busy">Capture</span>
-                <span x-show="busy" x-cloak>Saving…</span>
-            </x-filament::button>
-
-            <x-filament::button type="button" color="gray" x-on:click="stop()">
-                Cancel
-            </x-filament::button>
-        </div>
-    </div>
-
-    <canvas x-ref="canvas" class="hidden"></canvas>
+    <p x-show="received" x-cloak class="text-sm text-success-600 dark:text-success-400">
+        Photo received — it's set on this card and saves with the form.
+    </p>
 
     <p x-show="error" x-text="error" x-cloak class="text-sm text-danger-600 dark:text-danger-400"></p>
 </div>

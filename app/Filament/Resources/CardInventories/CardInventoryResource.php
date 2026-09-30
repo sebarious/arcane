@@ -205,6 +205,15 @@ class CardInventoryResource extends Resource
                         ->required(fn ($get) => (bool) $get('is_graded'))
                         ->helperText('e.g. 10, or 9.5 for a half grade.'),
 
+                    Forms\Components\TextInput::make('grade_serial')
+                        ->label('Certification / serial number')
+                        ->maxLength(40)
+                        ->visible(fn ($get) => (bool) $get('is_graded'))
+                        // Not required: PulseAPI fills graded_by and grade
+                        // without one, and demanding it here would make those
+                        // records impossible to save.
+                        ->helperText('The number on the slab label — lets a buyer verify it against the grader\'s own register.'),
+
                     Forms\Components\FileUpload::make('custom_image_path')
                         ->label('Our photo of this card')
                         ->image()
@@ -354,6 +363,15 @@ class CardInventoryResource extends Resource
                 Tables\Columns\ToggleColumn::make('not_for_batches')
                     ->label('No batches')
                     ->toggleable(),
+
+                Tables\Columns\TextColumn::make('grade_serial')
+                    ->label('Cert no.')
+                    ->placeholder('—')
+                    // Searchable because a slab in hand is most easily found
+                    // by the number on its label.
+                    ->searchable()
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('acquisition_lot')
                     ->label('Lot')
