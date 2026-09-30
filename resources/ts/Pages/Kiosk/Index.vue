@@ -125,6 +125,35 @@ const subtotalPence = ref(0);
 const discountPence = ref(0);
 const totalPence = ref(0);
 
+const showReceipt = ref(false);
+const receiptEmail = ref('');
+const receiptSending = ref(false);
+const receiptSentTo = ref('');
+const receiptError = ref('');
+
+/** Emails the customer a receipt for the sale that just completed on this tablet. */
+async function sendReceipt() {
+  if (currentOrderId.value === null || !receiptEmail.value.trim()) return;
+
+  receiptSending.value = true;
+  receiptError.value = '';
+
+  try {
+    const { data } = await axios.post(`/kiosk/orders/${currentOrderId.value}/receipt`, {
+      email: receiptEmail.value.trim(),
+    });
+    receiptSentTo.value = data.data.email;
+    showReceipt.value = false;
+    receiptEmail.value = '';
+  } catch (e: any) {
+    receiptError.value = e?.response?.data?.message
+      ?? e?.response?.data?.errors?.email?.[0]
+      ?? 'Could not send that receipt — check the address and try again.';
+  } finally {
+    receiptSending.value = false;
+  }
+}
+
 const showCustomItem = ref(false);
 const customLabel = ref('');
 const customAmount = ref('');
@@ -345,6 +374,10 @@ function startNewOrder() {
   payError.value = '';
   cancelError.value = '';
   currentOrderId.value = null;
+  showReceipt.value = false;
+  receiptEmail.value = '';
+  receiptSentTo.value = '';
+  receiptError.value = '';
   // Next customer starts from the featured view, not the last one's search.
   resetStock();
   resetZoom();
@@ -645,6 +678,38 @@ async function clearBasket() {
       </div>
       <p class="font-['Cinzel',sans-serif] font-bold text-white text-[28px]">Payment complete</p>
       <p class="text-[#a3a3a3] text-[16px] mt-3">Order {{ orderReference }} — a member of staff will bring your cards over shortly.</p>
+
+      <!-- Receipts are asked for, not assumed: offered here, never required. -->
+      <p v-if="receiptSentTo" class="text-[#22c55e] text-[15px] mt-6">
+        Receipt on its way to {{ receiptSentTo }}.
+      </p>
+
+      <div v-else-if="!showReceipt" class="mt-6">
+        <button type="button" @click="showReceipt = true"
+          class="px-6 h-[48px] rounded-[6px] border border-[#3d2f6e] text-white text-[15px] hover:border-[#c9a84c] transition-colors">
+          Email me a receipt
+        </button>
+      </div>
+
+      <form v-else @submit.prevent="sendReceipt" class="mt-6 w-full max-w-sm">
+        <input v-model="receiptEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"
+          class="w-full h-[56px] bg-[#1a1628] border border-[#3d2f6e] rounded-[8px] text-white text-[17px] text-center outline-none placeholder:opacity-40 placeholder:text-white focus:ring-0" />
+
+        <p v-if="receiptError" class="text-red-400 text-[14px] mt-3">{{ receiptError }}</p>
+
+        <div class="flex gap-3 mt-3">
+          <button type="button" @click="showReceipt = false; receiptError = ''"
+            class="flex-1 h-[48px] rounded-[6px] border border-[#3d2f6e] text-[#a3a3a3] text-[14px] uppercase hover:border-[#c9a84c] hover:text-white transition-colors">
+            No thanks
+          </button>
+          <button type="submit" :disabled="!receiptEmail.trim() || receiptSending"
+            class="flex-1 h-[48px] rounded-[6px] text-[#0d0b14] font-bold uppercase text-[14px] disabled:opacity-40"
+            style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
+            {{ receiptSending ? 'Sending…' : 'Send' }}
+          </button>
+        </div>
+      </form>
+
       <button type="button" @click="startNewOrder"
         class="mt-10 px-8 h-[52px] rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[14px] hover:border-[#c9a84c] transition-colors">
         Start a new order

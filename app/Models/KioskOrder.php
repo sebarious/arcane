@@ -9,6 +9,7 @@ class KioskOrder extends Model
     protected $fillable = [
         'reference', 'status', 'total_pence', 'stripe_payment_intent_id', 'paid_at', 'fulfilled_at',
         'subtotal_pence', 'discount_type', 'discount_value', 'discount_pence',
+        'customer_email', 'receipt_sent_at',
     ];
 
     protected $casts = [
@@ -18,6 +19,7 @@ class KioskOrder extends Model
         'discount_pence' => 'integer',
         'paid_at' => 'datetime',
         'fulfilled_at' => 'datetime',
+        'receipt_sent_at' => 'datetime',
     ];
 
     public function items()

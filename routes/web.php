@@ -25,6 +25,7 @@ use App\Http\Controllers\Kiosk\CheckoutController;
 use App\Http\Controllers\Kiosk\FilterOptionsController;
 use App\Http\Controllers\Kiosk\OrderStatusController;
 use App\Http\Controllers\Kiosk\PageController as KioskPageController;
+use App\Http\Controllers\Kiosk\ReceiptController;
 use App\Http\Controllers\Kiosk\SearchController as KioskSearchController;
 use App\Http\Controllers\Kiosk\StaffAccessController;
 use App\Http\Controllers\Kiosk\UnlockController;
@@ -201,6 +202,9 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
         Route::post('/orders/{order}/cancel', [CheckoutController::class, 'cancel'])
             ->middleware('throttle:20,1')
             ->name('orders.cancel');
+        Route::post('/orders/{order}/receipt', [ReceiptController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('orders.receipt');
     });
 });
 

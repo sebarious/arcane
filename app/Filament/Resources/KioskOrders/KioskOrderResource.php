@@ -3,12 +3,14 @@
 namespace App\Filament\Resources\KioskOrders;
 
 use App\Filament\Resources\KioskOrders\RelationManagers\ItemsRelationManager;
+use App\Jobs\SendKioskReceiptJob;
 use App\Models\KioskOrder;
 use App\Support\Money;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Forms;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -121,6 +123,12 @@ class KioskOrderResource extends Resource
                     ->dateTime('d M Y H:i')
                     ->placeholder('—')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('customer_email')
+                    ->label('Receipt')
+                    ->placeholder('Not sent')
+                    ->description(fn (KioskOrder $record) => $record->receipt_sent_at?->format('d M Y H:i'))
+                    ->searchable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('d M Y H:i')
                     ->sortable()
@@ -141,6 +149,7 @@ class KioskOrderResource extends Resource
             ])
             ->recordActions([
                 static::markFulfilledAction(),
+                static::emailReceiptAction(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -168,6 +177,43 @@ class KioskOrderResource extends Resource
             ->action(function (KioskOrder $record) {
                 $record->update(['fulfilled_at' => now()]);
                 Notification::make()->title('Order marked fulfilled')->success()->send();
+            });
+    }
+
+    /**
+     * Sends (or re-sends) the customer's receipt after the fact — someone who
+     * declined one at the counter, or never got the first.
+     */
+    public static function emailReceiptAction(): Action
+    {
+        return Action::make('emailReceipt')
+            ->label(fn (KioskOrder $record) => $record->receipt_sent_at ? 'Re-send receipt' : 'Email receipt')
+            ->icon(Heroicon::OutlinedEnvelope)
+            ->color('gray')
+            ->visible(fn (KioskOrder $record) => $record->status === 'paid')
+            ->schema([
+                Forms\Components\TextInput::make('email')
+                    ->label('Send to')
+                    ->email()
+                    ->required()
+                    ->maxLength(255)
+                    ->helperText(fn (KioskOrder $record) => $record->receipt_sent_at
+                        ? 'Last sent '.$record->receipt_sent_at->diffForHumans().'.'
+                        : 'No receipt has been sent for this sale yet.'),
+            ])
+            // Prefilled with wherever it went last, which is the address
+            // wanted in nearly every re-send.
+            ->fillForm(fn (KioskOrder $record) => ['email' => $record->customer_email])
+            ->modalHeading(fn (KioskOrder $record) => "Email receipt for {$record->reference}")
+            ->modalSubmitActionLabel('Send')
+            ->action(function (KioskOrder $record, array $data) {
+                SendKioskReceiptJob::dispatch($record->id, $data['email']);
+
+                Notification::make()
+                    ->title('Receipt queued')
+                    ->body("It's on its way to {$data['email']}.")
+                    ->success()
+                    ->send();
             });
     }
 

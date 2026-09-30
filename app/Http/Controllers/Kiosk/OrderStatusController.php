@@ -25,6 +25,12 @@ class OrderStatusController extends Controller
         if ($order->status === 'paid') {
             $request->session()->forget('kiosk_current_order_id');
             $request->session()->put('kiosk_basket', []);
+            $request->session()->forget(['kiosk_custom_lines', 'kiosk_discount']);
+
+            // Remembered so the success screen can offer a receipt: the
+            // current-order key is cleared above, and this is what scopes the
+            // receipt endpoint to the sale that just happened on this tablet.
+            $request->session()->put('kiosk_last_order_id', $order->id);
         }
 
         return response()->json([
