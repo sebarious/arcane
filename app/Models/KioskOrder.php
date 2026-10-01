@@ -27,6 +27,21 @@ class KioskOrder extends Model
         return $this->hasMany(KioskOrderItem::class);
     }
 
+    /**
+     * The trailing sequence on its own ("0002") — what a customer is asked to
+     * quote at the counter. The full KIOSK-2026-0002 stays the canonical
+     * reference everywhere it's stored, on receipts and in the admin; this is
+     * only ever for display, since the year and prefix are noise to someone
+     * reading a number off a screen and saying it out loud.
+     */
+    public function shortReference(): string
+    {
+        $parts = explode('-', $this->reference ?? '');
+        $last = end($parts);
+
+        return $last !== false && $last !== '' ? $last : (string) $this->reference;
+    }
+
     public static function nextReference(): string
     {
         $year = now()->format('Y');

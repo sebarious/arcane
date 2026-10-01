@@ -63,7 +63,7 @@ class OpenOrderController extends Controller
         $summary = $checkout->summarise(CardInventory::whereIn('id', $result['reserved'])->get());
 
         return response()->json($summary + [
-            'reference' => $order->reference,
+            'reference' => $order->shortReference(),
             // Named, not counted: staff need to tell the customer which cards
             // went rather than just how many.
             'unavailable' => $result['unavailable'],

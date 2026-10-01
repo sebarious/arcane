@@ -33,6 +33,7 @@ class OpenOrderController extends Controller
 
         return response()->json(['data' => [
             'reference' => $order->reference,
+            'short_reference' => $order->shortReference(),
             'total_pence' => $order->total_pence,
             'item_count' => $order->items()->count(),
         ]]);

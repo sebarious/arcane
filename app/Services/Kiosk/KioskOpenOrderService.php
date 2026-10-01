@@ -140,6 +140,7 @@ class KioskOpenOrderService
         return [
             'id' => $order->id,
             'reference' => $order->reference,
+            'short_reference' => $order->shortReference(),
             'item_count' => $order->items->count(),
             'total_pence' => $order->total_pence,
             'created_at' => $order->created_at?->toIso8601String(),

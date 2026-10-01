@@ -49,7 +49,11 @@ class KioskOpenOrderTest extends TestCase
         $this->postJson('/catalogue/kiosk/order', ['card_inventory_ids' => [$a->id, $b->id]])
             ->assertOk()
             ->assertJsonPath('data.item_count', 2)
-            ->assertJsonStructure(['data' => ['reference', 'total_pence', 'item_count']]);
+            ->assertJsonStructure(['data' => ['reference', 'short_reference', 'total_pence', 'item_count']]);
+
+        // Stored reference keeps the full scheme; only the display is short.
+        $this->assertSame('KIOSK-'.now()->format('Y').'-0001', KioskOrder::sole()->reference);
+        $this->assertSame('0001', KioskOrder::sole()->shortReference());
 
         $order = KioskOrder::sole();
         $this->assertSame(KioskOpenOrderService::STATUS_OPEN, $order->status);
@@ -122,7 +126,8 @@ class KioskOpenOrderTest extends TestCase
         $response = $this->withSession($this->unlocked())
             ->postJson("/kiosk/open-orders/{$order->id}/checkout")
             ->assertOk()
-            ->assertJsonPath('reference', $order->reference)
+            // The short form: what the customer quotes at the counter.
+            ->assertJsonPath('reference', $order->shortReference())
             ->assertJsonPath('unavailable', []);
 
         $this->assertSame([$card->id], $response->json('data.*.id'));

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import axios from 'axios';
 import { useCardStock, type StockCard } from '@/composables/useCardStock';
@@ -31,6 +31,20 @@ const orderError = ref('');
 const placedReference = ref('');
 const placedTotalPence = ref(0);
 
+// The thank-you screen clears itself so the next person doesn't walk up to
+// someone else's order number still on display. A fixed countdown, not an
+// idle timer: the customer standing there reading the number shouldn't keep
+// resetting it, and once they have the number the screen has done its job.
+const THANK_YOU_MS = 60 * 1000;
+let thankYouTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearThankYouTimer() {
+  if (thankYouTimer) clearTimeout(thankYouTimer);
+  thankYouTimer = null;
+}
+
+onUnmounted(clearThankYouTimer);
+
 const selectedIds = computed(() => new Set(selected.value.map((c) => c.id)));
 const selectedTotalPence = computed(() => selected.value.reduce((sum, c) => sum + c.price_pence, 0));
 
@@ -61,9 +75,12 @@ async function placeOrder() {
     const { data } = await axios.post('/catalogue/kiosk/order', {
       card_inventory_ids: selected.value.map((c) => c.id),
     });
-    placedReference.value = data.data.reference;
+    placedReference.value = data.data.short_reference;
     placedTotalPence.value = data.data.total_pence;
     showOrder.value = false;
+
+    clearThankYouTimer();
+    thankYouTimer = setTimeout(startOver, THANK_YOU_MS);
   } catch (e: any) {
     orderError.value = e?.response?.data?.message
       ?? 'Could not send that order through — please ask a member of staff.';
@@ -110,6 +127,7 @@ function formatPence(pence: number): string {
 
 /** Clears everything back to the featured view — for the next person walking up. */
 function startOver() {
+  clearThankYouTimer();
   clearFilters();
   resetAll();
   zoomIndex.value = DEFAULT_ZOOM_INDEX;
@@ -311,7 +329,7 @@ useIdleTimer(5 * 60 * 1000, startOver);
     <p class="font-['Cinzel',sans-serif] font-bold text-white text-[40px] leading-tight">Thank you!</p>
 
     <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.2em] mt-10">Your order number</p>
-    <p class="font-['Cinzel',sans-serif] font-bold text-[#c9a84c] text-[46px] tracking-[0.04em] mt-2">
+    <p class="font-['Cinzel',sans-serif] font-bold text-[#c9a84c] text-[120px] leading-none tracking-[0.06em] mt-3">
       {{ placedReference }}
     </p>
     <p class="text-white text-[22px] mt-3">{{ formatPence(placedTotalPence) }}</p>

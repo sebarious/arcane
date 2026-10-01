@@ -1028,8 +1028,13 @@ async function clearBasket() {
             class="border border-[#3d2f6e] rounded-[10px] p-4 mb-3 last:mb-0">
             <div class="flex items-center justify-between gap-4 mb-3">
               <div class="min-w-0">
-                <p class="font-['Cinzel',sans-serif] font-bold text-[#c9a84c] text-[19px]">{{ order.reference }}</p>
-                <p class="text-[#a3a3a3] text-[13px]">
+                <div class="flex items-baseline gap-3">
+                  <p class="font-['Cinzel',sans-serif] font-bold text-[#c9a84c] text-[34px] leading-none">
+                    {{ order.short_reference }}
+                  </p>
+                  <p class="text-[#6b6480] text-[12px] tracking-[0.08em]">{{ order.reference }}</p>
+                </div>
+                <p class="text-[#a3a3a3] text-[13px] mt-1">
                   {{ order.item_count }} {{ order.item_count === 1 ? 'card' : 'cards' }}
                 </p>
               </div>
