@@ -10,17 +10,19 @@
         <img :src="arcaneLogo" alt="Arcane" class="h-10 w-auto" />
       </a>
 
-      <!-- Desktop links -->
-      <div class="hidden md:flex items-center gap-9">
-        <div class="flex gap-9 text-xs tracking-[0.22em] uppercase text-[#DCC175]"
+      <!-- Desktop links. xl, not md: six links plus the CTA need ~1150px to
+           fit on one line, so anything below that belongs in the drawer. The
+           gap tightens at xl and opens back up at 2xl where there's room. -->
+      <div class="hidden xl:flex items-center gap-7 2xl:gap-9">
+        <div class="flex gap-7 2xl:gap-9 text-xs tracking-[0.22em] uppercase text-[#DCC175]"
           :style="{ fontFamily: 'Jost, sans-serif' }">
           <a v-for=" [label, href, active] in NAV_LINKS " :key="label" :href="href"
-            :class="['hover:text-[#DCC175] transition-colors duration-300', active ? 'text-white underline' : 'text-[#DCC175]']">
+            :class="['whitespace-nowrap hover:text-[#DCC175] transition-colors duration-300', active ? 'text-white underline' : 'text-[#DCC175]']">
             {{ label }}
           </a>
         </div>
         <Link :href="ctaButton.href"
-          class="text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-[#DCC175] text-black font-semibold hover:bg-[#e8d49a] transition-all duration-300"
+          class="whitespace-nowrap text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-[#DCC175] text-black font-semibold hover:bg-[#e8d49a] transition-all duration-300"
           :style="{ borderRadius: '3px', fontFamily: 'Jost, sans-serif' }">
           {{ ctaButton.label }}
         </Link>
@@ -28,7 +30,7 @@
 
       <!-- Burger button — mobile only -->
       <button
-        class="md:hidden flex items-center justify-center w-10 h-10 text-[#DCC175] hover:text-[#DCC175] transition-colors"
+        class="xl:hidden flex items-center justify-center w-10 h-10 text-[#DCC175] hover:text-[#DCC175] transition-colors"
         @click="toggleOpen" aria-label="Toggle menu">
         <X v-if=" open " :size="22" />
         <Menu v-else :size="22" />
@@ -36,7 +38,7 @@
     </nav>
 
     <!-- Mobile drawer -->
-    <div class="fixed inset-0 z-[100] md:hidden flex flex-col" v-if="open"
+    <div class="fixed inset-0 z-[100] xl:hidden flex flex-col" v-if="open"
       :style="{ background: 'rgba(6,6,11,0.97)', backdropFilter: 'blur(24px)' }" :aria-hidden="!open">
       <div class="h-20 px-6 flex items-center justify-between shrink-0">
         <a href="/" @click="close" title="Home">
@@ -135,12 +137,24 @@ const onScroll = () => {
   scrolled.value = window.scrollY > 60;
 };
 
+// The drawer is xl:hidden, so widening the window past the breakpoint hides
+// it while `open` stays true — and the watcher below would leave body scroll
+// locked with nothing left on screen to unlock it. Matches the xl breakpoint.
+let desktopMq: MediaQueryList | null = null;
+const onDesktopChange = ( e: MediaQueryListEvent ) => {
+  if ( e.matches ) close();
+};
+
 onMounted( () => {
   window.addEventListener( 'scroll', onScroll, { passive: true } );
+
+  desktopMq = window.matchMedia( '(min-width: 1280px)' );
+  desktopMq.addEventListener( 'change', onDesktopChange );
 } );
 
 onUnmounted( () => {
   window.removeEventListener( 'scroll', onScroll );
+  desktopMq?.removeEventListener( 'change', onDesktopChange );
 } );
 
 // lock body scroll when menu open
