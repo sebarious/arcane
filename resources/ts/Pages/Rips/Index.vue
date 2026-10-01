@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import Nav from '@/Components/Layout/Nav.vue';
 import Footer from '@/Components/Layout/Footer.vue';
@@ -19,7 +20,12 @@ interface Pack {
   in_stock: boolean;
 }
 
-defineProps<{ packs: Pack[]; walletBalancePence: number | null }>();
+const props = defineProps<{ packs: Pack[]; walletBalancePence: number | null }>();
+
+const packsWithNotice = computed(() => props.packs.map((pack) => ({
+  ...pack,
+  graded: gradedNotice(pack.graded_policy),
+})));
 
 const formatMoney = (pence: number) => '£' + (pence / 100).toFixed(2);
 const formatPct = (n: number) => (n * 100).toFixed(n < 0.01 ? 2 : 1) + '%';
@@ -58,7 +64,7 @@ const formatPct = (n: number) => (n * 100).toFixed(n < 0.01 ? 2 : 1) + '%';
 
     <section class="relative px-8 lg:px-16 pb-24 flex-1">
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        <Link v-for="pack in packs" :key="pack.slug" :href="`/rips/${pack.slug}`"
+        <Link v-for="pack in packsWithNotice" :key="pack.slug" :href="`/rips/${pack.slug}`"
           class="group relative bg-[#13101e] border border-[rgba(220,193,117,0.12)] rounded-[14px] overflow-hidden hover:border-[rgba(220,193,117,0.4)] transition-all duration-300 hover:-translate-y-1">
           <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" :style="{
             background: 'radial-gradient(ellipse at 50% 0%, rgba(220,193,117,0.12) 0%, transparent 65%)',
@@ -99,13 +105,13 @@ const formatPct = (n: number) => (n * 100).toFixed(n < 0.01 ? 2 : 1) + '%';
                 class="text-[9px] tracking-[0.15em] uppercase font-bold px-2 py-1 rounded bg-[rgba(124,58,237,0.12)] text-[#a78bfa] border border-[rgba(124,58,237,0.25)]">
                 {{ game }}
               </span>
-              <span v-if="gradedNotice(pack.graded_policy)" class="text-[9px] tracking-[0.15em] uppercase font-bold px-2 py-1 rounded"
+              <span class="text-[9px] tracking-[0.15em] uppercase font-bold px-2 py-1 rounded"
                 :style="{
-                  color: gradedNotice(pack.graded_policy)!.accent,
-                  background: gradedNotice(pack.graded_policy)!.accent + '1f',
-                  border: `1px solid ${gradedNotice(pack.graded_policy)!.accent}40`,
+                  color: pack.graded.accent,
+                  background: pack.graded.accent + '1f',
+                  border: `1px solid ${pack.graded.accent}40`,
                 }">
-                {{ gradedNotice(pack.graded_policy)!.badge }}
+                {{ pack.graded.badge }}
               </span>
             </div>
 

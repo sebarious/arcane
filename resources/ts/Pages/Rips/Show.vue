@@ -257,7 +257,7 @@ onBeforeUnmount(() => {
               class="text-[10px] tracking-[0.15em] uppercase font-bold px-2.5 py-1 rounded bg-[rgba(124,58,237,0.12)] text-[#a78bfa] border border-[rgba(124,58,237,0.25)]">
               {{ game }}
             </span>
-            <span v-if="graded" class="text-[10px] tracking-[0.15em] uppercase font-bold px-2.5 py-1 rounded"
+            <span class="text-[10px] tracking-[0.15em] uppercase font-bold px-2.5 py-1 rounded"
               :style="{ color: graded.accent, background: graded.accent + '1f', border: `1px solid ${graded.accent}40` }">
               {{ graded.badge }}
             </span>
@@ -271,7 +271,7 @@ onBeforeUnmount(() => {
                 <span class="text-[#DCC175] font-semibold">{{ formatPct(pack.band_odds[band] ?? 0) }}</span>
               </div>
             </div>
-            <p v-if="graded" class="text-xs mt-3" :style="{ color: graded.accent, fontFamily: 'Jost, sans-serif' }">
+            <p v-if="graded.detail" class="text-xs mt-3" :style="{ color: graded.accent, fontFamily: 'Jost, sans-serif' }">
               {{ graded.detail }}
             </p>
             <p class="text-white/40 text-xs mt-3" style="font-family: 'Jost', sans-serif;">
