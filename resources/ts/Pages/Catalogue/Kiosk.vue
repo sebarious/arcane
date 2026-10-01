@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
+import axios from 'axios';
 import { useCardStock, type StockCard } from '@/composables/useCardStock';
+import { useIdleTimer } from '@/composables/useIdleTimer';
 
 /**
  * The look-only catalogue for a tablet standing in the shop: full height, no
@@ -17,6 +19,58 @@ const LETTERS = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)
 const showLetterPicker = ref(false);
 const showFilterPicker = ref(false);
 const previewCard = ref<StockCard | null>(null);
+
+// --- The customer's order ---------------------------------------------------
+// Held client-side on purpose: an open order reserves nothing, so there is no
+// server state worth keeping until they actually finish. A refresh starting
+// over is the correct behaviour for a walk-up tablet.
+const selected = ref<StockCard[]>([]);
+const showOrder = ref(false);
+const placing = ref(false);
+const orderError = ref('');
+const placedReference = ref('');
+const placedTotalPence = ref(0);
+
+const selectedIds = computed(() => new Set(selected.value.map((c) => c.id)));
+const selectedTotalPence = computed(() => selected.value.reduce((sum, c) => sum + c.price_pence, 0));
+
+function isSelected(card: StockCard): boolean {
+  return selectedIds.value.has(card.id);
+}
+
+function toggleSelected(card: StockCard) {
+  selected.value = isSelected(card)
+    ? selected.value.filter((c) => c.id !== card.id)
+    : [...selected.value, card];
+}
+
+function removeSelected(id: number) {
+  selected.value = selected.value.filter((c) => c.id !== id);
+
+  if (selected.value.length === 0) showOrder.value = false;
+}
+
+/** Hands the list to the counter: creates the unpaid open order. */
+async function placeOrder() {
+  if (selected.value.length === 0 || placing.value) return;
+
+  placing.value = true;
+  orderError.value = '';
+
+  try {
+    const { data } = await axios.post('/catalogue/kiosk/order', {
+      card_inventory_ids: selected.value.map((c) => c.id),
+    });
+    placedReference.value = data.data.reference;
+    placedTotalPence.value = data.data.total_pence;
+    showOrder.value = false;
+  } catch (e: any) {
+    orderError.value = e?.response?.data?.message
+      ?? 'Could not send that order through — please ask a member of staff.';
+  } finally {
+    placing.value = false;
+  }
+}
 
 const {
   query, results, searching, hasSearched,
@@ -60,7 +114,16 @@ function startOver() {
   resetAll();
   zoomIndex.value = DEFAULT_ZOOM_INDEX;
   previewCard.value = null;
+  selected.value = [];
+  showOrder.value = false;
+  orderError.value = '';
+  placedReference.value = '';
+  placedTotalPence.value = 0;
 }
+
+// Someone browses, wanders off, and the next person finds a tablet full of
+// another customer's choices. Five minutes of nothing wipes it.
+useIdleTimer(5 * 60 * 1000, startOver);
 </script>
 
 <template>
@@ -153,7 +216,17 @@ function startOver() {
 
       <div :style="{ display: 'grid', gridTemplateColumns: `repeat(${zoom.cols}, minmax(0, 1fr))`, gap: '14px' }">
         <button v-for="card in displayResults" :key="card.id" type="button" @click="previewCard = card"
-          class="flex items-center gap-3 p-3 rounded-[10px] border border-[#3d2f6e] bg-[#13101e] hover:border-[#c9a84c] transition-colors text-left">
+          class="relative flex items-center gap-3 p-3 rounded-[10px] border bg-[#13101e] transition-colors text-left"
+          :class="isSelected(card)
+            ? 'border-[#c9a84c] bg-[rgba(201,168,76,0.08)]'
+            : 'border-[#3d2f6e] hover:border-[#c9a84c]'">
+          <!-- Already-chosen marker: at a glance, scanning a grid, the border
+               alone is too easy to miss. -->
+          <span v-if="isSelected(card)"
+            class="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#c9a84c] flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0d0b14" stroke-width="3.5"
+              stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+          </span>
           <img v-if="card.image_url" :src="card.image_url" alt="" class="object-cover rounded-[4px] shrink-0"
             :style="{ width: zoom.imgW + 'px', height: zoom.imgH + 'px' }" />
           <div class="flex-1 min-w-0">
@@ -167,9 +240,93 @@ function startOver() {
       <p v-if="listMode && browseLoading" class="text-[#a3a3a3] text-[14px] text-center py-5">Loading more…</p>
     </div>
 
-    <p class="shrink-0 text-center text-[#e2dfea] text-[13px] tracking-[0.14em] uppercase py-4">
-      Ask a member of staff to buy any of these
+    <p v-if="selected.length === 0" class="shrink-0 text-center text-[#e2dfea] text-[13px] tracking-[0.14em] uppercase py-4">
+      Tap a card to add it to an order
     </p>
+
+    <!-- Order bar -->
+    <div v-else class="shrink-0 border-t border-[#3d2f6e] bg-[#13101e] px-6 py-4 flex items-center gap-4">
+      <button type="button" @click="showOrder = true" class="flex-1 text-left">
+        <span class="block text-[#a3a3a3] text-[12px] uppercase tracking-[0.14em]">
+          {{ selected.length }} {{ selected.length === 1 ? 'card' : 'cards' }} &middot; tap to review
+        </span>
+        <span class="block text-white text-[26px] font-bold leading-tight">{{ formatPence(selectedTotalPence) }}</span>
+      </button>
+
+      <button type="button" @click="placeOrder" :disabled="placing"
+        class="shrink-0 h-[62px] px-8 rounded-[8px] text-[#0d0b14] font-bold uppercase tracking-[0.08em] text-[15px] disabled:opacity-50"
+        style="background-image: linear-gradient(175deg, rgb(201,168,76) 0%, rgb(232,212,154) 100%);">
+        {{ placing ? 'Sending…' : 'Complete order' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Review panel -->
+  <div v-if="showOrder" class="fixed inset-0 z-50 bg-black/80 flex items-end justify-center" @click="showOrder = false">
+    <div class="bg-[#13101e] border-t border-[#3d2f6e] rounded-t-[16px] w-full max-h-[80vh] flex flex-col" @click.stop>
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[#3d2f6e] shrink-0">
+        <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px]">Your order</p>
+        <button type="button" @click="showOrder = false" aria-label="Close"
+          class="w-10 h-10 text-[#a3a3a3] hover:text-white text-[26px] leading-none">&times;</button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto overscroll-contain min-h-0 px-6 py-4">
+        <div v-for="card in selected" :key="card.id"
+          class="flex items-center gap-4 py-3 border-b border-[#241d3d] last:border-0">
+          <img v-if="card.image_url" :src="card.image_url" alt="" class="w-[44px] h-[61px] object-contain rounded-[4px] shrink-0" />
+          <div class="flex-1 min-w-0">
+            <p class="text-white text-[16px] truncate">{{ card.card_name }}</p>
+            <p class="text-[#a3a3a3] text-[13px] truncate">{{ card.set_name }}</p>
+          </div>
+          <p class="text-[#c9a84c] text-[17px] font-bold shrink-0">{{ formatPence(card.price_pence) }}</p>
+          <button type="button" @click="removeSelected(card.id)" aria-label="Remove"
+            class="shrink-0 w-10 h-10 rounded-[6px] border border-[#3d2f6e] text-[#a3a3a3] hover:border-red-400 hover:text-red-400 text-[20px] leading-none">
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <div class="shrink-0 px-6 py-4 border-t border-[#3d2f6e]">
+        <p v-if="orderError" class="text-red-400 text-[14px] mb-3">{{ orderError }}</p>
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-[#a3a3a3] text-[14px] uppercase tracking-[0.14em]">Total</span>
+          <span class="text-white text-[28px] font-bold">{{ formatPence(selectedTotalPence) }}</span>
+        </div>
+        <button type="button" @click="placeOrder" :disabled="placing"
+          class="w-full h-[62px] rounded-[8px] text-[#0d0b14] font-bold uppercase tracking-[0.08em] text-[15px] disabled:opacity-50"
+          style="background-image: linear-gradient(175deg, rgb(201,168,76) 0%, rgb(232,212,154) 100%);">
+          {{ placing ? 'Sending…' : 'Complete order' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thank you -->
+  <div v-if="placedReference" class="fixed inset-0 z-[60] bg-[#0d0b14] flex flex-col items-center justify-center text-center px-10">
+    <div class="w-24 h-24 rounded-full bg-[rgba(34,197,94,0.15)] flex items-center justify-center mb-8">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+    </div>
+
+    <p class="font-['Cinzel',sans-serif] font-bold text-white text-[40px] leading-tight">Thank you!</p>
+
+    <p class="text-[#a3a3a3] text-[13px] uppercase tracking-[0.2em] mt-10">Your order number</p>
+    <p class="font-['Cinzel',sans-serif] font-bold text-[#c9a84c] text-[46px] tracking-[0.04em] mt-2">
+      {{ placedReference }}
+    </p>
+    <p class="text-white text-[22px] mt-3">{{ formatPence(placedTotalPence) }}</p>
+
+    <p class="text-[#e2dfea] text-[20px] leading-relaxed mt-10 max-w-lg">
+      Please take this number to the trade counter to complete your purchase.
+    </p>
+    <p class="text-[#a3a3a3] text-[15px] mt-4 max-w-lg">
+      Your cards aren&rsquo;t held until you pay, so please come over soon.
+    </p>
+
+    <button type="button" @click="startOver"
+      class="mt-12 px-10 h-[60px] rounded-[8px] border border-[#3d2f6e] text-white font-semibold uppercase tracking-[0.08em] text-[15px] hover:border-[#c9a84c] transition-colors">
+      Start a new order
+    </button>
   </div>
 
   <!-- Card preview -->
@@ -191,8 +348,20 @@ function startOver() {
       <p class="text-[#a3a3a3] text-[15px] text-center mt-1">{{ previewCard.set_name }} · {{ previewCard.rarity }}</p>
       <p class="text-[#c9a84c] text-[28px] font-bold mt-3">{{ formatPence(previewCard.price_pence) }}</p>
 
+      <button v-if="previewCard" type="button"
+        @click="toggleSelected(previewCard); previewCard = null"
+        class="w-full h-[58px] rounded-[8px] font-bold uppercase tracking-[0.08em] text-[15px] mb-3"
+        :class="isSelected(previewCard)
+          ? 'border border-[#3d2f6e] text-[#a3a3a3]'
+          : 'text-[#0d0b14]'"
+        :style="isSelected(previewCard)
+          ? {}
+          : { backgroundImage: 'linear-gradient(175deg, rgb(201,168,76) 0%, rgb(232,212,154) 100%)' }">
+        {{ isSelected(previewCard) ? 'Remove from order' : 'Add to order' }}
+      </button>
+
       <button type="button" @click="previewCard = null"
-        class="w-full h-[56px] mt-6 rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[14px] hover:border-[#c9a84c] transition-colors">
+        class="w-full h-[56px] rounded-[6px] border border-[#3d2f6e] text-white font-semibold uppercase text-[14px] hover:border-[#c9a84c] transition-colors">
         Close
       </button>
     </div>

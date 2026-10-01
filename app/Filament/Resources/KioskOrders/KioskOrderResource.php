@@ -56,6 +56,8 @@ class KioskOrderResource extends Resource
                         ->badge()
                         ->formatStateUsing(fn (string $state) => match ($state) {
                             'pending_payment' => 'Awaiting payment',
+                            'open' => 'Open — at counter',
+                            'collected' => 'Collected',
                             'paid' => 'Paid',
                             'expired' => 'Expired',
                             'cancelled' => 'Cancelled',
@@ -63,6 +65,8 @@ class KioskOrderResource extends Resource
                         })
                         ->color(fn (string $state) => match ($state) {
                             'pending_payment' => 'warning',
+                            'open' => 'info',
+                            'collected' => 'gray',
                             'paid' => 'success',
                             'expired', 'cancelled' => 'gray',
                             default => 'gray',
@@ -96,6 +100,8 @@ class KioskOrderResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state) => match ($state) {
                         'pending_payment' => 'Awaiting payment',
+                        'open' => 'Open — at counter',
+                        'collected' => 'Collected',
                         'paid' => 'Paid',
                         'expired' => 'Expired',
                         'cancelled' => 'Cancelled',
@@ -103,6 +109,8 @@ class KioskOrderResource extends Resource
                     })
                     ->color(fn (string $state) => match ($state) {
                         'pending_payment' => 'warning',
+                        'open' => 'info',
+                        'collected' => 'gray',
                         'paid' => 'success',
                         'expired', 'cancelled' => 'gray',
                         default => 'gray',
@@ -138,6 +146,8 @@ class KioskOrderResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'pending_payment' => 'Awaiting payment',
+                        'open' => 'Open — at counter',
+                        'collected' => 'Collected',
                         'paid' => 'Paid',
                         'expired' => 'Expired',
                         'cancelled' => 'Cancelled',

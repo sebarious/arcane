@@ -48,6 +48,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // auto-kept; the disclaimer under the buy buttons says "within 24
         // hours of opening" rather than promising an exact cutoff.
         $schedule->command('arcane:auto-keep-expired-rips')->dailyAt('03:00');
+
+        // Overnight, after close: yesterday's uncollected catalogue-tablet
+        // shopping lists are abandoned, not pending.
+        $schedule->command('arcane:purge-open-kiosk-orders')->dailyAt('03:30');
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

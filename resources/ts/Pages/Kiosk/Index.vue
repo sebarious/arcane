@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import axios from 'axios';
 import { Head } from '@inertiajs/vue3';
 import { useCardStock, type StockCard } from '@/composables/useCardStock';
+import { useIdleTimer } from '@/composables/useIdleTimer';
 
 // Registers the no-op service worker Chrome requires before it'll offer
 // "Add to Home Screen" — see public/kiosk-sw.js. Installing that (rather than
@@ -254,6 +255,62 @@ async function removeDiscount() {
   }
 }
 
+// --- Open orders ------------------------------------------------------------
+// Shopping lists customers built for themselves on the catalogue tablet.
+const showOpenOrders = ref(false);
+const openOrders = ref<any[]>([]);
+const openOrdersLoading = ref(false);
+const openOrdersError = ref('');
+const collectedNotice = ref('');
+
+async function loadOpenOrders() {
+  openOrdersLoading.value = true;
+  openOrdersError.value = '';
+
+  try {
+    const { data } = await axios.get('/kiosk/open-orders');
+    openOrders.value = data.data ?? [];
+  } catch {
+    openOrdersError.value = 'Could not load open orders.';
+  } finally {
+    openOrdersLoading.value = false;
+  }
+}
+
+function openOpenOrders() {
+  showOpenOrders.value = true;
+  loadOpenOrders();
+}
+
+async function discardOpenOrder(id: number) {
+  try {
+    await axios.delete(`/kiosk/open-orders/${id}`);
+    openOrders.value = openOrders.value.filter((o) => o.id !== id);
+  } catch {
+    openOrdersError.value = 'Could not delete that order.';
+  }
+}
+
+/** Moves an open order into the live basket so it can be paid for. */
+async function collectOpenOrder(id: number) {
+  openOrdersError.value = '';
+
+  try {
+    const { data } = await axios.post(`/kiosk/open-orders/${id}/checkout`);
+    applyBasket(data);
+    openOrders.value = openOrders.value.filter((o) => o.id !== id);
+    showOpenOrders.value = false;
+
+    // Nothing was held while the order sat waiting, so some of it may have
+    // sold in the meantime — staff need to be told which, by name.
+    collectedNotice.value = data.unavailable?.length
+      ? `${data.reference} loaded. No longer available: ${data.unavailable.join(', ')}.`
+      : `${data.reference} loaded into the basket.`;
+  } catch {
+    openOrdersError.value = 'Could not load that order into the basket.';
+  }
+}
+
 /** Locks the tablet when it's left unattended — needs today's PIN to reopen. */
 function lockKiosk() {
   const form = document.createElement('form');
@@ -264,6 +321,11 @@ function lockKiosk() {
   document.body.appendChild(form);
   form.submit();
 }
+
+// Left unattended at the counter, the till locks itself. Suppressed while a
+// payment is in flight — locking out from under a customer mid-tap would
+// strand a live PaymentIntent on the reader.
+useIdleTimer(5 * 60 * 1000, lockKiosk, () => screen.value !== 'paying');
 
 function formatPence(pence: number): string {
   return '£' + (pence / 100).toFixed(2);
@@ -488,6 +550,17 @@ async function clearBasket() {
                 : 'border-[#3d2f6e] text-white hover:border-[#c9a84c]'">
               Filter
             </button>
+            <!-- The catalogue tablet's queue of customer-built orders. -->
+            <button type="button" @click="openOpenOrders" title="Open orders" aria-label="Open orders"
+              class="relative shrink-0 h-[64px] px-4 rounded-[10px] border border-[#3d2f6e] text-[#a3a3a3] hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+              </svg>
+              <span class="text-[13px] uppercase tracking-[0.1em] font-semibold">Orders</span>
+            </button>
+
             <!-- Locks the tablet when it's left unattended; reopening needs
                  today's PIN from the admin topbar. -->
             <button type="button" @click="lockKiosk" title="Lock kiosk" aria-label="Lock kiosk"
@@ -929,6 +1002,71 @@ async function clearBasket() {
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Open orders: the catalogue tablet's queue -->
+    <div v-if="showOpenOrders" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+      @click="showOpenOrders = false">
+      <div class="bg-[#13101e] border border-[rgba(124,58,237,0.4)] rounded-[16px] w-full max-w-2xl max-h-[85vh] flex flex-col"
+        @click.stop>
+        <div class="flex items-center justify-between px-6 py-4 border-b border-[#3d2f6e] shrink-0">
+          <p class="font-['Cinzel',sans-serif] font-bold text-white text-[20px]">Open orders</p>
+          <button type="button" @click="showOpenOrders = false" aria-label="Close"
+            class="w-10 h-10 text-[#a3a3a3] hover:text-white text-[26px] leading-none">&times;</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto overscroll-contain min-h-0 px-6 py-5">
+          <p v-if="openOrdersError" class="text-red-400 text-[14px] mb-4">{{ openOrdersError }}</p>
+
+          <p v-if="openOrdersLoading" class="text-[#a3a3a3] text-[15px] text-center py-10">Loading…</p>
+
+          <p v-else-if="openOrders.length === 0" class="text-[#a3a3a3] text-[15px] text-center py-10">
+            No open orders waiting.
+          </p>
+
+          <div v-else v-for="order in openOrders" :key="order.id"
+            class="border border-[#3d2f6e] rounded-[10px] p-4 mb-3 last:mb-0">
+            <div class="flex items-center justify-between gap-4 mb-3">
+              <div class="min-w-0">
+                <p class="font-['Cinzel',sans-serif] font-bold text-[#c9a84c] text-[19px]">{{ order.reference }}</p>
+                <p class="text-[#a3a3a3] text-[13px]">
+                  {{ order.item_count }} {{ order.item_count === 1 ? 'card' : 'cards' }}
+                </p>
+              </div>
+              <p class="text-white text-[24px] font-bold shrink-0">{{ formatPence(order.total_pence) }}</p>
+            </div>
+
+            <ul class="mb-4">
+              <li v-for="(item, i) in order.items" :key="i"
+                class="flex items-center justify-between gap-3 text-[14px] py-1">
+                <span class="text-white/80 truncate">{{ item.card_name }}</span>
+                <span class="text-[#a3a3a3] shrink-0">{{ formatPence(item.unit_price_pence) }}</span>
+              </li>
+            </ul>
+
+            <div class="flex gap-3">
+              <button type="button" @click="discardOpenOrder(order.id)"
+                class="h-[48px] px-5 rounded-[6px] border border-[#3d2f6e] text-[#a3a3a3] text-[14px] uppercase tracking-[0.08em] hover:border-red-400 hover:text-red-400 transition-colors">
+                Delete
+              </button>
+              <button type="button" @click="collectOpenOrder(order.id)"
+                class="flex-1 h-[48px] rounded-[6px] text-[#0d0b14] font-bold uppercase tracking-[0.08em] text-[14px]"
+                style="background-image: linear-gradient(175.236deg, rgb(201, 168, 76) 0%, rgb(232, 212, 154) 100%);">
+                Checkout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- What happened to the order just pulled in, including anything that
+         sold while it was waiting. -->
+    <div v-if="collectedNotice"
+      class="fixed left-1/2 -translate-x-1/2 bottom-8 z-[60] max-w-xl w-[90%] bg-[#1a1628] border border-[#c9a84c] rounded-[10px] px-5 py-4 flex items-start gap-4">
+      <p class="flex-1 text-white text-[15px] leading-relaxed">{{ collectedNotice }}</p>
+      <button type="button" @click="collectedNotice = ''" aria-label="Dismiss"
+        class="shrink-0 w-8 h-8 text-[#a3a3a3] hover:text-white text-[22px] leading-none">&times;</button>
     </div>
   </div>
 </template>

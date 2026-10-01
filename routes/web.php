@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BatchQrSheetController;
+use App\Http\Controllers\Catalogue\OpenOrderController as CatalogueOpenOrderController;
 use App\Http\Controllers\Catalogue\PageController as CataloguePageController;
 use App\Http\Controllers\CreditNotePdfController;
 use App\Http\Controllers\Debug\ErrorPagePreviewController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\Kiosk\BasketController;
 use App\Http\Controllers\Kiosk\BrowseController;
 use App\Http\Controllers\Kiosk\CheckoutController;
 use App\Http\Controllers\Kiosk\FilterOptionsController;
+use App\Http\Controllers\Kiosk\OpenOrderController as KioskOpenOrderController;
 use App\Http\Controllers\Kiosk\OrderStatusController;
 use App\Http\Controllers\Kiosk\PageController as KioskPageController;
 use App\Http\Controllers\Kiosk\ReceiptController;
@@ -139,6 +141,11 @@ Route::get('/catalogue', CataloguePageController::class)->name('pages.catalogue'
 // Same stock, built for an in-store tablet — see the controller for why it's
 // a separate page rather than a flag on the public one.
 Route::get('/catalogue/kiosk', [CataloguePageController::class, 'kiosk'])->name('pages.catalogue.kiosk');
+// The catalogue tablet's only write. No PIN: it takes no money and reserves
+// no stock, so the worst a passer-by can do is leave an uncollected list.
+Route::post('/catalogue/kiosk/order', [CatalogueOpenOrderController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('pages.catalogue.kiosk.order');
 Route::get('/api-docs', ApiDocsController::class)->name('pages.api-docs');
 Route::get('/terms', TermsController::class)->name('pages.terms');
 Route::get('/privacy', PrivacyPolicyController::class)->name('pages.privacy');
@@ -217,6 +224,15 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
         Route::post('/orders/{order}/cancel', [CheckoutController::class, 'cancel'])
             ->middleware('throttle:20,1')
             ->name('orders.cancel');
+        // The queue of shopping lists built on the catalogue tablet.
+        Route::get('/open-orders', [KioskOpenOrderController::class, 'index'])
+            ->middleware('throttle:60,1')
+            ->name('open-orders.index');
+        Route::delete('/open-orders/{order}', [KioskOpenOrderController::class, 'destroy'])
+            ->name('open-orders.destroy');
+        Route::post('/open-orders/{order}/checkout', [KioskOpenOrderController::class, 'checkout'])
+            ->middleware('throttle:30,1')
+            ->name('open-orders.checkout');
         Route::post('/orders/{order}/receipt', [ReceiptController::class, 'store'])
             ->middleware('throttle:10,1')
             ->name('orders.receipt');
