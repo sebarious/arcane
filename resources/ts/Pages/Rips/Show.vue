@@ -236,7 +236,7 @@ onBeforeUnmount(() => {
       <div class="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12">
         <!-- self-start: the grid would otherwise stretch this column to match the
              taller buy column, stranding the pack in a tall empty panel. -->
-        <div class="relative lg:self-start flex items-center justify-center bg-[#13101e] border border-[rgba(220,193,117,0.12)] rounded-[16px] p-10 overflow-hidden min-h-[440px]">
+        <div class="relative lg:self-start flex items-center justify-center overflow-hidden min-h-[440px]">
           <div class="absolute inset-0 pointer-events-none" :style="{
             background: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.24) 0%, rgba(220,193,117,0.10) 44%, transparent 72%)',
           }" />

@@ -68,7 +68,7 @@ const formatPct = (n: number) => (n * 100).toFixed(n < 0.01 ? 2 : 1) + '%';
                fills the tile instead of floating in a letterboxed 4:3 band.
                No background of its own: the old #0d0b14 cut a hard seam
                across the card against its #13101e body. -->
-          <div class="relative aspect-square flex items-center justify-center p-7 overflow-hidden">
+          <div class="relative aspect-square flex items-center justify-center overflow-hidden">
             <!-- The pack art is near-black on a near-black ground, so it needs
                  something behind it to read against — the same purple-into-gold
                  wash the hero uses. -->
