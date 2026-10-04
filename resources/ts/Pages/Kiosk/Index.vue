@@ -372,7 +372,11 @@ async function removeFromBasket(id: number) {
 }
 
 async function checkout() {
-  if (basket.value.length === 0) return;
+  // basketEmpty, not basket.length — same trap clearBasket() already had.
+  // "Pay now" enables on basketEmpty, so a basket of nothing but manual
+  // lines (a supplies sale, a deposit) lit the button up and then fell out
+  // of this guard silently: the button did nothing at all.
+  if (basketEmpty.value) return;
 
   screen.value = 'paying';
   payError.value = '';

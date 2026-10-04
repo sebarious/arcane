@@ -49,5 +49,37 @@ class AppServiceProvider extends ServiceProvider
                     'message' => 'Rate limit exceeded. Try again shortly.',
                 ], 429));
         });
+
+        /*
+         * Kiosk limiters.
+         *
+         * These exist as named limiters rather than inline `throttle:n,1`
+         * because the inline form keys guests on `domain|ip` alone, with no
+         * per-route component (ThrottleRequests::resolveRequestSignature()).
+         * Every inline-throttled route on the site therefore shares ONE
+         * counter and only the ceiling differs — so a payment's status poll
+         * (roughly 30 hits a minute) would burn through the allowance that
+         * /kiosk/checkout, capped at 10, then reads, and the next customer's
+         * payment died with "Too Many Attempts.".
+         *
+         * They key on the session, not the IP, for a second reason: every
+         * tablet in the shop shares one public IP, so an IP-keyed limit is
+         * really a shop-wide limit, and the till, the catalogue tablet and a
+         * customer's phone on the wifi all eat each other's budget.
+         */
+        $perTablet = fn (Request $request, string $bucket) => $bucket.'|'.$request->session()->getId();
+
+        RateLimiter::for('kiosk-browse', fn (Request $request) => Limit::perMinute(120)->by($perTablet($request, 'kiosk-browse')));
+        RateLimiter::for('kiosk-basket', fn (Request $request) => Limit::perMinute(60)->by($perTablet($request, 'kiosk-basket')));
+        RateLimiter::for('kiosk-checkout', fn (Request $request) => Limit::perMinute(10)->by($perTablet($request, 'kiosk-checkout')));
+        // Polled every 2s while the reader waits; 3 minutes of that is ~90
+        // hits, so this needs real headroom of its own.
+        RateLimiter::for('kiosk-status', fn (Request $request) => Limit::perMinute(90)->by($perTablet($request, 'kiosk-status')));
+        RateLimiter::for('kiosk-order', fn (Request $request) => Limit::perMinute(30)->by($perTablet($request, 'kiosk-order')));
+
+        // The PIN screen stays keyed on IP on purpose: this one is guarding
+        // against guessing, and a guesser can clear a cookie to get a fresh
+        // session whenever they like.
+        RateLimiter::for('kiosk-unlock', fn (Request $request) => Limit::perMinute(20)->by('kiosk-unlock|'.$request->ip()));
     }
 }

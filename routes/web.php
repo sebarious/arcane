@@ -144,7 +144,7 @@ Route::get('/catalogue/kiosk', [CataloguePageController::class, 'kiosk'])->name(
 // The catalogue tablet's only write. No PIN: it takes no money and reserves
 // no stock, so the worst a passer-by can do is leave an uncollected list.
 Route::post('/catalogue/kiosk/order', [CatalogueOpenOrderController::class, 'store'])
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:kiosk-order')
     ->name('pages.catalogue.kiosk.order');
 Route::get('/api-docs', ApiDocsController::class)->name('pages.api-docs');
 Route::get('/terms', TermsController::class)->name('pages.terms');
@@ -161,13 +161,13 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     // pure stock lookups, nothing to do with checkout, so these must stay
     // reachable regardless of whether Stripe is configured.
     Route::get('/search', KioskSearchController::class)
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:kiosk-browse')
         ->name('search');
     Route::get('/browse', BrowseController::class)
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:kiosk-browse')
         ->name('browse');
     Route::get('/filters', FilterOptionsController::class)
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:kiosk-browse')
         ->name('filters');
 
     // Where kiosk-role staff land after signing in — today's PIN and a
@@ -183,7 +183,7 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::middleware('kiosk.enabled')->group(function () {
         Route::get('/unlock', [UnlockController::class, 'show'])->name('unlock.show');
         Route::post('/unlock', [UnlockController::class, 'store'])
-            ->middleware('throttle:20,1')
+            ->middleware('throttle:kiosk-unlock')
             ->name('unlock.store');
         Route::post('/lock', [UnlockController::class, 'destroy'])->name('lock');
     });
@@ -196,7 +196,7 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
         Route::get('/', KioskPageController::class)->name('index');
         Route::get('/basket', [BasketController::class, 'index'])->name('basket.index');
         Route::post('/basket', [BasketController::class, 'store'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:kiosk-basket')
             ->name('basket.store');
         Route::delete('/basket/{cardInventoryId}', [BasketController::class, 'destroy'])
             ->whereNumber('cardInventoryId')
@@ -206,35 +206,35 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
         // same PIN as the rest of the till, so a customer can't discount
         // their own basket.
         Route::post('/basket/custom', [BasketController::class, 'storeCustom'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:kiosk-basket')
             ->name('basket.custom.store');
         Route::delete('/basket/custom/{lineId}', [BasketController::class, 'destroyCustom'])
             ->name('basket.custom.destroy');
         Route::post('/basket/discount', [BasketController::class, 'setDiscount'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:kiosk-basket')
             ->name('basket.discount.store');
         Route::delete('/basket/discount', [BasketController::class, 'clearDiscount'])
             ->name('basket.discount.destroy');
         Route::post('/checkout', [CheckoutController::class, 'store'])
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:kiosk-checkout')
             ->name('checkout');
         Route::get('/orders/{order}/status', OrderStatusController::class)
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:kiosk-status')
             ->name('orders.status');
         Route::post('/orders/{order}/cancel', [CheckoutController::class, 'cancel'])
-            ->middleware('throttle:20,1')
+            ->middleware('throttle:kiosk-order')
             ->name('orders.cancel');
         // The queue of shopping lists built on the catalogue tablet.
         Route::get('/open-orders', [KioskOpenOrderController::class, 'index'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:kiosk-browse')
             ->name('open-orders.index');
         Route::delete('/open-orders/{order}', [KioskOpenOrderController::class, 'destroy'])
             ->name('open-orders.destroy');
         Route::post('/open-orders/{order}/checkout', [KioskOpenOrderController::class, 'checkout'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:kiosk-order')
             ->name('open-orders.checkout');
         Route::post('/orders/{order}/receipt', [ReceiptController::class, 'store'])
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:kiosk-order')
             ->name('orders.receipt');
     });
 });
