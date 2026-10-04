@@ -311,6 +311,19 @@ async function collectOpenOrder(id: number) {
   }
 }
 
+/**
+ * A plain page reload. The tablet runs under OS-level kiosk lockdown with no
+ * browser chrome, so there is otherwise no way to reload a wedged front end
+ * without taking the device out of kiosk mode.
+ *
+ * Non-destructive: the basket lives in the server session and is re-fetched
+ * by loadBasket() on mount, so whatever is rung up survives the reload. It
+ * only renders on the shopping screen, so it can't be hit mid-payment.
+ */
+function refreshKiosk() {
+  window.location.reload();
+}
+
 /** Locks the tablet when it's left unattended — needs today's PIN to reopen. */
 function lockKiosk() {
   const form = document.createElement('form');
@@ -563,6 +576,19 @@ async function clearBasket() {
                 <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
               </svg>
               <span class="text-[13px] uppercase tracking-[0.1em] font-semibold">Orders</span>
+            </button>
+
+            <!-- No browser chrome under kiosk lockdown, so reloading needs a
+                 button of its own. -->
+            <button type="button" @click="refreshKiosk" title="Refresh page" aria-label="Refresh page"
+              class="shrink-0 w-[64px] h-[64px] rounded-[10px] border border-[#3d2f6e] text-[#a3a3a3] hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors flex items-center justify-center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 0 1 9-9c2.6 0 4.95 1.1 6.6 2.86L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9c-2.6 0-4.95-1.1-6.6-2.86L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
             </button>
 
             <!-- Locks the tablet when it's left unattended; reopening needs
