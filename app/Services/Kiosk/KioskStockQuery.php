@@ -19,6 +19,31 @@ use Illuminate\Support\Facades\DB;
 class KioskStockQuery
 {
     /**
+     * Which physical copy of a printing the kiosk offers when it holds
+     * several, lowest number first.
+     *
+     * This is not cosmetic: the copy that wins this ranking is the row that
+     * gets reserved, charged for and marked sold. Ranking purely on price
+     * meant the kiosk would happily sell a batch-eligible copy while the
+     * customer was physically lifting an identical card off the card wall —
+     * so wall stock never depleted and batch stock quietly drained into
+     * walk-up sales, leaving fewer and fewer cards to build batches from.
+     *
+     *   0  on the card wall — almost certainly the one in the customer's hand
+     *   1  otherwise held back from batches (not_for_batches, or a slab)
+     *   2  batch-eligible stock, spent only once the others are gone
+     *
+     * Written bare rather than `= true` so it reads the same on Postgres
+     * (real booleans) and MySQL (tinyint).
+     */
+    private const COPY_PRIORITY = 'CASE'
+        .' WHEN in_card_wall THEN 0'
+        .' WHEN not_for_batches THEN 1'
+        ." WHEN graded_by IS NOT NULL AND graded_by <> '' AND grade IS NOT NULL AND grade <> '' THEN 1"
+        .' ELSE 2'
+        .' END';
+
+    /**
      * @param  array{search?: ?string, letter?: ?string, set?: ?string, rarity?: ?string, graded?: ?string, featured?: bool}  $filters
      */
     public function build(array $filters = []): Builder
@@ -50,7 +75,7 @@ class KioskStockQuery
             ->selectRaw(
                 'ROW_NUMBER() OVER ('
                 .'PARTITION BY product_id, graded_by, grade, CASE WHEN product_id IS NULL THEN id ELSE NULL END '
-                .'ORDER BY market_value_pence DESC, id ASC'
+                .'ORDER BY '.self::COPY_PRIORITY.', market_value_pence DESC, id ASC'
                 .') AS rn'
             );
 
